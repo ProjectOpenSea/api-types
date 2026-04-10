@@ -1,0 +1,43 @@
+{
+  "name": "@opensea/api-types",
+  "version": "0.2.0",
+  "description": "Auto-generated TypeScript types from the OpenSea API OpenAPI spec",
+  "license": "MIT",
+  "author": "OpenSea Developers",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "opensea-api.json"
+  ],
+  "scripts": {
+    "generate": "openapi-typescript opensea-api.json -o src/generated.ts",
+    "build": "npm run generate && tsup",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "update-spec": "node scripts/update-spec.mjs"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.6.1",
+    "tsup": "^8.3.0",
+    "typescript": "^6.0.2",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
