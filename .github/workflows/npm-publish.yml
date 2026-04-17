@@ -5,19 +5,6 @@ on:
     types: [published]
 
 jobs:
-  publish-npm:
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-          registry-url: https://registry.npmjs.org/
-      - run: npm install
-      - run: npm run build
-      - run: npm test
-      # Auth via OIDC trusted publishing (id-token: write + --provenance)
-      - run: npm publish --provenance --access public
+  publish:
+    uses: ./.github/workflows/npm-publish-reusable.yml
+    secrets: inherit
