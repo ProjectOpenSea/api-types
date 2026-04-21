@@ -4,6 +4,10 @@
   "description": "Auto-generated TypeScript types from the OpenSea API OpenAPI spec",
   "license": "MIT",
   "author": "OpenSea Developers",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ProjectOpenSea/api-types.git"
+  },
   "type": "module",
   "exports": {
     ".": {
