@@ -23,38 +23,62 @@
   ],
   "tags": [
     {
+      "name": "Chain Endpoints",
+      "description": "Chain endpoints to discover supported blockchains and their capabilities"
+    },
+    {
+      "name": "Account Endpoints",
+      "description": "Account endpoints to retrieve OpenSea account profiles and resolve identifiers"
+    },
+    {
+      "name": "Collection Endpoints",
+      "description": "Collection endpoints to retrieve collection details, traits, and trending data"
+    },
+    {
       "name": "NFT Endpoints",
-      "description": "NFT endpoints to retrieve individual NFTs, collections, and related information"
+      "description": "NFT endpoints to retrieve individual NFTs, metadata, ownership, and rarity"
     },
     {
-      "name": "Analytics Endpoints",
-      "description": "Analytics endpoints to retrieve events, stats, and trading data"
-    },
-    {
-      "name": "OpenSea Marketplace Endpoints",
-      "description": "Marketplace endpoints for orders, offers, listings, and trading"
+      "name": "Contract Endpoints",
+      "description": "Contract endpoints to retrieve contract metadata and payment token details"
     },
     {
       "name": "Token Endpoints",
-      "description": "Token endpoints for discovering tokens, getting token details, and swapping tokens"
+      "description": "Token endpoints for getting token details, balances, and trending data"
     },
     {
       "name": "Search Endpoints",
       "description": "Search endpoints for discovering collections, tokens, NFTs, and accounts"
     },
     {
+      "name": "Listing Endpoints",
+      "description": "Listing endpoints for creating, fulfilling, and querying listings"
+    },
+    {
+      "name": "Offer Endpoints",
+      "description": "Offer endpoints for building, creating, fulfilling, and querying offers"
+    },
+    {
+      "name": "Order Endpoints",
+      "description": "Order endpoints for looking up and canceling individual orders"
+    },
+    {
+      "name": "Swap Endpoints",
+      "description": "Swap endpoints for getting token swap quotes with executable transaction data"
+    },
+    {
       "name": "Drops Endpoints",
       "description": "Endpoints for discovering drops, checking mint eligibility, and building mint transactions"
     },
     {
-      "name": "Chain Endpoints",
-      "description": "Chain endpoints to discover supported blockchains and their capabilities"
+      "name": "Analytics Endpoints",
+      "description": "Analytics endpoints to retrieve events, stats, and trading data"
     }
   ],
   "paths": {
     "/api/v2/orders/{chain}/{protocol}/offers": {
       "get": {
-        "tags": ["OpenSea Marketplace Endpoints"],
+        "tags": ["Offer Endpoints"],
         "summary": "Get item offers",
         "description": "Deprecated: This endpoint uses a legacy response format. Use the following collection-based endpoints instead, which return a cleaner response shape with structured price objects: GET /api/v2/offers/collection/{slug}/nfts/{identifier} for item offers, GET /api/v2/offers/collection/{slug}/all for all offers in a collection, GET /api/v2/offers/collection/{slug} for collection offers, or GET /api/v2/offers/collection/{slug}/traits for trait offers. To look up an individual order, use GET /api/v2/orders/chain/{chain}/protocol/{protocol_address}/{order_hash}. The collection-based endpoints return results sorted by best price. To query by creation time, use the events API (GET /api/v2/events). Note: the 'maker' filter on this endpoint has no equivalent on the collection-based endpoints.",
         "operationId": "get_offers",
@@ -193,7 +217,7 @@
         "deprecated": true
       },
       "post": {
-        "tags": ["OpenSea Marketplace Endpoints"],
+        "tags": ["Offer Endpoints"],
         "summary": "Create an item offer",
         "description": "Create an offer to purchase a single NFT (ERC721 or ERC1155). The response includes both a legacy 'order' field (deprecated) and a new 'offer' field with the current v2 response format. New integrations should use the 'offer' field.",
         "operationId": "post_offer",
@@ -247,7 +271,7 @@
     },
     "/api/v2/orders/{chain}/{protocol}/listings": {
       "get": {
-        "tags": ["OpenSea Marketplace Endpoints"],
+        "tags": ["Listing Endpoints"],
         "summary": "Get listings",
         "description": "Deprecated: This endpoint uses a legacy response format. Use the following collection-based endpoints instead, which return a cleaner response shape with structured price objects: GET /api/v2/listings/collection/{slug}/all for all listings in a collection, GET /api/v2/listings/collection/{slug}/best for best listings by price, or GET /api/v2/listings/collection/{slug}/nfts/{identifier}/best for the best listing on a specific NFT. To look up an individual order, use GET /api/v2/orders/chain/{chain}/protocol/{protocol_address}/{order_hash}. The collection-based endpoints return results sorted by best price. To query by creation time, use the events API (GET /api/v2/events). Note: the 'maker' filter on this endpoint has no equivalent on the collection-based endpoints. Also, the NFT-specific route (GET /api/v2/listings/collection/{slug}/nfts/{identifier}/best) only returns the best single listing, not a full paginated list.",
         "operationId": "get_listings",
@@ -387,7 +411,7 @@
         "deprecated": true
       },
       "post": {
-        "tags": ["OpenSea Marketplace Endpoints"],
+        "tags": ["Listing Endpoints"],
         "summary": "Create a listing",
         "description": "List a single NFT (ERC721 or ERC1155) for sale on the OpenSea marketplace. The response includes both a legacy 'order' field (deprecated) and a new 'listing' field with the current v2 response format. New integrations should use the 'listing' field.",
         "operationId": "post_listing",
@@ -441,7 +465,7 @@
     },
     "/api/v2/orders/chain/{chain}/protocol/{protocol_address}/{order_hash}/cancel": {
       "post": {
-        "tags": ["OpenSea Marketplace Endpoints"],
+        "tags": ["Order Endpoints"],
         "summary": "Cancel an order",
         "description": "Offchain cancel a single order, offer or listing, by its order hash when protected by the SignedZone. Protocol and Chain are required to prevent hash collisions. Please note cancellation is only assured if a fulfillment signature was not vended prior to cancellation.",
         "operationId": "cancel_order",
@@ -510,7 +534,7 @@
     },
     "/api/v2/offers": {
       "post": {
-        "tags": ["OpenSea Marketplace Endpoints"],
+        "tags": ["Offer Endpoints"],
         "summary": "Create a criteria offer",
         "description": "Create a criteria offer to purchase any NFT in a collection or which matches the specified trait. For trait offers where the Build Offer endpoint returns identifierOrCriteria '0', use that value directly — trait matching is validated server-side at fulfillment time rather than via onchain merkle proof.",
         "operationId": "post_criteria_offer_v2",
@@ -546,7 +570,7 @@
     },
     "/api/v2/offers/fulfillment_data": {
       "post": {
-        "tags": ["OpenSea Marketplace Endpoints"],
+        "tags": ["Offer Endpoints"],
         "summary": "Fulfill an offer",
         "description": "Retrieve all the information, including signatures, needed to fulfill an offer directly onchain. For trait offers with identifierOrCriteria '0', the server validates that the specified token matches the offer's trait criteria before generating fulfillment data.",
         "operationId": "generate_offer_fulfillment_data_v2",
@@ -589,7 +613,7 @@
     },
     "/api/v2/offers/build": {
       "post": {
-        "tags": ["OpenSea Marketplace Endpoints"],
+        "tags": ["Offer Endpoints"],
         "summary": "Build a criteria offer",
         "description": "Build a portion of a criteria offer including the consideration item, zone, and zone hash needed to post an offer. For trait offers on supported collections, the identifierOrCriteria in the returned consideration will be '0' (no merkle root computation needed). For other collections, a computed merkle root is returned. When identifierOrCriteria is '0', the encodedTokenIds field is informational only and not required for constructing the onchain order.",
         "operationId": "build_offer_v2",
@@ -625,7 +649,7 @@
     },
     "/api/v2/listings/fulfillment_data": {
       "post": {
-        "tags": ["OpenSea Marketplace Endpoints"],
+        "tags": ["Listing Endpoints"],
         "summary": "Fulfill a listing",
         "description": "Retrieve all the information, including signatures, needed to fulfill a listing directly onchain.",
         "operationId": "generate_listing_fulfillment_data_v2",
@@ -888,9 +912,59 @@
         }
       }
     },
+    "/api/v2/auth/keys": {
+      "post": {
+        "tags": ["Auth Endpoints"],
+        "summary": "Create an instant API key",
+        "description": "Creates a free-tier API key instantly without authentication. The key can be used immediately for all API endpoints. Rate limited to 3 keys per hour per IP. Keys expire after 30 days.",
+        "operationId": "create_instant_api_key",
+        "responses": {
+          "201": {
+            "description": "API key created successfully",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstantApiKeyResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Key creation rate limit exceeded",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1ErrorWrapper"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error (e.g. database failure)",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1ErrorWrapper"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Feature is currently disabled or temporarily unavailable",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1ErrorWrapper"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/traits/{slug}": {
       "get": {
-        "tags": ["NFT Endpoints"],
+        "tags": ["Collection Endpoints"],
         "summary": "Get collection traits",
         "description": "Get all available traits for a collection with their value counts and data types.",
         "operationId": "get_collection_traits",
@@ -1075,9 +1149,99 @@
         }
       }
     },
-    "/api/v2/swap/quote": {
+    "/api/v2/token-groups": {
       "get": {
         "tags": ["Token Endpoints"],
+        "summary": "Get token groups",
+        "description": "Get a paginated list of token groups sorted by market cap descending. Token groups represent equivalent currencies across different blockchains (e.g., ETH on Ethereum, Base, and Arbitrum are all in the \"eth\" token group).",
+        "operationId": "get_token_groups",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of results to return (default: 50, max: 100)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            },
+            "example": 50
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Pagination cursor for next page",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenGroupPaginatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/token-groups/{slug}": {
+      "get": {
+        "tags": ["Token Endpoints"],
+        "summary": "Get a token group by slug",
+        "description": "Get detailed information about a specific token group by its slug identifier.",
+        "operationId": "get_token_group",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "The slug identifier of the token group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "eth"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenGroupResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/swap/quote": {
+      "get": {
+        "tags": ["Swap Endpoints"],
         "summary": "Get swap quote",
         "description": "Get a quote for swapping tokens, including price details and executable transaction data.",
         "operationId": "get_swap_quote",
@@ -1260,7 +1424,7 @@
     },
     "/api/v2/orders/chain/{chain}/protocol/{protocol_address}/{order_hash}": {
       "get": {
-        "tags": ["OpenSea Marketplace Endpoints"],
+        "tags": ["Order Endpoints"],
         "summary": "Get an order",
         "description": "Get a single order by its order hash.",
         "operationId": "get_order",
@@ -1315,7 +1479,7 @@
     },
     "/api/v2/offers/collection/{slug}": {
       "get": {
-        "tags": ["OpenSea Marketplace Endpoints"],
+        "tags": ["Offer Endpoints"],
         "summary": "Get offers by collection",
         "description": "Get collection offers on a collection.",
         "operationId": "get_offers_collection",
@@ -1378,7 +1542,7 @@
     },
     "/api/v2/offers/collection/{slug}/traits": {
       "get": {
-        "tags": ["OpenSea Marketplace Endpoints"],
+        "tags": ["Offer Endpoints"],
         "summary": "Get offers by trait",
         "description": "Get trait offers for a collection with the specified trait(s). Supports single or multiple traits.",
         "operationId": "get_offers_collection_trait",
@@ -1498,7 +1662,7 @@
     },
     "/api/v2/offers/collection/{slug}/nfts/{identifier}": {
       "get": {
-        "tags": ["OpenSea Marketplace Endpoints"],
+        "tags": ["Offer Endpoints"],
         "summary": "Get offers by NFT",
         "description": "Get offers for an NFT.",
         "operationId": "get_offers_nft",
@@ -1570,7 +1734,7 @@
     },
     "/api/v2/offers/collection/{slug}/nfts/{identifier}/best": {
       "get": {
-        "tags": ["OpenSea Marketplace Endpoints"],
+        "tags": ["Offer Endpoints"],
         "summary": "Get best offer by NFT",
         "description": "Get the best offer for an NFT.",
         "operationId": "get_best_offer_nft",
@@ -1619,7 +1783,7 @@
     },
     "/api/v2/offers/collection/{slug}/all": {
       "get": {
-        "tags": ["OpenSea Marketplace Endpoints"],
+        "tags": ["Offer Endpoints"],
         "summary": "Get all offers by collection",
         "description": "Get all offers for a collection.",
         "operationId": "list_offers_collection_all",
@@ -1743,7 +1907,7 @@
     },
     "/api/v2/listings/collection/{slug}/nfts/{identifier}/best": {
       "get": {
-        "tags": ["OpenSea Marketplace Endpoints"],
+        "tags": ["Listing Endpoints"],
         "summary": "Get best listing by NFT",
         "description": "Get the best listing for an NFT.",
         "operationId": "get_best_listing_nft",
@@ -1801,7 +1965,7 @@
     },
     "/api/v2/listings/collection/{slug}/best": {
       "get": {
-        "tags": ["OpenSea Marketplace Endpoints"],
+        "tags": ["Listing Endpoints"],
         "summary": "Get best listings by collection",
         "description": "Get the best listings for a collection sorted by price ascending. Note: results are not deduplicated by token ID — if a token has multiple listings, each listing is returned individually. Filter client-side if you need unique tokens.",
         "operationId": "get_best_listings_collection",
@@ -1873,7 +2037,7 @@
     },
     "/api/v2/listings/collection/{slug}/all": {
       "get": {
-        "tags": ["OpenSea Marketplace Endpoints"],
+        "tags": ["Listing Endpoints"],
         "summary": "Get all listings by collection",
         "description": "Get all listings for a collection.",
         "operationId": "list_listings_collection_all",
@@ -2492,7 +2656,7 @@
     },
     "/api/v2/collections": {
       "get": {
-        "tags": ["NFT Endpoints"],
+        "tags": ["Collection Endpoints"],
         "summary": "Get multiple collections",
         "description": "Get a list of collections with filters and sorting options.",
         "operationId": "list_collections",
@@ -2583,7 +2747,7 @@
     },
     "/api/v2/collections/{slug}": {
       "get": {
-        "tags": ["NFT Endpoints"],
+        "tags": ["Collection Endpoints"],
         "summary": "Get a single collection",
         "description": "Get a single collection including details such as fees, traits, and links.",
         "operationId": "get_collection",
@@ -2624,7 +2788,7 @@
     },
     "/api/v2/collections/{slug}/stats": {
       "get": {
-        "tags": ["Analytics Endpoints", "NFT Endpoints"],
+        "tags": ["Collection Endpoints", "Analytics Endpoints"],
         "summary": "Get collection stats",
         "description": "Get comprehensive statistics for a collection including volume, floor price, and trading metrics.",
         "operationId": "get_collection_stats",
@@ -2665,7 +2829,7 @@
     },
     "/api/v2/collections/trending": {
       "get": {
-        "tags": ["NFT Endpoints"],
+        "tags": ["Collection Endpoints"],
         "summary": "Get trending collections",
         "description": "Get a list of trending NFT collections sorted by sales activity over a specified timeframe. Trending is determined by sales volume and activity metrics. Available timeframes range from 1 minute to all time. For the one_day timeframe without a chain filter, collections are sorted by a composite trending score; all other timeframes sort by raw sales count. Results are filtered to verified, non-spam, non-NSFW collections with minimum volume thresholds.",
         "operationId": "get_trending_collections",
@@ -2697,7 +2861,7 @@
           {
             "name": "category",
             "in": "query",
-            "description": "Category to filter by (e.g. art, gaming, memberships, music, pfps, photography, domain-names, virtual-worlds, sports-collectibles).",
+            "description": "Category to filter by (e.g. art, gaming, memberships, music, pfps, photography, domain-names, virtual-worlds, sports-collectibles, physical-collectibles).",
             "required": false,
             "schema": {
               "type": "string"
@@ -2748,7 +2912,7 @@
     },
     "/api/v2/collections/top": {
       "get": {
-        "tags": ["NFT Endpoints"],
+        "tags": ["Collection Endpoints"],
         "summary": "Get top collections",
         "description": "Get top NFT collections ranked by various stats (sorted descending). Unlike /trending, results are not filtered by verification status; spam-tagged collections are excluded via trust-safety enforcement states. Available sort options: one_day_volume, seven_days_volume, thirty_days_volume, floor_price, one_day_sales, seven_days_sales, thirty_days_sales, total_volume, total_sales.",
         "operationId": "get_top_collections",
@@ -2780,7 +2944,7 @@
           {
             "name": "category",
             "in": "query",
-            "description": "Category to filter by (e.g. art, gaming, memberships, music, pfps, photography, domain-names, virtual-worlds, sports-collectibles).",
+            "description": "Category to filter by (e.g. art, gaming, memberships, music, pfps, photography, domain-names, virtual-worlds, sports-collectibles, physical-collectibles).",
             "required": false,
             "schema": {
               "type": "string"
@@ -2971,7 +3135,7 @@
     },
     "/api/v2/chain/{chain}/payment_token/{address}": {
       "get": {
-        "tags": ["NFT Endpoints"],
+        "tags": ["Contract Endpoints"],
         "summary": "Get payment token",
         "description": "Get a payment token by chain and contract address.",
         "operationId": "get_payment_token",
@@ -3020,7 +3184,7 @@
     },
     "/api/v2/chain/{chain}/contract/{address}": {
       "get": {
-        "tags": ["NFT Endpoints"],
+        "tags": ["Contract Endpoints"],
         "summary": "Get contract",
         "description": "Get contract metadata including collection information, contract standards, and ownership details.",
         "operationId": "get_contract",
@@ -3199,7 +3363,7 @@
     },
     "/api/v2/chain/{chain}/contract/{address}/nfts/{identifier}/collection": {
       "get": {
-        "tags": ["NFT Endpoints"],
+        "tags": ["Collection Endpoints"],
         "summary": "Get collection by NFT",
         "description": "Get the collection that an NFT belongs to. This is useful for multi-contract collections like Art Blocks where the item ID disambiguates which collection the NFT belongs to.",
         "operationId": "get_nft_collection",
@@ -3340,7 +3504,7 @@
     },
     "/api/v2/accounts/{address_or_username}": {
       "get": {
-        "tags": ["NFT Endpoints"],
+        "tags": ["Account Endpoints"],
         "summary": "Get an OpenSea account profile",
         "description": "Get an OpenSea Account Profile including details such as bio, social media usernames, and profile image.",
         "operationId": "get_account",
@@ -3381,7 +3545,7 @@
     },
     "/api/v2/accounts/resolve/{identifier}": {
       "get": {
-        "tags": ["NFT Endpoints"],
+        "tags": ["Account Endpoints"],
         "summary": "Resolve an account identifier",
         "description": "Resolve an ENS name (e.g. vitalik.eth), OpenSea username, or wallet address to canonical account info including address, username, and ENS name. The ENS path performs both forward resolution (name → address) and reverse lookup (address → canonical primary name). The address and ENS paths perform enrichment calls (username + ENS reverse lookup) in parallel. The username path only needs an ENS reverse lookup after the initial resolution and runs it sequentially. The ENS and username paths require an extra initial call and may be slower than the address path on cache misses.",
         "operationId": "resolve_account",
@@ -5590,6 +5754,62 @@
         },
         "required": ["assetIdentifier"]
       },
+      "InstantApiKeyResponse": {
+        "type": "object",
+        "description": "Instant API key response",
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "description": "The API key to use in X-API-KEY header"
+          },
+          "name": {
+            "type": "string",
+            "description": "Key name for identification and revocation"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO-8601 timestamp when the key expires"
+          },
+          "rate_limits": {
+            "$ref": "#/components/schemas/RateLimitsResponse",
+            "description": "Rate limits for this key"
+          },
+          "upgrade_url": {
+            "type": "string",
+            "description": "URL to upgrade to higher rate limits"
+          }
+        },
+        "required": [
+          "api_key",
+          "expires_at",
+          "name",
+          "rate_limits",
+          "upgrade_url"
+        ]
+      },
+      "RateLimitsResponse": {
+        "type": "object",
+        "description": "Rate limits for the API key",
+        "properties": {
+          "read": {
+            "type": "string",
+            "description": "Read rate limit",
+            "example": "60/m"
+          },
+          "write": {
+            "type": "string",
+            "description": "Write rate limit",
+            "example": "5/m"
+          },
+          "fulfillment": {
+            "type": "string",
+            "description": "Fulfillment rate limit",
+            "example": "5/m"
+          }
+        },
+        "required": ["fulfillment", "read", "write"]
+      },
       "TokenPaginatedResponse": {
         "type": "object",
         "description": "Paginated list of tokens",
@@ -5676,6 +5896,242 @@
           "symbol",
           "usd_price"
         ]
+      },
+      "TokenGroupCurrencyResponse": {
+        "type": "object",
+        "description": "A currency within a token group",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "The contract address of the currency",
+            "example": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+          },
+          "chain": {
+            "type": "string",
+            "description": "The blockchain the currency is on",
+            "example": "ethereum"
+          },
+          "name": {
+            "type": "string",
+            "description": "The display name of the currency",
+            "example": "Wrapped Ether"
+          },
+          "symbol": {
+            "type": "string",
+            "description": "The ticker symbol of the currency",
+            "example": "WETH"
+          },
+          "image_url": {
+            "type": "string",
+            "description": "URL of the currency's image"
+          },
+          "decimals": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of decimal places",
+            "example": 18
+          },
+          "usd_price": {
+            "type": "string",
+            "description": "Current price in USD",
+            "example": 2345.67
+          }
+        },
+        "required": [
+          "address",
+          "chain",
+          "decimals",
+          "name",
+          "symbol",
+          "usd_price"
+        ]
+      },
+      "TokenGroupPaginatedResponse": {
+        "type": "object",
+        "description": "Paginated list of token groups",
+        "properties": {
+          "token_groups": {
+            "type": "array",
+            "description": "List of token groups",
+            "items": {
+              "$ref": "#/components/schemas/TokenGroupResponse"
+            }
+          },
+          "next": {
+            "type": "string",
+            "description": "Cursor for the next page of results"
+          }
+        },
+        "required": ["token_groups"]
+      },
+      "TokenGroupResponse": {
+        "type": "object",
+        "description": "A token group representing equivalent currencies across different blockchains",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Unique slug identifier for the token group",
+            "example": "eth"
+          },
+          "display_name": {
+            "type": "string",
+            "description": "Display name of the token group",
+            "example": "Ethereum"
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Ticker symbol of the token group",
+            "example": "ETH"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the token group"
+          },
+          "image_url": {
+            "type": "string",
+            "description": "URL of the token group's image"
+          },
+          "opensea_url": {
+            "type": "string",
+            "description": "URL to the token group page on OpenSea"
+          },
+          "currencies": {
+            "type": "array",
+            "description": "Currencies in this token group",
+            "items": {
+              "$ref": "#/components/schemas/TokenGroupCurrencyResponse"
+            }
+          },
+          "primary_currency": {
+            "$ref": "#/components/schemas/TokenGroupCurrencyResponse",
+            "description": "The primary currency for this token group"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/TokenGroupStatsResponse",
+            "description": "Market statistics for the token group"
+          },
+          "socials": {
+            "$ref": "#/components/schemas/TokenGroupSocialsResponse",
+            "description": "Social media links for the token group"
+          },
+          "created_at": {
+            "type": "string",
+            "description": "ISO 8601 timestamp when the token group was created"
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "ISO 8601 timestamp when the token group was last updated"
+          }
+        },
+        "required": [
+          "created_at",
+          "currencies",
+          "display_name",
+          "opensea_url",
+          "primary_currency",
+          "slug",
+          "updated_at"
+        ]
+      },
+      "TokenGroupRollingStatsResponse": {
+        "type": "object",
+        "description": "Rolling statistics for a token group over multiple time periods",
+        "properties": {
+          "volume_1d": {
+            "type": "string",
+            "description": "1-day trading volume in USD"
+          },
+          "volume_7d": {
+            "type": "string",
+            "description": "7-day trading volume in USD"
+          },
+          "volume_30d": {
+            "type": "string",
+            "description": "30-day trading volume in USD"
+          },
+          "price_change_1d": {
+            "type": "number",
+            "format": "double",
+            "description": "1-day price change percentage"
+          },
+          "price_change_7d": {
+            "type": "number",
+            "format": "double",
+            "description": "7-day price change percentage"
+          },
+          "price_change_30d": {
+            "type": "number",
+            "format": "double",
+            "description": "30-day price change percentage"
+          }
+        }
+      },
+      "TokenGroupSocialsResponse": {
+        "type": "object",
+        "description": "Social media links for a token group",
+        "properties": {
+          "website": {
+            "type": "string",
+            "description": "The token group's website URL"
+          },
+          "twitter": {
+            "type": "string",
+            "description": "The token group's Twitter/X handle"
+          },
+          "discord": {
+            "type": "string",
+            "description": "The token group's Discord invite URL"
+          },
+          "telegram": {
+            "type": "string",
+            "description": "The token group's Telegram identifier"
+          },
+          "coinmarketcap": {
+            "type": "string",
+            "description": "CoinMarketCap listing URL"
+          },
+          "coingecko": {
+            "type": "string",
+            "description": "CoinGecko listing URL"
+          }
+        }
+      },
+      "TokenGroupStatsResponse": {
+        "type": "object",
+        "description": "Market statistics for a token group",
+        "properties": {
+          "market_cap_usd": {
+            "type": "string",
+            "description": "Total market capitalization in USD"
+          },
+          "volume_usd_24h": {
+            "type": "string",
+            "description": "24-hour trading volume in USD"
+          },
+          "price_usd": {
+            "type": "string",
+            "description": "Current price in USD (from primary currency)"
+          },
+          "price_change_percent_24h": {
+            "type": "number",
+            "format": "double",
+            "description": "Price change percentage over the last 24 hours"
+          },
+          "total_supply": {
+            "type": "string",
+            "description": "Total supply across all currencies in the group"
+          },
+          "holders": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of holders"
+          },
+          "rolling_stats": {
+            "$ref": "#/components/schemas/TokenGroupRollingStatsResponse",
+            "description": "Rolling statistics over multiple time periods"
+          }
+        },
+        "required": ["market_cap_usd", "volume_usd_24h"]
       },
       "SwapQuoteDetails": {
         "type": "object",
@@ -6826,11 +7282,15 @@
           },
           "volume_diff": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "deprecated": true,
+            "description": "Deprecated. This field always returns 0 and will be removed in a future version."
           },
           "volume_change": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "deprecated": true,
+            "description": "Deprecated. This field always returns 0 and will be removed in a future version."
           },
           "sales": {
             "type": "integer",
@@ -6838,11 +7298,15 @@
           },
           "sales_diff": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "deprecated": true,
+            "description": "Deprecated. This field always returns 0 and will be removed in a future version."
           },
           "average_price": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "deprecated": true,
+            "description": "Deprecated. This field always returns 0 and will be removed in a future version."
           }
         },
         "required": [
@@ -6872,7 +7336,9 @@
           },
           "market_cap": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "deprecated": true,
+            "description": "Deprecated. This field always returns 0 and will be removed in a future version."
           },
           "floor_price": {
             "type": "number",
@@ -6883,7 +7349,9 @@
           },
           "average_price": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "deprecated": true,
+            "description": "Deprecated. This field always returns 0 and will be removed in a future version."
           }
         },
         "required": [
@@ -7464,5 +7932,33 @@
         "in": "header"
       }
     }
-  }
+  },
+  "x-tagGroups": [
+    {
+      "name": "Data & Discovery",
+      "tags": [
+        "Chain Endpoints",
+        "Account Endpoints",
+        "Collection Endpoints",
+        "NFT Endpoints",
+        "Contract Endpoints",
+        "Token Endpoints",
+        "Search Endpoints"
+      ]
+    },
+    {
+      "name": "Marketplace & Trading",
+      "tags": [
+        "Listing Endpoints",
+        "Offer Endpoints",
+        "Order Endpoints",
+        "Swap Endpoints",
+        "Drops Endpoints"
+      ]
+    },
+    {
+      "name": "Analytics & Events",
+      "tags": ["Analytics Endpoints"]
+    }
+  ]
 }

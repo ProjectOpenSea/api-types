@@ -99,6 +99,19 @@ export type TokenBalanceResponse = Schemas["TokenBalanceResponse"]
 export type TokenBalancePaginatedResponse =
   Schemas["TokenBalancePaginatedResponse"]
 
+// Token Groups
+export type TokenGroupResponse = Schemas["TokenGroupResponse"]
+export type TokenGroupPaginatedResponse = Schemas["TokenGroupPaginatedResponse"]
+export type TokenGroupStatsResponse = Schemas["TokenGroupStatsResponse"]
+export type TokenGroupRollingStatsResponse =
+  Schemas["TokenGroupRollingStatsResponse"]
+export type TokenGroupSocialsResponse = Schemas["TokenGroupSocialsResponse"]
+export type TokenGroupCurrencyResponse = Schemas["TokenGroupCurrencyResponse"]
+
+// Auth / API keys
+export type InstantApiKeyResponse = Schemas["InstantApiKeyResponse"]
+export type RateLimitsResponse = Schemas["RateLimitsResponse"]
+
 // Swap
 export type SwapQuoteResponse = Schemas["SwapQuoteResponse"]
 export type SwapQuoteDetails = Schemas["SwapQuoteDetails"]

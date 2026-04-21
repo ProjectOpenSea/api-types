@@ -214,6 +214,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/auth/keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create an instant API key
+         * @description Creates a free-tier API key instantly without authentication. The key can be used immediately for all API endpoints. Rate limited to 3 keys per hour per IP. Keys expire after 30 days.
+         */
+        post: operations["create_instant_api_key"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/traits/{slug}": {
         parameters: {
             query?: never;
@@ -266,6 +286,46 @@ export interface paths {
          * @description Get top tokens ranked by 24-hour trading volume. Returns established tokens with high market activity.
          */
         get: operations["get_top_tokens"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/token-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get token groups
+         * @description Get a paginated list of token groups sorted by market cap descending. Token groups represent equivalent currencies across different blockchains (e.g., ETH on Ethereum, Base, and Arbitrum are all in the "eth" token group).
+         */
+        get: operations["get_token_groups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/token-groups/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a token group by slug
+         * @description Get detailed information about a specific token group by its slug identifier.
+         */
+        get: operations["get_token_group"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1614,6 +1674,40 @@ export interface components {
             metadata?: components["schemas"]["ValidateMetadataDetails"];
             error?: components["schemas"]["MetadataIngestionError"];
         };
+        /** @description Instant API key response */
+        InstantApiKeyResponse: {
+            /** @description The API key to use in X-API-KEY header */
+            api_key: string;
+            /** @description Key name for identification and revocation */
+            name: string;
+            /**
+             * Format: date-time
+             * @description ISO-8601 timestamp when the key expires
+             */
+            expires_at: string;
+            /** @description Rate limits for this key */
+            rate_limits: components["schemas"]["RateLimitsResponse"];
+            /** @description URL to upgrade to higher rate limits */
+            upgrade_url: string;
+        };
+        /** @description Rate limits for the API key */
+        RateLimitsResponse: {
+            /**
+             * @description Read rate limit
+             * @example 60/m
+             */
+            read: string;
+            /**
+             * @description Write rate limit
+             * @example 5/m
+             */
+            write: string;
+            /**
+             * @description Fulfillment rate limit
+             * @example 5/m
+             */
+            fulfillment: string;
+        };
         /** @description Paginated list of tokens */
         TokenPaginatedResponse: {
             /** @description List of tokens */
@@ -1673,6 +1767,147 @@ export interface components {
             price_change_24h?: number;
             /** @description URL to the token page on OpenSea */
             opensea_url: string;
+        };
+        /** @description A currency within a token group */
+        TokenGroupCurrencyResponse: {
+            /**
+             * @description The contract address of the currency
+             * @example 0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2
+             */
+            address: string;
+            /**
+             * @description The blockchain the currency is on
+             * @example ethereum
+             */
+            chain: string;
+            /**
+             * @description The display name of the currency
+             * @example Wrapped Ether
+             */
+            name: string;
+            /**
+             * @description The ticker symbol of the currency
+             * @example WETH
+             */
+            symbol: string;
+            /** @description URL of the currency's image */
+            image_url?: string;
+            /**
+             * Format: int32
+             * @description Number of decimal places
+             * @example 18
+             */
+            decimals: number;
+            /**
+             * @description Current price in USD
+             * @example 2345.67
+             */
+            usd_price: string;
+        };
+        /** @description Paginated list of token groups */
+        TokenGroupPaginatedResponse: {
+            /** @description List of token groups */
+            token_groups: components["schemas"]["TokenGroupResponse"][];
+            /** @description Cursor for the next page of results */
+            next?: string;
+        };
+        /** @description A token group representing equivalent currencies across different blockchains */
+        TokenGroupResponse: {
+            /**
+             * @description Unique slug identifier for the token group
+             * @example eth
+             */
+            slug: string;
+            /**
+             * @description Display name of the token group
+             * @example Ethereum
+             */
+            display_name: string;
+            /**
+             * @description Ticker symbol of the token group
+             * @example ETH
+             */
+            symbol?: string;
+            /** @description Description of the token group */
+            description?: string;
+            /** @description URL of the token group's image */
+            image_url?: string;
+            /** @description URL to the token group page on OpenSea */
+            opensea_url: string;
+            /** @description Currencies in this token group */
+            currencies: components["schemas"]["TokenGroupCurrencyResponse"][];
+            /** @description The primary currency for this token group */
+            primary_currency: components["schemas"]["TokenGroupCurrencyResponse"];
+            /** @description Market statistics for the token group */
+            stats?: components["schemas"]["TokenGroupStatsResponse"];
+            /** @description Social media links for the token group */
+            socials?: components["schemas"]["TokenGroupSocialsResponse"];
+            /** @description ISO 8601 timestamp when the token group was created */
+            created_at: string;
+            /** @description ISO 8601 timestamp when the token group was last updated */
+            updated_at: string;
+        };
+        /** @description Rolling statistics for a token group over multiple time periods */
+        TokenGroupRollingStatsResponse: {
+            /** @description 1-day trading volume in USD */
+            volume_1d?: string;
+            /** @description 7-day trading volume in USD */
+            volume_7d?: string;
+            /** @description 30-day trading volume in USD */
+            volume_30d?: string;
+            /**
+             * Format: double
+             * @description 1-day price change percentage
+             */
+            price_change_1d?: number;
+            /**
+             * Format: double
+             * @description 7-day price change percentage
+             */
+            price_change_7d?: number;
+            /**
+             * Format: double
+             * @description 30-day price change percentage
+             */
+            price_change_30d?: number;
+        };
+        /** @description Social media links for a token group */
+        TokenGroupSocialsResponse: {
+            /** @description The token group's website URL */
+            website?: string;
+            /** @description The token group's Twitter/X handle */
+            twitter?: string;
+            /** @description The token group's Discord invite URL */
+            discord?: string;
+            /** @description The token group's Telegram identifier */
+            telegram?: string;
+            /** @description CoinMarketCap listing URL */
+            coinmarketcap?: string;
+            /** @description CoinGecko listing URL */
+            coingecko?: string;
+        };
+        /** @description Market statistics for a token group */
+        TokenGroupStatsResponse: {
+            /** @description Total market capitalization in USD */
+            market_cap_usd: string;
+            /** @description 24-hour trading volume in USD */
+            volume_usd_24h: string;
+            /** @description Current price in USD (from primary currency) */
+            price_usd?: string;
+            /**
+             * Format: double
+             * @description Price change percentage over the last 24 hours
+             */
+            price_change_percent_24h?: number;
+            /** @description Total supply across all currencies in the group */
+            total_supply?: string;
+            /**
+             * Format: int32
+             * @description Number of holders
+             */
+            holders?: number;
+            /** @description Rolling statistics over multiple time periods */
+            rolling_stats?: components["schemas"]["TokenGroupRollingStatsResponse"];
         };
         /** @description Price and fee details for a swap quote */
         SwapQuoteDetails: {
@@ -2125,15 +2360,31 @@ export interface components {
             interval: string;
             /** Format: double */
             volume: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @deprecated
+             * @description Deprecated. This field always returns 0 and will be removed in a future version.
+             */
             volume_diff: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @deprecated
+             * @description Deprecated. This field always returns 0 and will be removed in a future version.
+             */
             volume_change: number;
             /** Format: int32 */
             sales: number;
-            /** Format: int32 */
+            /**
+             * Format: int32
+             * @deprecated
+             * @description Deprecated. This field always returns 0 and will be removed in a future version.
+             */
             sales_diff: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @deprecated
+             * @description Deprecated. This field always returns 0 and will be removed in a future version.
+             */
             average_price: number;
         };
         Total: {
@@ -2143,12 +2394,20 @@ export interface components {
             sales: number;
             /** Format: int64 */
             num_owners: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @deprecated
+             * @description Deprecated. This field always returns 0 and will be removed in a future version.
+             */
             market_cap: number;
             /** Format: double */
             floor_price: number;
             floor_price_symbol: string;
-            /** Format: double */
+            /**
+             * Format: double
+             * @deprecated
+             * @description Deprecated. This field always returns 0 and will be removed in a future version.
+             */
             average_price: number;
         };
         NftListResponse: {
@@ -2929,6 +3188,53 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    create_instant_api_key: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description API key created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InstantApiKeyResponse"];
+                };
+            };
+            /** @description Key creation rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal server error (e.g. database failure) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Feature is currently disabled or temporarily unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+        };
+    };
     get_collection_traits: {
         parameters: {
             query?: never;
@@ -3025,6 +3331,65 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_token_groups: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Number of results to return (default: 50, max: 100)
+                 * @example 50
+                 */
+                limit?: number;
+                /** @description Pagination cursor for next page */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TokenGroupPaginatedResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_token_group: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The slug identifier of the token group
+                 * @example eth
+                 */
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TokenGroupResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -3840,7 +4205,7 @@ export interface operations {
                  */
                 chains?: components["schemas"]["ChainIdentifier"][];
                 /**
-                 * @description Category to filter by (e.g. art, gaming, memberships, music, pfps, photography, domain-names, virtual-worlds, sports-collectibles).
+                 * @description Category to filter by (e.g. art, gaming, memberships, music, pfps, photography, domain-names, virtual-worlds, sports-collectibles, physical-collectibles).
                  * @example pfps
                  */
                 category?: string;
@@ -3885,7 +4250,7 @@ export interface operations {
                  */
                 chains?: components["schemas"]["ChainIdentifier"][];
                 /**
-                 * @description Category to filter by (e.g. art, gaming, memberships, music, pfps, photography, domain-names, virtual-worlds, sports-collectibles).
+                 * @description Category to filter by (e.g. art, gaming, memberships, music, pfps, photography, domain-names, virtual-worlds, sports-collectibles, physical-collectibles).
                  * @example pfps
                  */
                 category?: string;
