@@ -11,7 +11,6 @@ import type {
   ChainIdentifier,
   CollectionResponse,
   Contract,
-  components,
   Event,
   FulfillListingResponse,
   Listing,
@@ -23,7 +22,6 @@ import type {
   OperationRequestBody,
   OperationResponse,
   Order,
-  operations,
   paths,
   Schemas,
 } from "../src/index.js"

@@ -543,7 +543,7 @@ export interface paths {
         };
         /**
          * Get best listings by collection
-         * @description Get the best listings for a collection sorted by price ascending. Note: results are not deduplicated by token ID — if a token has multiple listings, each listing is returned individually. Filter client-side if you need unique tokens.
+         * @description Get the best listings for a collection sorted by price ascending. Optionally filter by item traits using the 'traits' query parameter with a JSON array of trait filters. Multiple traits are AND-combined (items must match all). Note: results are not deduplicated by token ID — if a token has multiple listings, each listing is returned individually. Filter client-side if you need unique tokens. Example: ?traits=[{"traitType":"Background","value":"Red"}]
          */
         get: operations["get_best_listings_collection"];
         put?: never;
@@ -603,7 +603,7 @@ export interface paths {
         };
         /**
          * Get events (by collection)
-         * @description Get a list of events for a collection.
+         * @description Get a list of events for a collection. Optionally filter by traits to only return events for items matching the specified trait criteria.
          */
         get: operations["list_events_by_collection"];
         put?: never;
@@ -803,7 +803,7 @@ export interface paths {
         };
         /**
          * Get NFTs by collection
-         * @description Get all NFTs in a specific collection.
+         * @description Get NFTs in a specific collection. Optionally filter by traits using the 'traits' query parameter with a JSON array of trait filters. Multiple traits are AND-combined (items must match all specified traits). Example: ?traits=[{"traitType":"Background","value":"Red"},{"traitType":"Eyes","value":"Blue"}]
          */
         get: operations["get_nfts_by_collection"];
         put?: never;
@@ -2684,6 +2684,12 @@ export interface components {
             usd_value: string;
             /** @description URL to the token page on OpenSea */
             opensea_url: string;
+            /**
+             * @description Token status relative to OpenSea's spam-classification rules. `OK` for tokens that pass all spam filters (the normal case); populated with a more specific value for tokens surfaced via `disable_spam_filtering=true` that would normally be hidden. Categories are intentionally broad and may evolve. Possible values, in decreasing severity: `WARNING` (flagged as risky/suspicious — caution advised), `SPAM` (flagged as spam), `LOW_LIQUIDITY` (insufficient pool liquidity), `LOW_VALUE` (dust holding < $0.01), `OK` (passes all filters).
+             * @default OK
+             * @enum {string}
+             */
+            status: "OK" | "WARNING" | "SPAM" | "LOW_LIQUIDITY" | "LOW_VALUE";
         };
     };
     responses: {
@@ -3787,6 +3793,16 @@ export interface operations {
                 /** @description Whether to include private listings; defaults to false */
                 include_private_listings?: boolean;
                 /**
+                 * @description JSON array of trait filters to narrow listings by item traits. Each object has 'traitType' and 'value' fields. Multiple traits are AND-combined (items must match all). Example: [{"traitType":"Background","value":"Red"}]
+                 * @example [
+                 *       {
+                 *         "traitType": "Background",
+                 *         "value": "Red"
+                 *       }
+                 *     ]
+                 */
+                traits?: string;
+                /**
                  * @description Number of items to return per page
                  * @example 20
                  */
@@ -3895,6 +3911,16 @@ export interface operations {
                 before?: number;
                 /** @description Filter by event types. To get order invalidation and revalidation events, please use the Stream API. The order status can also be checked on the Get Order endpoint. */
                 event_type?: ("sale" | "transfer" | "mint" | "listing" | "offer" | "trait_offer" | "collection_offer")[];
+                /**
+                 * @description JSON array of trait filters. Each object has 'traitType' and 'value' fields. Multiple traits are AND-combined (items must match all). Example: [{"traitType":"Background","value":"Red"}]
+                 * @example [
+                 *       {
+                 *         "traitType": "Background",
+                 *         "value": "Red"
+                 *       }
+                 *     ]
+                 */
+                traits?: string;
                 /**
                  * @description Number of items to return per page
                  * @example 20
@@ -4285,6 +4311,16 @@ export interface operations {
         parameters: {
             query?: {
                 /**
+                 * @description JSON array of trait filters. Each object has 'traitType' and 'value' fields. Multiple traits are AND-combined (items must match all). Example: [{"traitType":"Background","value":"Red"}]
+                 * @example [
+                 *       {
+                 *         "traitType": "Background",
+                 *         "value": "Red"
+                 *       }
+                 *     ]
+                 */
+                traits?: string;
+                /**
                  * @description Number of items to return per page
                  * @example 20
                  */
@@ -4636,7 +4672,7 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Number of results to return (default: 20, max: 25)
+                 * @description Number of results to return (default: 20, max: 100)
                  * @example 20
                  */
                 limit?: number;
@@ -4656,7 +4692,7 @@ export interface operations {
                  */
                 sort_direction?: "asc" | "desc";
                 /**
-                 * @description Disable spam token filtering (default: false)
+                 * @description When true, disables OpenSea's heuristic spam filtering and returns tokens that would normally be hidden (low liquidity, dust, flagged-as-spam, etc.). Tokens flagged for trust & safety enforcement or as malicious are still filtered out regardless. Surfaced tokens carry a `status` field on the response indicating why they would have been filtered.
                  * @example false
                  */
                 disable_spam_filtering?: boolean;

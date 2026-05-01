@@ -1967,7 +1967,7 @@
       "get": {
         "tags": ["Listing Endpoints"],
         "summary": "Get best listings by collection",
-        "description": "Get the best listings for a collection sorted by price ascending. Note: results are not deduplicated by token ID — if a token has multiple listings, each listing is returned individually. Filter client-side if you need unique tokens.",
+        "description": "Get the best listings for a collection sorted by price ascending. Optionally filter by item traits using the 'traits' query parameter with a JSON array of trait filters. Multiple traits are AND-combined (items must match all). Note: results are not deduplicated by token ID — if a token has multiple listings, each listing is returned individually. Filter client-side if you need unique tokens. Example: ?traits=[{\"traitType\":\"Background\",\"value\":\"Red\"}]",
         "operationId": "get_best_listings_collection",
         "parameters": [
           {
@@ -1987,6 +1987,21 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "traits",
+            "in": "query",
+            "description": "JSON array of trait filters to narrow listings by item traits. Each object has 'traitType' and 'value' fields. Multiple traits are AND-combined (items must match all). Example: [{\"traitType\":\"Background\",\"value\":\"Red\"}]",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": [
+              {
+                "traitType": "Background",
+                "value": "Red"
+              }
+            ]
           },
           {
             "name": "limit",
@@ -2203,7 +2218,7 @@
       "get": {
         "tags": ["Analytics Endpoints"],
         "summary": "Get events (by collection)",
-        "description": "Get a list of events for a collection.",
+        "description": "Get a list of events for a collection. Optionally filter by traits to only return events for items matching the specified trait criteria.",
         "operationId": "list_events_by_collection",
         "parameters": [
           {
@@ -2256,6 +2271,21 @@
                 ]
               }
             }
+          },
+          {
+            "name": "traits",
+            "in": "query",
+            "description": "JSON array of trait filters. Each object has 'traitType' and 'value' fields. Multiple traits are AND-combined (items must match all). Example: [{\"traitType\":\"Background\",\"value\":\"Red\"}]",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": [
+              {
+                "traitType": "Background",
+                "value": "Red"
+              }
+            ]
           },
           {
             "name": "limit",
@@ -2997,7 +3027,7 @@
       "get": {
         "tags": ["NFT Endpoints"],
         "summary": "Get NFTs by collection",
-        "description": "Get all NFTs in a specific collection.",
+        "description": "Get NFTs in a specific collection. Optionally filter by traits using the 'traits' query parameter with a JSON array of trait filters. Multiple traits are AND-combined (items must match all specified traits). Example: ?traits=[{\"traitType\":\"Background\",\"value\":\"Red\"},{\"traitType\":\"Eyes\",\"value\":\"Blue\"}]",
         "operationId": "get_nfts_by_collection",
         "parameters": [
           {
@@ -3008,6 +3038,21 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "traits",
+            "in": "query",
+            "description": "JSON array of trait filters. Each object has 'traitType' and 'value' fields. Multiple traits are AND-combined (items must match all). Example: [{\"traitType\":\"Background\",\"value\":\"Red\"}]",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": [
+              {
+                "traitType": "Background",
+                "value": "Red"
+              }
+            ]
           },
           {
             "name": "limit",
@@ -3606,7 +3651,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Number of results to return (default: 20, max: 25)",
+            "description": "Number of results to return (default: 20, max: 100)",
             "required": false,
             "schema": {
               "type": "integer",
@@ -3660,7 +3705,7 @@
           {
             "name": "disable_spam_filtering",
             "in": "query",
-            "description": "Disable spam token filtering (default: false)",
+            "description": "When true, disables OpenSea's heuristic spam filtering and returns tokens that would normally be hidden (low liquidity, dust, flagged-as-spam, etc.). Tokens flagged for trust & safety enforcement or as malicious are still filtered out regardless. Surfaced tokens carry a `status` field on the response indicating why they would have been filtered.",
             "required": false,
             "schema": {
               "type": "boolean",
@@ -7869,6 +7914,12 @@
           "opensea_url": {
             "type": "string",
             "description": "URL to the token page on OpenSea"
+          },
+          "status": {
+            "type": "string",
+            "default": "OK",
+            "description": "Token status relative to OpenSea's spam-classification rules. `OK` for tokens that pass all spam filters (the normal case); populated with a more specific value for tokens surfaced via `disable_spam_filtering=true` that would normally be hidden. Categories are intentionally broad and may evolve. Possible values, in decreasing severity: `WARNING` (flagged as risky/suspicious — caution advised), `SPAM` (flagged as spam), `LOW_LIQUIDITY` (insufficient pool liquidity), `LOW_VALUE` (dust holding < $0.01), `OK` (passes all filters).",
+            "enum": ["OK", "WARNING", "SPAM", "LOW_LIQUIDITY", "LOW_VALUE"]
           }
         },
         "required": [

@@ -1,5 +1,11 @@
 # @opensea/api-types
 
+## 0.2.2
+
+### Patch Changes
+
+- 33bf144: Sync OpenAPI spec: add `traits` query param to three collection-scoped read endpoints (`GET /api/v2/collection/{slug}/nfts`, `GET /api/v2/listings/collection/{slug}/best`, `GET /api/v2/events/collection/{slug}`) — accepts a JSON-encoded array of `{traitType, value}` filters that are AND-combined server-side. Adds optional `status` field to `TokenBalanceResponse` (`OK` | `WARNING` | `SPAM` | `LOW_LIQUIDITY` | `LOW_VALUE`) surfaced when callers pass `disable_spam_filtering=true` on the account tokens endpoint, whose `limit` max also rises from 25 to 100. Non-breaking, additive.
+
 ## 0.2.1
 
 ### Patch Changes
