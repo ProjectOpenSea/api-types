@@ -37,6 +37,8 @@ When reviewing changes to this package, verify:
    pnpm --filter cli run build
    ```
 
+   **Always-update-this-first rule**: when adding a new OpenSea v2 endpoint to the SDK or CLI, refresh the spec and regenerate types here BEFORE writing the SDK/CLI method. Hand-rolling request/response types in `packages/sdk/src/api/types.ts` or `packages/cli/src/types/api.ts` is forbidden and CI will block it (`pnpm check-api-paths`).
+
 4. **Chain enum sync**: The SDK's `Chain` enum has a compile-time assertion against `ChainIdentifier` from this package. If the spec adds a new chain, the SDK build will fail until `Chain` is updated.
 
 ## Conventions

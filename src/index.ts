@@ -58,6 +58,15 @@ export type FulfillmentData = Schemas["FulfillmentData"]
 export type TransactionData = Schemas["TransactionData"]
 export type OrderData = Schemas["OrderData"]
 
+// Cross-chain fulfillment
+export type CrossChainFulfillmentRequest =
+  Schemas["CrossChainFulfillmentRequest"]
+export type CrossChainFulfillmentResponse =
+  Schemas["CrossChainFulfillmentResponse"]
+export type CrossChainPaymentToken = Schemas["CrossChainPaymentToken"]
+export type FulfillerObject = Schemas["FulfillerObject"]
+export type ListingObject = Schemas["ListingObject"]
+
 // Seaport
 export type SeaportParameters = Schemas["SeaportParameters"]
 export type SeaportRequest = Schemas["SeaportRequest"]

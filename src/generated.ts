@@ -154,6 +154,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/listings/cross_chain_fulfillment_data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fulfill a listing using a different token
+         * @description Get fulfillment data to buy one or more listings using a token on a different chain or a different token on the same chain. Supports cross-chain purchases and same-chain token swaps via the Relay protocol. Returns an ordered list of transactions to execute.
+         */
+        post: operations["generate_cross_chain_listing_fulfillment_data"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/drops/{slug}/mint": {
         parameters: {
             query?: never;
@@ -1612,6 +1632,48 @@ export interface components {
             chain: string;
             protocol_address: string;
         };
+        /** @description Request to fulfill one or more listings using a payment token on a different chain or a different token on the same chain */
+        CrossChainFulfillmentRequest: {
+            /** @description One or more listings to fulfill */
+            listings: components["schemas"]["ListingObject"][];
+            fulfiller: components["schemas"]["FulfillerObject"];
+            /** @description The token to pay with */
+            payment: components["schemas"]["CrossChainPaymentToken"];
+            /** @description Optional recipient address for the purchased items */
+            recipient?: string;
+        };
+        /** @description Payment token to use for cross-chain fulfillment */
+        CrossChainPaymentToken: {
+            /**
+             * @description Chain of the payment token (e.g. 'base', 'ethereum')
+             * @example base
+             */
+            chain: string;
+            /**
+             * @description Contract address of the payment token (use 0x0000000000000000000000000000000000000000 for native token)
+             * @example 0x0000000000000000000000000000000000000000
+             */
+            token_address: string;
+        };
+        /** @description Response containing ordered transactions to execute for cross-chain fulfillment */
+        CrossChainFulfillmentResponse: {
+            /** @description Ordered list of transactions to execute. May include approval and buy/swap transactions. */
+            transactions: components["schemas"]["SwapTransactionResponse"][];
+        };
+        /** @description A transaction to be submitted onchain to execute a swap */
+        SwapTransactionResponse: {
+            /**
+             * @description The blockchain for this transaction
+             * @example ethereum
+             */
+            chain: string;
+            /** @description The destination address for the transaction */
+            to?: string;
+            /** @description The transaction data. For EVM chains: hex-encoded calldata. For SVM chains: comma-separated instructions in programId:data format. */
+            data: string;
+            /** @description The native token value to send with the transaction */
+            value?: string;
+        };
         /** @description Ready-to-sign mint transaction data */
         DropMintResponse: {
             /** @description Transaction target contract address */
@@ -1948,20 +2010,6 @@ export interface components {
             quote: components["schemas"]["SwapQuoteDetails"];
             /** @description Transactions to execute the swap */
             transactions: components["schemas"]["SwapTransactionResponse"][];
-        };
-        /** @description A transaction to be submitted onchain to execute a swap */
-        SwapTransactionResponse: {
-            /**
-             * @description The blockchain for this transaction
-             * @example ethereum
-             */
-            chain: string;
-            /** @description The destination address for the transaction */
-            to?: string;
-            /** @description The transaction data. For EVM chains: hex-encoded calldata. For SVM chains: comma-separated instructions in programId:data format. */
-            data: string;
-            /** @description The native token value to send with the transaction */
-            value?: string;
         };
         /** @description Account search result */
         AccountSearchResponse: {
@@ -2690,6 +2738,16 @@ export interface components {
              * @enum {string}
              */
             status: "OK" | "WARNING" | "SPAM" | "LOW_LIQUIDITY" | "LOW_VALUE";
+            /**
+             * @description USD value of base token reserves in the top liquidity pool paired with a major token
+             * @example 125000.5
+             */
+            base_token_liquidity_usd?: string;
+            /**
+             * @description USD value of quote token reserves in the top liquidity pool paired with a major token
+             * @example 125000.5
+             */
+            quote_token_liquidity_usd?: string;
         };
     };
     responses: {
@@ -3045,6 +3103,40 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["FulfillListingResponse"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    generate_cross_chain_listing_fulfillment_data: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrossChainFulfillmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Cross-chain fulfillment data retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CrossChainFulfillmentResponse"];
+                };
+            };
+            /** @description The request is invalid. Possible reasons: listing not found, listing not valid, listing is not a listing order, or no fulfillment actions could be generated. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CrossChainFulfillmentResponse"];
                 };
             };
             500: components["responses"]["InternalError"];

@@ -690,6 +690,49 @@
         }
       }
     },
+    "/api/v2/listings/cross_chain_fulfillment_data": {
+      "post": {
+        "tags": ["Listing Endpoints"],
+        "summary": "Fulfill a listing using a different token",
+        "description": "Get fulfillment data to buy one or more listings using a token on a different chain or a different token on the same chain. Supports cross-chain purchases and same-chain token swaps via the Relay protocol. Returns an ordered list of transactions to execute.",
+        "operationId": "generate_cross_chain_listing_fulfillment_data",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrossChainFulfillmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Cross-chain fulfillment data retrieved successfully",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrossChainFulfillmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid. Possible reasons: listing not found, listing not valid, listing is not a listing order, or no fulfillment actions could be generated.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrossChainFulfillmentResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/api/v2/drops/{slug}/mint": {
       "post": {
         "tags": ["Drops Endpoints"],
@@ -5640,6 +5683,86 @@
         },
         "required": ["chain", "hash", "protocol_address"]
       },
+      "CrossChainFulfillmentRequest": {
+        "type": "object",
+        "description": "Request to fulfill one or more listings using a payment token on a different chain or a different token on the same chain",
+        "properties": {
+          "listings": {
+            "type": "array",
+            "description": "One or more listings to fulfill",
+            "items": {
+              "$ref": "#/components/schemas/ListingObject"
+            }
+          },
+          "fulfiller": {
+            "$ref": "#/components/schemas/FulfillerObject"
+          },
+          "payment": {
+            "$ref": "#/components/schemas/CrossChainPaymentToken",
+            "description": "The token to pay with"
+          },
+          "recipient": {
+            "type": "string",
+            "description": "Optional recipient address for the purchased items"
+          }
+        },
+        "required": ["fulfiller", "listings", "payment"]
+      },
+      "CrossChainPaymentToken": {
+        "type": "object",
+        "description": "Payment token to use for cross-chain fulfillment",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "description": "Chain of the payment token (e.g. 'base', 'ethereum')",
+            "example": "base"
+          },
+          "token_address": {
+            "type": "string",
+            "description": "Contract address of the payment token (use 0x0000000000000000000000000000000000000000 for native token)",
+            "example": "0x0000000000000000000000000000000000000000"
+          }
+        },
+        "required": ["chain", "token_address"]
+      },
+      "CrossChainFulfillmentResponse": {
+        "type": "object",
+        "description": "Response containing ordered transactions to execute for cross-chain fulfillment",
+        "properties": {
+          "transactions": {
+            "type": "array",
+            "description": "Ordered list of transactions to execute. May include approval and buy/swap transactions.",
+            "items": {
+              "$ref": "#/components/schemas/SwapTransactionResponse"
+            }
+          }
+        },
+        "required": ["transactions"]
+      },
+      "SwapTransactionResponse": {
+        "type": "object",
+        "description": "A transaction to be submitted onchain to execute a swap",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "description": "The blockchain for this transaction",
+            "example": "ethereum"
+          },
+          "to": {
+            "type": "string",
+            "description": "The destination address for the transaction"
+          },
+          "data": {
+            "type": "string",
+            "description": "The transaction data. For EVM chains: hex-encoded calldata. For SVM chains: comma-separated instructions in programId:data format."
+          },
+          "value": {
+            "type": "string",
+            "description": "The native token value to send with the transaction"
+          }
+        },
+        "required": ["chain", "data"]
+      },
       "DropMintResponse": {
         "type": "object",
         "description": "Ready-to-sign mint transaction data",
@@ -5904,7 +6027,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1
+            "example": 1.0
           },
           "decimals": {
             "type": "integer",
@@ -6192,7 +6315,7 @@
             "type": "number",
             "format": "double",
             "description": "Total cost of tokens sent in USD",
-            "example": 1869
+            "example": 1869.0
           },
           "slippage_tolerance": {
             "type": "number",
@@ -6238,30 +6361,6 @@
           }
         },
         "required": ["quote", "transactions"]
-      },
-      "SwapTransactionResponse": {
-        "type": "object",
-        "description": "A transaction to be submitted onchain to execute a swap",
-        "properties": {
-          "chain": {
-            "type": "string",
-            "description": "The blockchain for this transaction",
-            "example": "ethereum"
-          },
-          "to": {
-            "type": "string",
-            "description": "The destination address for the transaction"
-          },
-          "data": {
-            "type": "string",
-            "description": "The transaction data. For EVM chains: hex-encoded calldata. For SVM chains: comma-separated instructions in programId:data format."
-          },
-          "value": {
-            "type": "string",
-            "description": "The native token value to send with the transaction"
-          }
-        },
-        "required": ["chain", "data"]
       },
       "AccountSearchResponse": {
         "type": "object",
@@ -7516,7 +7615,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1
+            "example": 1.0
           },
           "decimals": {
             "type": "integer",
@@ -7893,7 +7992,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1
+            "example": 1.0
           },
           "decimals": {
             "type": "integer",
@@ -7920,6 +8019,16 @@
             "default": "OK",
             "description": "Token status relative to OpenSea's spam-classification rules. `OK` for tokens that pass all spam filters (the normal case); populated with a more specific value for tokens surfaced via `disable_spam_filtering=true` that would normally be hidden. Categories are intentionally broad and may evolve. Possible values, in decreasing severity: `WARNING` (flagged as risky/suspicious — caution advised), `SPAM` (flagged as spam), `LOW_LIQUIDITY` (insufficient pool liquidity), `LOW_VALUE` (dust holding < $0.01), `OK` (passes all filters).",
             "enum": ["OK", "WARNING", "SPAM", "LOW_LIQUIDITY", "LOW_VALUE"]
+          },
+          "base_token_liquidity_usd": {
+            "type": "string",
+            "description": "USD value of base token reserves in the top liquidity pool paired with a major token",
+            "example": 125000.5
+          },
+          "quote_token_liquidity_usd": {
+            "type": "string",
+            "description": "USD value of quote token reserves in the top liquidity pool paired with a major token",
+            "example": 125000.5
           }
         },
         "required": [
