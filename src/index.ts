@@ -41,16 +41,21 @@ export type NumericTraitCriteria = Schemas["NumericTraitCriteria"]
 export type Order = Schemas["Order"]
 export type Offer = Schemas["Offer"]
 export type Listing = Schemas["Listing"]
-export type OrdersResponse = Schemas["OrdersResponse"]
 export type OffersResponse = Schemas["OffersResponse"]
 export type ListingsResponse = Schemas["ListingsResponse"]
 export type GetOrderResponse = Schemas["GetOrderResponse"]
-export type CreateOfferResponse = Schemas["CreateOfferResponse"]
-export type CreateListingResponse = Schemas["CreateListingResponse"]
 export type ListingOrOffer = Schemas["ListingOrOffer"]
 export type Price = Schemas["Price"]
 export type ListingPrice = Schemas["ListingPrice"]
 export type CriteriaRequest = Schemas["CriteriaRequest"]
+
+// Listings — sweep
+export type SweepCollectionRequest = Schemas["SweepCollectionRequest"]
+export type SweepCollectionResponse = Schemas["SweepCollectionResponse"]
+
+// Transactions
+export type TransactionReceiptRequest = Schemas["TransactionReceiptRequest"]
+export type TransactionReceiptResponse = Schemas["TransactionReceiptResponse"]
 
 // Fulfillment
 export type FulfillListingResponse = Schemas["FulfillListingResponse"]
@@ -71,7 +76,6 @@ export type ListingObject = Schemas["ListingObject"]
 export type SeaportParameters = Schemas["SeaportParameters"]
 export type SeaportRequest = Schemas["SeaportRequest"]
 export type ProtocolData = Schemas["ProtocolData"]
-export type V1ProtocolData = Schemas["V1ProtocolData"]
 export type ConsiderationItem = Schemas["ConsiderationItem"]
 export type OfferItem = Schemas["OfferItem"]
 
@@ -86,7 +90,6 @@ export type Payment = Schemas["Payment"]
 // Accounts
 export type AccountResponse = Schemas["AccountResponse"]
 export type AccountResolveResponse = Schemas["AccountResolveResponse"]
-export type SimpleAccount = Schemas["SimpleAccount"]
 export type SocialMediaAccount = Schemas["SocialMediaAccount"]
 
 // Contracts
@@ -124,7 +127,10 @@ export type RateLimitsResponse = Schemas["RateLimitsResponse"]
 // Swap
 export type SwapQuoteResponse = Schemas["SwapQuoteResponse"]
 export type SwapQuoteDetails = Schemas["SwapQuoteDetails"]
+export type SwapQuoteInput = Schemas["SwapQuoteInput"]
 export type SwapTransactionResponse = Schemas["SwapTransactionResponse"]
+export type SwapExecuteRequest = Schemas["SwapExecuteRequest"]
+export type SwapExecuteResponse = Schemas["SwapExecuteResponse"]
 
 // Search
 export type SearchResponse = Schemas["SearchResponse"]

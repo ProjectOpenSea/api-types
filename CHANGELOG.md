@@ -1,5 +1,34 @@
 # @opensea/api-types
 
+## 0.3.0
+
+### Minor Changes
+
+- 7a51fd0: Sync OpenAPI spec — bundles os2-core#40171 (deprecation removals) and os2-core#40190 (new `maker` filter), plus four new endpoints.
+
+  **Removed (os2-core#40171):**
+
+  - `GET /api/v2/orders/{chain}/{protocol}/offers` — use `GET /api/v2/offers/collection/{slug}/all` (or `…/nfts/{identifier}` for per-NFT)
+  - `GET /api/v2/orders/{chain}/{protocol}/listings` — use `GET /api/v2/listings/collection/{slug}/all` (or `…/nfts/{identifier}/best` for per-NFT)
+  - `order` wrapper field from `POST /orders/{chain}/{protocol}/offers` and `…/listings` responses — these now return bare `Offer` / `Listing`
+  - `Criteria.trait` (singular) response field — use `Criteria.traits[]`
+  - `IntervalStat.{volume_diff, volume_change, sales_diff, average_price}` (always returned 0)
+  - `Total.{market_cap, average_price}` (always returned 0)
+  - Schemas: `OrdersResponse`, `CreateOfferResponse`, `CreateListingResponse`, `SimpleOrderV2Serializer`, `V1ProtocolData`, `SimpleAccount`. The named re-exports for the first three plus `V1ProtocolData` and `SimpleAccount` are removed from `src/index.ts`.
+
+  **Added (os2-core#40190):**
+
+  - Optional `maker` query param on `GET /api/v2/offers/collection/{slug}/all` and `GET /api/v2/listings/collection/{slug}/all`
+
+  **Other new endpoints picked up in this sync (not in #40171/#40190):**
+
+  - `POST /api/v2/listings/sweep` — bulk-buy from a collection. New types: `SweepCollectionRequest`, `SweepCollectionResponse`.
+  - `GET /api/v2/offers/collection/{slug}/nfts/{identifier}` — all offers for one NFT (the proper per-NFT replacement for the removed orders endpoint).
+  - `POST /api/v2/swap/execute` — companion to `/swap/quote`. New types: `SwapExecuteRequest`, `SwapExecuteResponse`, `SwapQuoteInput`.
+  - `POST /api/v2/transactions/receipt` — fetch transaction status. New types: `TransactionReceiptRequest`, `TransactionReceiptResponse`.
+
+  **Downstream impact** — `@opensea/sdk` and `@opensea/cli` depend on the removed schemas/operations and will break against this version. SDK/CLI follow-up PRs to delete `getNFTOffers`/`getNFTListings`/`getOrder`/`getOrders`/`postOrder`, fix `postListing`/`postOffer` response handling, drop the deprecated stats fields, and surface the four new endpoints will land in subsequent minor bumps.
+
 ## 0.2.3
 
 ### Patch Changes

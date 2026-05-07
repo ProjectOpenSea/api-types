@@ -4,6 +4,46 @@
  */
 
 export interface paths {
+    "/api/v2/transactions/receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get transaction receipt
+         * @description Get the receipt/status for a submitted transaction. Works for all transaction types including listing fulfillments, cross-chain buys, sweeps, offer fulfillments, and token swaps. Poll this endpoint after submitting transactions to check completion status.
+         */
+        post: operations["get_transaction_receipt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/swap/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Execute a token swap
+         * @description Get executable transactions for token-to-token swaps. Supports same-chain and cross-chain swaps with multiple from/to assets.
+         */
+        post: operations["post_swap_execute"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/orders/{chain}/{protocol}/offers": {
         parameters: {
             query?: never;
@@ -11,16 +51,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get item offers
-         * @deprecated
-         * @description Deprecated: This endpoint uses a legacy response format. Use the following collection-based endpoints instead, which return a cleaner response shape with structured price objects: GET /api/v2/offers/collection/{slug}/nfts/{identifier} for item offers, GET /api/v2/offers/collection/{slug}/all for all offers in a collection, GET /api/v2/offers/collection/{slug} for collection offers, or GET /api/v2/offers/collection/{slug}/traits for trait offers. To look up an individual order, use GET /api/v2/orders/chain/{chain}/protocol/{protocol_address}/{order_hash}. The collection-based endpoints return results sorted by best price. To query by creation time, use the events API (GET /api/v2/events). Note: the 'maker' filter on this endpoint has no equivalent on the collection-based endpoints.
-         */
-        get: operations["get_offers"];
+        get?: never;
         put?: never;
         /**
          * Create an item offer
-         * @description Create an offer to purchase a single NFT (ERC721 or ERC1155). The response includes both a legacy 'order' field (deprecated) and a new 'offer' field with the current v2 response format. New integrations should use the 'offer' field.
+         * @description Create an offer to purchase a single NFT (ERC721 or ERC1155).
          */
         post: operations["post_offer"];
         delete?: never;
@@ -36,16 +71,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get listings
-         * @deprecated
-         * @description Deprecated: This endpoint uses a legacy response format. Use the following collection-based endpoints instead, which return a cleaner response shape with structured price objects: GET /api/v2/listings/collection/{slug}/all for all listings in a collection, GET /api/v2/listings/collection/{slug}/best for best listings by price, or GET /api/v2/listings/collection/{slug}/nfts/{identifier}/best for the best listing on a specific NFT. To look up an individual order, use GET /api/v2/orders/chain/{chain}/protocol/{protocol_address}/{order_hash}. The collection-based endpoints return results sorted by best price. To query by creation time, use the events API (GET /api/v2/events). Note: the 'maker' filter on this endpoint has no equivalent on the collection-based endpoints. Also, the NFT-specific route (GET /api/v2/listings/collection/{slug}/nfts/{identifier}/best) only returns the best single listing, not a full paginated list.
-         */
-        get: operations["get_listings"];
+        get?: never;
         put?: never;
         /**
          * Create a listing
-         * @description List a single NFT (ERC721 or ERC1155) for sale on the OpenSea marketplace. The response includes both a legacy 'order' field (deprecated) and a new 'listing' field with the current v2 response format. New integrations should use the 'listing' field.
+         * @description List a single NFT (ERC721 or ERC1155) for sale on the OpenSea marketplace.
          */
         post: operations["post_listing"];
         delete?: never;
@@ -128,6 +158,26 @@ export interface paths {
          * @description Build a portion of a criteria offer including the consideration item, zone, and zone hash needed to post an offer. For trait offers on supported collections, the identifierOrCriteria in the returned consideration will be '0' (no merkle root computation needed). For other collections, a computed merkle root is returned. When identifierOrCriteria is '0', the encodedTokenIds field is informational only and not required for constructing the onchain order.
          */
         post: operations["build_offer_v2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/listings/sweep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sweep buy items from a collection
+         * @description Buy up to N items from a collection using any payment token, including cross-chain. If a requested item becomes unavailable, the system can automatically substitute it with the next cheapest listing from the same collection (enabled by default). Returns an ordered list of transactions to execute.
+         */
+        post: operations["sweep_collection"];
         delete?: never;
         options?: never;
         head?: never;
@@ -442,8 +492,16 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get offers by trait
-         * @description Get trait offers for a collection with the specified trait(s). Supports single or multiple traits.
+         * Get trait offers for a collection
+         * @description Get trait offers for a collection. Use the `mode` parameter to select the bid category.
+         *
+         *     **Single string trait:** `?mode=STRING&type=Background&value=Red`
+         *     **Multiple string traits:** `?mode=MULTI&traits=[{"traitType":"Background","value":"Red"},{"traitType":"Eyes","value":"Blue"}]`
+         *     **Numeric trait range:** `?mode=NUMERIC&type=Level&min_value=1&max_value=10`
+         *
+         *     Omit filter params to discover all bids of that mode (e.g. `?mode=NUMERIC` returns all numeric bids).
+         *
+         *     If `mode` is omitted, the mode is inferred from the params for backward compatibility.
          */
         get: operations["get_offers_collection_trait"];
         put?: never;
@@ -1065,6 +1123,230 @@ export interface components {
          * @enum {string}
          */
         ChainIdentifier: "blast" | "base" | "ethereum" | "zora" | "arbitrum" | "sei" | "avalanche" | "polygon" | "optimism" | "ape_chain" | "flow" | "b3" | "soneium" | "ronin" | "bera_chain" | "solana" | "shape" | "unichain" | "gunzilla" | "abstract" | "animechain" | "hyperevm" | "somnia" | "monad" | "hyperliquid" | "megaeth" | "ink";
+        /** @description An asset with quantity in base units */
+        AssetQuantityInput: {
+            /**
+             * @description The blockchain chain
+             * @example ethereum
+             */
+            chain: string;
+            /**
+             * @description The contract address
+             * @example 0x0000000000000000000000000000000000000000
+             */
+            contract: string;
+            /**
+             * @description Token ID for NFTs
+             * @example 1234
+             */
+            token_id?: string;
+            /**
+             * @description Amount in base units (wei/lamports)
+             * @example 1000000000000000000
+             */
+            amount: string;
+        };
+        /** @description The original swap quote assets */
+        SwapQuoteInput: {
+            /** @description Assets being sent/spent */
+            from_assets: components["schemas"]["AssetQuantityInput"][];
+            /** @description Assets being received */
+            to_assets?: components["schemas"]["AssetQuantityInput"][];
+        };
+        /** @description A transaction identifier with optional swap provider */
+        TransactionIdentifierInput: {
+            /**
+             * @description The transaction hash
+             * @example 0xabc123...
+             */
+            transaction_hash: string;
+            /**
+             * @description The blockchain chain
+             * @example ethereum
+             */
+            chain: string;
+            /**
+             * @description The swap provider used (e.g. RELAY, JUPITER, ZERO_EX, LOCAL_BUY_NFT). Required when relay_request_id is not provided. Can be omitted for cross-chain flows that use relay_request_id.
+             * @example RELAY
+             */
+            swap_provider?: string;
+        };
+        /** @description Request to get a transaction receipt/status */
+        TransactionReceiptRequest: {
+            /** @description Transaction identifiers to look up */
+            transaction_identifiers?: components["schemas"]["TransactionIdentifierInput"][];
+            /** @description The swap quote that was originally submitted */
+            swap_quote: components["schemas"]["SwapQuoteInput"];
+            /** @description Relay request ID for cross-chain tracking */
+            relay_request_id?: string;
+            /** @description Request ID for workflow tracking */
+            request_id?: string;
+        };
+        /** @description Asset identifier with chain, contract address, and optional token ID */
+        AssetIdentifierResponse: {
+            /**
+             * @description The blockchain chain
+             * @example ethereum
+             */
+            chain: string;
+            /**
+             * @description The contract address
+             * @example 0xBd3531dA5CF5857e7CfAA92426877b022e612cf8
+             */
+            contract: string;
+            /**
+             * @description Token ID for NFTs
+             * @example 1234
+             */
+            token_id?: string;
+        };
+        /** @description Receipt for a single asset in a transaction */
+        AssetReceiptResponse: {
+            /** @description The asset received */
+            asset: components["schemas"]["AssetIdentifierResponse"];
+            /**
+             * @description Quantity received in base units
+             * @example 1
+             */
+            quantity: string;
+            /** @description Price paid per item */
+            price: components["schemas"]["PriceResponse"];
+        };
+        /** @description Price information for an asset */
+        PriceResponse: {
+            /**
+             * @description Amount in the token's native units
+             * @example 5.5
+             */
+            amount: string;
+            /**
+             * @description Token symbol
+             * @example ETH
+             */
+            currency?: string;
+            /**
+             * @description USD equivalent
+             * @example 19250
+             */
+            usd: string;
+        };
+        /** @description Total spent across all assets in a transaction */
+        TotalSpentResponse: {
+            /** @description Price breakdown per token type */
+            price_per_token: components["schemas"]["PriceResponse"][];
+        };
+        /** @description Transaction receipt with status and asset details */
+        TransactionReceiptResponse: {
+            /**
+             * @description Transaction status: PENDING, SUCCESS, PARTIAL_SUCCESS, or FAILED
+             * @example SUCCESS
+             */
+            status: string;
+            /** @description Reason for failure, if applicable */
+            fail_reason?: string;
+            /** @description Successfully received assets */
+            asset_receipts: components["schemas"]["AssetReceiptResponse"][];
+            /** @description Assets that failed to be received */
+            failed_asset_receipts: components["schemas"]["AssetReceiptResponse"][];
+            /** @description Total amount spent across all assets */
+            total_spent: components["schemas"]["TotalSpentResponse"];
+            /** @description Assets that are missing from the receipt */
+            missing_assets: components["schemas"]["AssetIdentifierResponse"][];
+            /** @description Whether a cross-chain refund was issued */
+            cross_chain_refunded?: boolean;
+        };
+        /** @description An asset to swap with chain, contract address, and amount */
+        SwapAssetInput: {
+            /**
+             * @description Chain slug (e.g. ethereum, base, solana)
+             * @example ethereum
+             */
+            chain: string;
+            /**
+             * @description Contract address of the token
+             * @example 0x0000000000000000000000000000000000000000
+             */
+            contract: string;
+            /**
+             * @description Amount in the smallest unit of the token (e.g. wei for ETH). Use "0" for to_assets to receive the market rate.
+             * @example 1000000000000000000
+             */
+            amount: string;
+        };
+        /** @description Request body for executing a token swap */
+        SwapExecuteRequest: {
+            /** @description Tokens to swap from (at least one required) */
+            from_assets: components["schemas"]["SwapAssetInput"][];
+            /** @description Tokens to swap to (at least one required) */
+            to_assets: components["schemas"]["SwapAssetInput"][];
+            /**
+             * @description Wallet address executing the swap
+             * @example 0x1234567890abcdef1234567890abcdef12345678
+             */
+            address: string;
+            /** @description Recipient address (defaults to sender address) */
+            recipient?: string;
+            /**
+             * Format: double
+             * @description Slippage tolerance as a decimal (0.0 to 0.5, default: 0.01)
+             * @example 0.01
+             */
+            slippage_tolerance?: number;
+        };
+        /** @description Response containing quote details and executable swap transactions */
+        SwapExecuteResponse: {
+            /** @description Price and fee details for the swap */
+            quote: components["schemas"]["SwapQuoteDetails"];
+            /** @description Ordered list of transactions to execute the swap */
+            transactions: components["schemas"]["SwapTransactionResponse"][];
+        };
+        /** @description Price and fee details for a swap quote */
+        SwapQuoteDetails: {
+            /**
+             * Format: double
+             * @description Total value of tokens received in USD
+             * @example 1850.5
+             */
+            total_price_usd: number;
+            /**
+             * Format: double
+             * @description Total cost of tokens sent in USD
+             * @example 1869
+             */
+            total_cost_usd: number;
+            /**
+             * Format: double
+             * @description Slippage tolerance as a decimal (e.g. 0.01 = 1%)
+             * @example 0.01
+             */
+            slippage_tolerance: number;
+            /**
+             * Format: int64
+             * @description Estimated swap duration in milliseconds
+             * @example 30000
+             */
+            estimated_duration_ms: number;
+            /**
+             * Format: int32
+             * @description Marketplace fee in basis points
+             * @example 50
+             */
+            marketplace_fee_bps: number;
+        };
+        /** @description A transaction to be submitted onchain to execute a swap */
+        SwapTransactionResponse: {
+            /**
+             * @description The blockchain for this transaction
+             * @example ethereum
+             */
+            chain: string;
+            /** @description The destination address for the transaction */
+            to?: string;
+            /** @description The transaction data. For EVM chains: hex-encoded calldata. For SVM chains: comma-separated instructions in programId:data format. */
+            data: string;
+            /** @description The native token value to send with the transaction */
+            value?: string;
+        };
         ConsiderationItem: {
             /** Format: int32 */
             itemType: number;
@@ -1106,51 +1388,12 @@ export interface components {
         CollectionInner: {
             slug: string;
         };
-        CollectionResponse: {
-            collection: string;
-            name: string;
-            description?: string;
-            image_url?: string;
-            banner_image_url?: string;
-            owner?: string;
-            safelist_status: string;
-            category?: string;
-            is_disabled: boolean;
-            is_nsfw: boolean;
-            trait_offers_enabled: boolean;
-            collection_offers_enabled: boolean;
-            opensea_url: string;
-            project_url?: string;
-            wiki_url?: string;
-            discord_url?: string;
-            telegram_url?: string;
-            twitter_username?: string;
-            instagram_username?: string;
-            contracts: components["schemas"]["Contract"][];
-        };
-        Contract: {
-            address: string;
-            chain: string;
-        };
         ContractInner: {
             address: string;
-        };
-        CreateOfferResponse: {
-            /**
-             * @deprecated
-             * @description Deprecated: Use the 'offer' field instead for the current response format.
-             */
-            order: components["schemas"]["SimpleOrderV2Serializer"];
-            offer: components["schemas"]["Offer"];
         };
         Criteria: {
             collection?: components["schemas"]["CollectionInner"];
             contract?: components["schemas"]["ContractInner"];
-            /**
-             * @deprecated
-             * @description Use traits field instead. Only populated for single-trait offers.
-             */
-            trait?: components["schemas"]["TraitData"];
             traits?: components["schemas"]["TraitData"][];
             numeric_traits?: components["schemas"]["NumericTraitData"][];
             encoded_token_ids?: string;
@@ -1216,103 +1459,9 @@ export interface components {
             parameters: components["schemas"]["Parameters"];
             signature?: string;
         };
-        SimpleAccount: {
-            address: string;
-            profile_img_url?: string;
-            config?: string;
-        };
-        SimpleAsset: {
-            /** Format: int64 */
-            id?: number;
-            token_id: string;
-            /** Format: int32 */
-            num_sales?: number;
-            background_color?: string;
-            image_url?: string;
-            image_preview_url?: string;
-            image_thumbnail_url?: string;
-            image_original_url?: string;
-            animation_url?: string;
-            animation_original_url?: string;
-            name?: string;
-            description?: string;
-            external_link?: string;
-            asset_contract: components["schemas"]["SimpleAssetContract"];
-            permalink?: string;
-            collection?: components["schemas"]["CollectionResponse"];
-            /** Format: int32 */
-            decimals?: number;
-            token_metadata?: string;
-            is_nsfw?: boolean;
-            owner?: components["schemas"]["SimpleAccount"];
-        };
-        SimpleAssetBundle: {
-            assets: components["schemas"]["SimpleAsset"][];
-            maker?: components["schemas"]["SimpleAccount"];
-            asset_contract?: components["schemas"]["SimpleAssetContract"];
-            slug?: string;
-            name?: string;
-            description?: string;
-            external_link?: string;
-            permalink?: string;
-            seaport_sell_orders?: unknown[];
-        };
-        SimpleAssetContract: {
-            address: string;
-            chain_identifier: string;
-            schema_name?: string;
-            asset_contract_type: string;
-        };
-        SimpleFee: {
-            account?: components["schemas"]["SimpleAccount"];
-            basis_points: string;
-        };
-        SimpleOrderV2Serializer: {
-            /** Format: date-time */
-            created_date: string;
-            /** Format: date-time */
-            closing_date?: string;
-            /** Format: int64 */
-            listing_time: number;
-            /** Format: int64 */
-            expiration_time: number;
-            order_hash: string;
-            protocol_data?: components["schemas"]["V1ProtocolData"];
-            protocol_address?: string;
-            current_price: string;
-            maker?: components["schemas"]["SimpleAccount"];
-            taker?: components["schemas"]["SimpleAccount"];
-            maker_fees: components["schemas"]["SimpleFee"][];
-            taker_fees: components["schemas"]["SimpleFee"][];
-            side: string;
-            order_type: string;
-            cancelled: boolean;
-            finalized: boolean;
-            marked_invalid: boolean;
-            /** Format: int64 */
-            remaining_quantity: number;
-            /** @enum {string} */
-            status: "ACTIVE" | "INACTIVE" | "FULFILLED" | "EXPIRED" | "CANCELLED";
-            maker_asset_bundle?: components["schemas"]["SimpleAssetBundle"];
-            taker_asset_bundle?: components["schemas"]["SimpleAssetBundle"];
-        };
         TraitData: {
             type: string;
             value: string;
-        };
-        V1ProtocolData: {
-            parameters?: {
-                [key: string]: unknown;
-            };
-            signature?: string;
-        };
-        CreateListingResponse: {
-            /**
-             * @deprecated
-             * @description Deprecated: Use the 'listing' field instead for the current response format.
-             */
-            order: components["schemas"]["SimpleOrderV2Serializer"];
-            listing: components["schemas"]["Listing"];
         };
         Listing: components["schemas"]["ListingOrOffer"] & {
             order_hash: string;
@@ -1611,6 +1760,60 @@ export interface components {
             zone: string;
             zoneHash: string;
         };
+        /** @description Payment token to use for cross-chain fulfillment */
+        CrossChainPaymentToken: {
+            /**
+             * @description Chain of the payment token (e.g. 'base', 'ethereum')
+             * @example base
+             */
+            chain: string;
+            /**
+             * @description Contract address of the payment token (use 0x0000000000000000000000000000000000000000 for native token)
+             * @example 0x0000000000000000000000000000000000000000
+             */
+            token_address: string;
+        };
+        /** @description Request to sweep buy items from a collection */
+        SweepCollectionRequest: {
+            /**
+             * @description The slug of the collection to sweep
+             * @example pudgypenguins
+             */
+            collection_slug: string;
+            /** @description The token to pay with */
+            payment: components["schemas"]["CrossChainPaymentToken"];
+            /**
+             * Format: int32
+             * @description Maximum number of items to buy (1-50)
+             * @example 5
+             */
+            max_items: number;
+            /**
+             * @description Maximum price per item in the payment token's units
+             * @example 10
+             */
+            max_price_per_item: string;
+            /**
+             * @description Address of the buyer
+             * @example 0x...
+             */
+            buyer: string;
+            /** @description Optional recipient address for the purchased items */
+            recipient?: string;
+        };
+        JsonNode: unknown;
+        /** @description Response containing ordered blockchain actions to execute for a collection sweep */
+        SweepCollectionResponse: {
+            /** @description Ordered list of blockchain actions to execute. Each action is a JSON object with a single field indicating the type (e.g. buyItemAction, permit2SignatureAction, paymentApprovalAction) and its associated data. Serialized using proto3 JSON format — fields with default values (empty string, 0, false) may be omitted. */
+            steps: components["schemas"]["JsonNode"][];
+            /** @description Errors encountered during sweep. Present alongside steps for partial success cases (e.g. some listings became unavailable). */
+            errors?: components["schemas"]["SweepError"][];
+        };
+        /** @description An error encountered during a sweep operation */
+        SweepError: {
+            /** @description Human-readable error message */
+            message: string;
+        };
         FullfillListingRequest: {
             listing: components["schemas"]["ListingObject"];
             fulfiller: components["schemas"]["FulfillerObject"];
@@ -1642,37 +1845,10 @@ export interface components {
             /** @description Optional recipient address for the purchased items */
             recipient?: string;
         };
-        /** @description Payment token to use for cross-chain fulfillment */
-        CrossChainPaymentToken: {
-            /**
-             * @description Chain of the payment token (e.g. 'base', 'ethereum')
-             * @example base
-             */
-            chain: string;
-            /**
-             * @description Contract address of the payment token (use 0x0000000000000000000000000000000000000000 for native token)
-             * @example 0x0000000000000000000000000000000000000000
-             */
-            token_address: string;
-        };
         /** @description Response containing ordered transactions to execute for cross-chain fulfillment */
         CrossChainFulfillmentResponse: {
             /** @description Ordered list of transactions to execute. May include approval and buy/swap transactions. */
             transactions: components["schemas"]["SwapTransactionResponse"][];
-        };
-        /** @description A transaction to be submitted onchain to execute a swap */
-        SwapTransactionResponse: {
-            /**
-             * @description The blockchain for this transaction
-             * @example ethereum
-             */
-            chain: string;
-            /** @description The destination address for the transaction */
-            to?: string;
-            /** @description The transaction data. For EVM chains: hex-encoded calldata. For SVM chains: comma-separated instructions in programId:data format. */
-            data: string;
-            /** @description The native token value to send with the transaction */
-            value?: string;
         };
         /** @description Ready-to-sign mint transaction data */
         DropMintResponse: {
@@ -1971,39 +2147,6 @@ export interface components {
             /** @description Rolling statistics over multiple time periods */
             rolling_stats?: components["schemas"]["TokenGroupRollingStatsResponse"];
         };
-        /** @description Price and fee details for a swap quote */
-        SwapQuoteDetails: {
-            /**
-             * Format: double
-             * @description Total value of tokens received in USD
-             * @example 1850.5
-             */
-            total_price_usd: number;
-            /**
-             * Format: double
-             * @description Total cost of tokens sent in USD
-             * @example 1869
-             */
-            total_cost_usd: number;
-            /**
-             * Format: double
-             * @description Slippage tolerance as a decimal (e.g. 0.01 = 1%)
-             * @example 0.01
-             */
-            slippage_tolerance: number;
-            /**
-             * Format: int64
-             * @description Estimated swap duration in milliseconds
-             * @example 30000
-             */
-            estimated_duration_ms: number;
-            /**
-             * Format: int32
-             * @description Marketplace fee in basis points
-             * @example 50
-             */
-            marketplace_fee_bps: number;
-        };
         /** @description Swap quote with price details and executable transactions */
         SwapQuoteResponse: {
             /** @description Price and fee details for the swap */
@@ -2118,10 +2261,6 @@ export interface components {
             decimals: number;
             /** @description URL to the token on OpenSea */
             opensea_url: string;
-        };
-        OrdersResponse: {
-            orders: components["schemas"]["SimpleOrderV2Serializer"][];
-            next?: string;
         };
         GetOrderResponse: {
             order: components["schemas"]["Listing"] | components["schemas"]["Offer"];
@@ -2337,6 +2476,32 @@ export interface components {
             collections: components["schemas"]["CollectionResponse"][];
             next?: string;
         };
+        CollectionResponse: {
+            collection: string;
+            name: string;
+            description?: string;
+            image_url?: string;
+            banner_image_url?: string;
+            owner?: string;
+            safelist_status: string;
+            category?: string;
+            is_disabled: boolean;
+            is_nsfw: boolean;
+            trait_offers_enabled: boolean;
+            collection_offers_enabled: boolean;
+            opensea_url: string;
+            project_url?: string;
+            wiki_url?: string;
+            discord_url?: string;
+            telegram_url?: string;
+            twitter_username?: string;
+            instagram_username?: string;
+            contracts: components["schemas"]["Contract"][];
+        };
+        Contract: {
+            address: string;
+            chain: string;
+        };
         CollectionDetailedResponse: {
             collection: string;
             name: string;
@@ -2408,32 +2573,8 @@ export interface components {
             interval: string;
             /** Format: double */
             volume: number;
-            /**
-             * Format: double
-             * @deprecated
-             * @description Deprecated. This field always returns 0 and will be removed in a future version.
-             */
-            volume_diff: number;
-            /**
-             * Format: double
-             * @deprecated
-             * @description Deprecated. This field always returns 0 and will be removed in a future version.
-             */
-            volume_change: number;
             /** Format: int32 */
             sales: number;
-            /**
-             * Format: int32
-             * @deprecated
-             * @description Deprecated. This field always returns 0 and will be removed in a future version.
-             */
-            sales_diff: number;
-            /**
-             * Format: double
-             * @deprecated
-             * @description Deprecated. This field always returns 0 and will be removed in a future version.
-             */
-            average_price: number;
         };
         Total: {
             /** Format: double */
@@ -2442,21 +2583,9 @@ export interface components {
             sales: number;
             /** Format: int64 */
             num_owners: number;
-            /**
-             * Format: double
-             * @deprecated
-             * @description Deprecated. This field always returns 0 and will be removed in a future version.
-             */
-            market_cap: number;
             /** Format: double */
             floor_price: number;
             floor_price_symbol: string;
-            /**
-             * Format: double
-             * @deprecated
-             * @description Deprecated. This field always returns 0 and will be removed in a future version.
-             */
-            average_price: number;
         };
         NftListResponse: {
             nfts: components["schemas"]["Nft"][];
@@ -2540,6 +2669,12 @@ export interface components {
             socials?: components["schemas"]["TokenSocialsResponse"];
             /** @description URL to the token page on OpenSea */
             opensea_url: string;
+            /**
+             * @description Token safety status based on OpenSea's spam-classification rules. `OK` for tokens that pass all safety checks (the normal case). Categories are intentionally broad and may evolve. Possible values, in decreasing severity: `WARNING` (flagged as risky/suspicious — caution advised), `SPAM` (flagged as spam), `LOW_LIQUIDITY` (insufficient liquidity pool reserves), `OK` (passes all checks).
+             * @default OK
+             * @enum {string}
+             */
+            status: "OK" | "WARNING" | "SPAM" | "LOW_LIQUIDITY";
         };
         /** @description Social media links for a token */
         TokenSocialsResponse: {
@@ -2739,12 +2874,12 @@ export interface components {
              */
             status: "OK" | "WARNING" | "SPAM" | "LOW_LIQUIDITY" | "LOW_VALUE";
             /**
-             * @description USD value of base token reserves in the top liquidity pool paired with a major token
+             * @description USD value of base token reserves in the top liquidity pool paired with a curated quote token
              * @example 125000.5
              */
             base_token_liquidity_usd?: string;
             /**
-             * @description USD value of quote token reserves in the top liquidity pool paired with a major token
+             * @description USD value of quote token reserves in the top liquidity pool paired with a curated quote token
              * @example 125000.5
              */
             quote_token_liquidity_usd?: string;
@@ -2801,42 +2936,52 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    get_offers: {
+    get_transaction_receipt: {
         parameters: {
-            query?: {
-                asset_contract_address?: string;
-                token_ids?: string[];
-                maker?: string;
-                order_direction?: "asc" | "desc";
-                order_by?: "price" | "created_at";
-                listed_before?: string;
-                listed_after?: string;
-                payment_token_address?: string;
-                /**
-                 * @description Number of items to return per page
-                 * @example 20
-                 */
-                limit?: number;
-                "cursor.value"?: string;
-            };
+            query?: never;
             header?: never;
-            path: {
-                /** @description Blockchain chain identifier */
-                chain: string;
-                /** @description Protocol name (e.g. 'seaport') */
-                protocol: string;
-            };
+            path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransactionReceiptRequest"];
+            };
+        };
         responses: {
-            /** @description Item offers retrieved successfully */
+            /** @description Transaction receipt retrieved */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["OrdersResponse"];
+                    "*/*": components["schemas"]["TransactionReceiptResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    post_swap_execute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SwapExecuteRequest"];
+            };
+        };
+        responses: {
+            /** @description Swap execution data retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SwapExecuteResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -2865,50 +3010,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["CreateOfferResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            500: components["responses"]["InternalError"];
-        };
-    };
-    get_listings: {
-        parameters: {
-            query?: {
-                asset_contract_address?: string;
-                token_ids?: string[];
-                maker?: string;
-                listed_before?: string;
-                listed_after?: string;
-                order_direction?: "asc" | "desc";
-                order_by?: "price" | "created_at";
-                /** @description Whether to include private listings; defaults to false */
-                include_private_listings?: boolean;
-                /**
-                 * @description Number of items to return per page
-                 * @example 20
-                 */
-                limit?: number;
-                "cursor.value"?: string;
-            };
-            header?: never;
-            path: {
-                /** @description Blockchain chain identifier */
-                chain: string;
-                /** @description Protocol name (e.g. 'seaport') */
-                protocol: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Item listings retrieved successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["OrdersResponse"];
+                    "*/*": components["schemas"]["Offer"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -2937,7 +3039,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["CreateListingResponse"];
+                    "*/*": components["schemas"]["Listing"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -3065,6 +3167,40 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    sweep_collection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SweepCollectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Sweep fulfillment data retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SweepCollectionResponse"];
+                };
+            };
+            /** @description The request is invalid. Possible reasons: collection not found, invalid chain, max_items exceeds limit, or no listings available. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SweepCollectionResponse"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -3653,28 +3789,22 @@ export interface operations {
     get_offers_collection_trait: {
         parameters: {
             query?: {
-                /**
-                 * @deprecated
-                 * @description Trait type (deprecated: use 'traits' parameter)
-                 */
+                /** @description Bid category: STRING (single string trait), MULTI (multiple string traits), or NUMERIC (numeric trait range). If omitted, inferred from params. */
+                mode?: "STRING" | "NUMERIC" | "MULTI";
+                /** @description Trait type name */
                 type?: string;
-                /**
-                 * @deprecated
-                 * @description Trait value as string (deprecated: use 'traits' parameter)
-                 */
+                /** @description Trait value as string */
                 value?: string;
-                /**
-                 * @deprecated
-                 * @description Trait value as float (deprecated: use 'traits' parameter)
-                 */
+                /** @description Trait value as float */
                 float_value?: number;
-                /**
-                 * @deprecated
-                 * @description Trait value as integer (deprecated: use 'traits' parameter)
-                 */
+                /** @description Trait value as integer */
                 int_value?: number;
+                /** @description Minimum value for numeric trait range queries */
+                min_value?: number;
+                /** @description Maximum value for numeric trait range queries */
+                max_value?: number;
                 /**
-                 * @description JSON array of trait filters. Each trait has 'traitType' and 'value' fields. Example: [{"traitType":"Background","value":"Red"},{"traitType":"Eyes","value":"Blue"}]
+                 * @description JSON array of trait filters for multi-trait queries. Each element has 'traitType' and 'value' fields. Example: [{"traitType":"Background","value":"Red"}]
                  * @example [
                  *       {
                  *         "traitType": "Background",
@@ -3779,6 +3909,8 @@ export interface operations {
     list_offers_collection_all: {
         parameters: {
             query?: {
+                /** @description Filter by the wallet address of the order maker */
+                maker?: string;
                 /**
                  * @description Number of items to return per page
                  * @example 20
@@ -3929,6 +4061,8 @@ export interface operations {
             query?: {
                 /** @description Whether to include private listings; defaults to false */
                 include_private_listings?: boolean;
+                /** @description Filter by the wallet address of the order maker */
+                maker?: string;
                 /**
                  * @description Number of items to return per page
                  * @example 20

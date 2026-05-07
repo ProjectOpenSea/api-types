@@ -30,8 +30,14 @@ describe("@opensea/api-types smoke tests", () => {
   it("paths covers known API endpoints", () => {
     // These are compile-time checks — if any path is removed from the spec,
     // TypeScript will error here.
-    type _offers = paths["/api/v2/orders/{chain}/{protocol}/offers"]
-    type _listings = paths["/api/v2/orders/{chain}/{protocol}/listings"]
+    type _postOffer = paths["/api/v2/orders/{chain}/{protocol}/offers"]["post"]
+    type _postListing =
+      paths["/api/v2/orders/{chain}/{protocol}/listings"]["post"]
+    type _offersByNft =
+      paths["/api/v2/offers/collection/{slug}/nfts/{identifier}"]
+    type _sweep = paths["/api/v2/listings/sweep"]
+    type _swapExecute = paths["/api/v2/swap/execute"]
+    type _txReceipt = paths["/api/v2/transactions/receipt"]
     type _collection = paths["/api/v2/collections/{slug}"]
     type _nft =
       paths["/api/v2/chain/{chain}/contract/{address}/nfts/{identifier}"]
@@ -60,7 +66,7 @@ describe("@opensea/api-types smoke tests", () => {
   it("operation helpers extract types", () => {
     type _getCollection = OperationResponse<"get_collection">
     type _postOffer = OperationRequestBody<"post_offer">
-    type _getOfferPath = OperationPathParams<"get_offers">
+    type _getOffersByNftPath = OperationPathParams<"get_offers_nft">
     type _listCollectionsQuery = OperationQueryParams<"list_collections">
     expect(true).toBe(true)
   })
