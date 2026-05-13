@@ -24,6 +24,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/tokens/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get tokens by contract identifiers
+         * @description Retrieve multiple tokens in a single request by providing a list of contract identifiers (chain and address). Not-found tokens are silently omitted from the response.
+         */
+        post: operations["get_tokens_batch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/swap/execute": {
         parameters: {
             query?: never;
@@ -164,6 +184,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/nfts/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get NFTs by identifiers
+         * @description Retrieve multiple NFTs in a single request by providing a list of identifiers (chain, contract address, and token ID). Not-found NFTs are silently omitted from the response.
+         */
+        post: operations["get_nfts_batch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/listings/sweep": {
         parameters: {
             query?: never;
@@ -224,6 +264,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/listings/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get listing creation actions
+         * @description Returns the blockchain actions (approvals + Seaport order signing payload) needed to list one or more NFTs. This eliminates the need to construct Seaport orders manually.
+         */
+        post: operations["create_listing_actions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/drops/{slug}/mint": {
         parameters: {
             query?: never;
@@ -238,6 +298,46 @@ export interface paths {
          * @description Returns ready-to-sign transaction data for minting tokens from a drop. The caller is responsible for signing and submitting the transaction. No wallet authentication is required — only an API key. The minter address in the request body determines who will receive the tokens. Stage selection is handled automatically by the backend — if multiple stages are active, the first eligible stage is used.
          */
         post: operations["build_drop_mint_transaction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/drops/deploy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Build deploy contract transaction data
+         * @description Returns ready-to-sign transaction data for deploying a new NFT drop contract. The caller is responsible for signing and submitting the transaction.
+         */
+        post: operations["deploy_drop_contract"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/collections/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get collections by slugs
+         * @description Retrieve multiple collections in a single request by providing a list of slugs. Results are returned in the same order as the input slugs. Not-found collections are silently omitted.
+         */
+        post: operations["get_collections_batch"];
         delete?: never;
         options?: never;
         head?: never;
@@ -298,6 +398,26 @@ export interface paths {
          * @description Creates a free-tier API key instantly without authentication. The key can be used immediately for all API endpoints. Rate limited to 3 keys per hour per IP. Keys expire after 30 days.
          */
         post: operations["create_instant_api_key"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/assets/transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Transfer NFTs or tokens between wallets
+         * @description Returns ordered blockchain actions to execute for transferring one or more NFTs or tokens from one wallet to another. Supports bulk transfers of multiple assets in a single request.
+         */
+        post: operations["transfer_assets"];
         delete?: never;
         options?: never;
         head?: never;
@@ -772,6 +892,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/drops/deploy/{chain}/{tx_hash}/receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get deploy contract receipt
+         * @description Check the status of a contract deployment transaction. Returns the deployment status and, on success, the deployed contract address and linked collection slug.
+         */
+        get: operations["get_deploy_contract_receipt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/collections": {
         parameters: {
             query?: never;
@@ -824,6 +964,66 @@ export interface paths {
          * @description Get comprehensive statistics for a collection including volume, floor price, and trading metrics.
          */
         get: operations["get_collection_stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/collections/{slug}/offer_aggregates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get collection offer aggregates
+         * @description Get aggregated offer buckets grouped by price level for a collection.
+         */
+        get: operations["get_collection_offer_aggregates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/collections/{slug}/holders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get collection holders
+         * @description Get a paginated list of holders for a collection.
+         */
+        get: operations["get_collection_holders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/collections/{slug}/floor_prices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get collection floor price history
+         * @description Get time-series floor price data for a collection.
+         */
+        get: operations["get_collection_floor_prices"];
         put?: never;
         post?: never;
         delete?: never;
@@ -932,6 +1132,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/chain/{chain}/token/{address}/price_history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get token price history
+         * @description Get historical price data for a specific token.
+         */
+        get: operations["get_token_price_history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/chain/{chain}/token/{address}/ohlcv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get token OHLCV candles
+         * @description Get OHLCV (Open, High, Low, Close, Volume) candlestick data for a specific token.
+         */
+        get: operations["get_token_ohlcv"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/chain/{chain}/token/{address}/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get token swap activity
+         * @description Get paginated swap activity for a specific token on a given chain.
+         */
+        get: operations["get_token_activity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/chain/{chain}/payment_token/{address}": {
         parameters: {
             query?: never;
@@ -1012,6 +1272,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/chain/{chain}/contract/{address}/nfts/{identifier}/owners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get NFT owners
+         * @description Get a paginated list of owners for a specific NFT. Particularly useful for ERC-1155 tokens which can have multiple owners.
+         */
+        get: operations["get_nft_owners"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/chain/{chain}/contract/{address}/nfts/{identifier}/collection": {
         parameters: {
             query?: never;
@@ -1024,6 +1304,26 @@ export interface paths {
          * @description Get the collection that an NFT belongs to. This is useful for multi-contract collections like Art Blocks where the item ID disambiguates which collection the NFT belongs to.
          */
         get: operations["get_nft_collection"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/chain/{chain}/contract/{address}/nfts/{identifier}/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get NFT analytics
+         * @description Get analytics data for a specific NFT including sales history and floor price history.
+         */
+        get: operations["get_nft_analytics"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1104,6 +1404,146 @@ export interface paths {
          * @description Get fungible token balances for a specific wallet address. Returns quantity (in display units, not raw/wei), USD value, and token metadata for each token held.
          */
         get: operations["get_token_balances_by_account"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/account/{address}/portfolio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get portfolio stats for an account
+         * @description Get portfolio analytics including total value, NFT/token breakdown, and P&L for a wallet address over a given timeframe.
+         */
+        get: operations["get_portfolio_stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/account/{address}/portfolio/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get portfolio net worth history for an account
+         * @description Get net worth time series data for a wallet address over a given timeframe.
+         */
+        get: operations["get_portfolio_history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/account/{address}/offers_received": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get offers received by an account
+         * @description Get a paginated list of offers received on items owned by a wallet address.
+         */
+        get: operations["get_profile_offers_received"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/account/{address}/offers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get active offers made by an account
+         * @description Get a paginated list of active offers made by a wallet address.
+         */
+        get: operations["get_profile_offers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/account/{address}/listings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get active listings for an account
+         * @description Get a paginated list of active listings created by a wallet address.
+         */
+        get: operations["get_profile_listings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/account/{address}/favorites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get items favorited by an account
+         * @description Get a paginated list of items favorited by a wallet address.
+         */
+        get: operations["get_profile_favorites"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/account/{address}/collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get collections owned by an account
+         * @description Get a paginated list of collections owned by a wallet address, with ownership data.
+         */
+        get: operations["get_profile_collections"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1255,6 +1695,177 @@ export interface components {
             /** @description Whether a cross-chain refund was issued */
             cross_chain_refunded?: boolean;
         };
+        /** @description Request body for batch token retrieval by contract identifiers */
+        BatchTokensRequest: {
+            /** @description List of token contract identifiers to retrieve */
+            contracts: components["schemas"]["TokenContractInput"][];
+        };
+        /** @description A token contract identifier consisting of chain and address */
+        TokenContractInput: {
+            /**
+             * @description The blockchain the token is on
+             * @example ethereum
+             */
+            chain: string;
+            /**
+             * @description The contract address of the token
+             * @example 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
+             */
+            address: string;
+        };
+        /** @description Common token identity fields shared across token responses */
+        TokenBaseResponse: {
+            /**
+             * @description The contract address of the token
+             * @example 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
+             */
+            address: string;
+            /**
+             * @description The blockchain the token is on
+             * @example ethereum
+             */
+            chain: string;
+            /**
+             * @description The display name of the token
+             * @example USD Coin
+             */
+            name: string;
+            /**
+             * @description The ticker symbol of the token
+             * @example USDC
+             */
+            symbol: string;
+            /** @description URL of the token's image */
+            image_url?: string;
+            /**
+             * @description Current price in USD
+             * @example 1
+             */
+            usd_price: string;
+            /**
+             * Format: int32
+             * @description Number of decimal places
+             * @example 6
+             */
+            decimals: number;
+            /** @description URL to the token page on OpenSea */
+            opensea_url: string;
+        };
+        TokenBatchResponse: {
+            tokens: components["schemas"]["TokenDetailedResponse"][];
+        };
+        /** @description Detailed token information including stats and social links */
+        TokenDetailedResponse: {
+            /**
+             * @description The contract address of the token
+             * @example 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
+             */
+            address: string;
+            /**
+             * @description The blockchain the token is on
+             * @example ethereum
+             */
+            chain: string;
+            /**
+             * @description The display name of the token
+             * @example USD Coin
+             */
+            name: string;
+            /**
+             * @description The ticker symbol of the token
+             * @example USDC
+             */
+            symbol: string;
+            /** @description URL of the token's image */
+            image_url?: string;
+            /**
+             * @description Current price in USD
+             * @example 1
+             */
+            usd_price: string;
+            /**
+             * Format: int32
+             * @description Number of decimal places
+             * @example 6
+             */
+            decimals: number;
+            /** @description URL to the token page on OpenSea */
+            opensea_url: string;
+            /** @description A description of the token */
+            description?: string;
+            /** @description Market statistics for the token */
+            stats?: components["schemas"]["TokenStatsResponse"];
+            /** @description Social media links for the token */
+            socials?: components["schemas"]["TokenSocialsResponse"];
+            /**
+             * @description Token safety status based on OpenSea's spam-classification rules. `OK` for tokens that pass all safety checks (the normal case). Categories are intentionally broad and may evolve. Possible values, in decreasing severity: `WARNING` (flagged as risky/suspicious — caution advised), `SPAM` (flagged as spam), `LOW_LIQUIDITY` (insufficient liquidity pool reserves), `OK` (passes all checks).
+             * @default OK
+             * @enum {string}
+             */
+            status: "OK" | "WARNING" | "SPAM" | "LOW_LIQUIDITY";
+        };
+        /** @description Social media links for a token */
+        TokenSocialsResponse: {
+            /** @description The token's website URL */
+            website?: string;
+            /** @description The token's Twitter/X handle */
+            twitter_handle?: string;
+            /** @description The token's Telegram identifier */
+            telegram_identifier?: string;
+        };
+        /** @description Market statistics for a token */
+        TokenStatsResponse: {
+            /**
+             * Format: double
+             * @description Market capitalization in USD
+             */
+            market_cap_usd?: number;
+            /**
+             * Format: double
+             * @description Fully diluted valuation in USD
+             */
+            fdv_usd?: number;
+            /**
+             * Format: double
+             * @description Circulating supply of the token
+             */
+            circulating_supply?: number;
+            /**
+             * Format: double
+             * @description Maximum supply of the token
+             */
+            max_supply?: number;
+            /**
+             * Format: double
+             * @description Total supply of the token
+             */
+            total_supply?: number;
+            /**
+             * Format: double
+             * @description 24-hour trading volume in USD
+             */
+            volume_24h?: number;
+            /**
+             * Format: double
+             * @description Price change percentage over the last hour
+             */
+            price_change_1h?: number;
+            /**
+             * Format: double
+             * @description Price change percentage over the last 24 hours
+             */
+            price_change_24h?: number;
+            /**
+             * Format: double
+             * @description Price change percentage over the last 7 days
+             */
+            price_change_7d?: number;
+            /**
+             * Format: double
+             * @description Price change percentage over the last 30 days
+             */
+            price_change_30d?: number;
+        };
         /** @description An asset to swap with chain, contract address, and amount */
         SwapAssetInput: {
             /**
@@ -1293,12 +1904,39 @@ export interface components {
              */
             slippage_tolerance?: number;
         };
+        /** @description A cost component of the swap */
+        SwapCostResponse: {
+            /**
+             * @description The type of cost
+             * @example GAS
+             * @enum {string}
+             */
+            type: "GAS" | "PROVIDER" | "PROTOCOL" | "SWAP" | "MARKETPLACE" | "CREATOR" | "MEV_PROTECTION";
+            /**
+             * @description Cost amount in USD
+             * @example 0.5
+             */
+            usd: string;
+        };
         /** @description Response containing quote details and executable swap transactions */
         SwapExecuteResponse: {
             /** @description Price and fee details for the swap */
             quote: components["schemas"]["SwapQuoteDetails"];
             /** @description Ordered list of transactions to execute the swap */
             transactions: components["schemas"]["SwapTransactionResponse"][];
+        };
+        /** @description Price impact of the swap */
+        SwapPriceImpact: {
+            /**
+             * @description Price impact in USD (negative means user loses value)
+             * @example -1.5
+             */
+            usd: string;
+            /**
+             * @description Price impact as a percentage (negative means user loses value)
+             * @example -0.08
+             */
+            percent: string;
         };
         /** @description Price and fee details for a swap quote */
         SwapQuoteDetails: {
@@ -1332,6 +1970,25 @@ export interface components {
              * @example 50
              */
             marketplace_fee_bps: number;
+            /** @description Price impact of the swap (null if unavailable) */
+            price_impact?: components["schemas"]["SwapPriceImpact"];
+            /**
+             * @description The swap provider that fulfilled this quote (null if unavailable)
+             * @example RELAY
+             */
+            swap_provider?: string;
+            /** @description Breakdown of costs for the swap */
+            costs: components["schemas"]["SwapCostResponse"][];
+            /** @description Errors encountered for individual swap routes */
+            route_errors: components["schemas"]["SwapRouteErrorResponse"][];
+        };
+        /** @description An error encountered for a specific swap route */
+        SwapRouteErrorResponse: {
+            /**
+             * @description The error type
+             * @example INSUFFICIENT_FUNDS
+             */
+            type: string;
         };
         /** @description A transaction to be submitted onchain to execute a swap */
         SwapTransactionResponse: {
@@ -1420,6 +2077,8 @@ export interface components {
             protocol_address?: string;
             /** Format: int64 */
             remaining_quantity: number;
+            /** Format: int64 */
+            order_created_at?: number;
             criteria?: components["schemas"]["Criteria"];
             price: components["schemas"]["Price"];
             /** @enum {string} */
@@ -1432,6 +2091,8 @@ export interface components {
             protocol_address?: string;
             /** Format: int64 */
             remaining_quantity: number;
+            /** Format: int64 */
+            order_created_at?: number;
         };
         Parameters: {
             offerer: string;
@@ -1470,6 +2131,8 @@ export interface components {
             protocol_address?: string;
             /** Format: int64 */
             remaining_quantity: number;
+            /** Format: int64 */
+            order_created_at?: number;
             price: components["schemas"]["ListingPrice"];
             type: string;
             /** @enum {string} */
@@ -1760,6 +2423,93 @@ export interface components {
             zone: string;
             zoneHash: string;
         };
+        /** @description Request body for batch NFT retrieval by identifiers */
+        BatchNftsRequest: {
+            /** @description List of NFT identifiers to retrieve */
+            identifiers: components["schemas"]["NftIdentifierInput"][];
+        };
+        /** @description An NFT identifier consisting of chain, contract address, and token ID */
+        NftIdentifierInput: {
+            /**
+             * @description The blockchain the NFT is on
+             * @example ethereum
+             */
+            chain: string;
+            /**
+             * @description The contract address of the NFT
+             * @example 0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D
+             */
+            contract_address: string;
+            /**
+             * @description The token ID of the NFT
+             * @example 1
+             */
+            token_id: string;
+        };
+        Nft: {
+            identifier: string;
+            collection: string;
+            contract: string;
+            token_standard: string;
+            name?: string;
+            description?: string;
+            image_url?: string;
+            display_image_url?: string;
+            display_animation_url?: string;
+            metadata_url?: string;
+            opensea_url: string;
+            updated_at: string;
+            is_disabled: boolean;
+            is_nsfw: boolean;
+            original_image_url?: string;
+            original_animation_url?: string;
+            traits: components["schemas"]["Trait"][];
+        };
+        NftBatchResponse: {
+            nfts: components["schemas"]["NftDetailed"][];
+        };
+        NftDetailed: {
+            identifier: string;
+            collection: string;
+            contract: string;
+            token_standard: string;
+            name?: string;
+            description?: string;
+            image_url?: string;
+            display_image_url?: string;
+            display_animation_url?: string;
+            metadata_url?: string;
+            opensea_url: string;
+            updated_at: string;
+            is_disabled: boolean;
+            is_nsfw: boolean;
+            original_image_url?: string;
+            original_animation_url?: string;
+            traits: components["schemas"]["Trait"][];
+            animation_url?: string;
+            is_suspicious: boolean;
+            creator: string;
+            owners: components["schemas"]["Owner"][];
+            rarity?: components["schemas"]["Rarity"];
+        };
+        Owner: {
+            address: string;
+            /** Format: int32 */
+            quantity: number;
+            quantity_string: string;
+        };
+        Rarity: {
+            strategy_id: string;
+            strategy_version: string;
+            /** Format: int64 */
+            rank?: number;
+        };
+        Trait: {
+            trait_type: string;
+            display_type?: string;
+            max_value?: string;
+            value: unknown;
+        };
         /** @description Payment token to use for cross-chain fulfillment */
         CrossChainPaymentToken: {
             /**
@@ -1850,6 +2600,61 @@ export interface components {
             /** @description Ordered list of transactions to execute. May include approval and buy/swap transactions. */
             transactions: components["schemas"]["SwapTransactionResponse"][];
         };
+        /** @description Request to get listing creation actions */
+        CreateListingActionsRequest: {
+            /** @description Items to list for sale */
+            items: components["schemas"]["ListingItem"][];
+            /**
+             * @description Maker (seller) wallet address
+             * @example 0x...
+             */
+            address: string;
+            /** @description Whether to include creator fees. Defaults to true. */
+            use_creator_fee?: boolean;
+            /** @description Optional taker address for private listings */
+            taker?: string;
+        };
+        /** @description An item to list for sale */
+        ListingItem: {
+            /**
+             * @description Chain of the item (e.g. 'ethereum', 'base')
+             * @example ethereum
+             */
+            chain: string;
+            /**
+             * @description Contract address of the NFT
+             * @example 0x...
+             */
+            contract: string;
+            /**
+             * @description Token ID of the NFT
+             * @example 1234
+             */
+            token_id: string;
+            /**
+             * Format: int64
+             * @description Quantity to list (use 1 for ERC-721)
+             * @example 1
+             */
+            quantity: number;
+            /** @description Price per item */
+            price: components["schemas"]["ListingPrice"];
+            /**
+             * @description Listing start time in ISO 8601 format. Defaults to now.
+             * @example 2026-05-01T00:00:00Z
+             */
+            start_time?: string;
+            /**
+             * @description Listing end time in ISO 8601 format. Defaults to 30 days from start.
+             * @example 2026-06-01T00:00:00Z
+             */
+            end_time?: string;
+        };
+        /** @description Response containing blockchain actions to execute for listing creation */
+        CreateListingActionsResponse: {
+            /** @description Ordered list of blockchain actions to execute. May include approval actions (e.g. setApprovalForAll) and a createListingsAction containing the Seaport order to sign. Serialized using proto3 JSON format — fields with default values (empty string, 0, false) may be omitted. */
+            steps: components["schemas"]["JsonNode"][];
+        };
         /** @description Ready-to-sign mint transaction data */
         DropMintResponse: {
             /** @description Transaction target contract address */
@@ -1877,6 +2682,90 @@ export interface components {
              * @example 1
              */
             quantity: number;
+        };
+        /** @description Ready-to-sign deploy contract transaction data */
+        DropDeployResponse: {
+            /** @description Transaction target contract address */
+            to: string;
+            /** @description Encoded transaction data (hex) */
+            data: string;
+            /** @description Transaction value in wei (hex) */
+            value: string;
+            /** @description Chain identifier */
+            chain: string;
+        };
+        /** @description Deploy contract request parameters */
+        DropDeployRequest: {
+            /**
+             * @description Chain slug (e.g. "ethereum", "base")
+             * @example ethereum
+             */
+            chain: string;
+            /**
+             * @description Name for the new contract
+             * @example My NFT Collection
+             */
+            contract_name: string;
+            /**
+             * @description Symbol for the new contract
+             * @example MNFT
+             */
+            contract_symbol: string;
+            /**
+             * @description Drop type (see validation error for supported values)
+             * @example seadrop_v1_erc721
+             */
+            drop_type: string;
+            /**
+             * @description Token type (see validation error for supported values)
+             * @example erc721_standard
+             */
+            token_type: string;
+            /**
+             * @description Deployer wallet address
+             * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+             */
+            sender: string;
+        };
+        /** @description Request body for batch collection retrieval by slugs */
+        BatchCollectionsRequest: {
+            /**
+             * @description List of collection slugs to retrieve
+             * @example [
+             *       "boredapeyachtclub",
+             *       "doodles-official"
+             *     ]
+             */
+            slugs: string[];
+        };
+        CollectionBatchResponse: {
+            collections: components["schemas"]["CollectionResponse"][];
+        };
+        CollectionResponse: {
+            collection: string;
+            name: string;
+            description?: string;
+            image_url?: string;
+            banner_image_url?: string;
+            owner?: string;
+            safelist_status: string;
+            category?: string;
+            is_disabled: boolean;
+            is_nsfw: boolean;
+            trait_offers_enabled: boolean;
+            collection_offers_enabled: boolean;
+            opensea_url: string;
+            project_url?: string;
+            wiki_url?: string;
+            discord_url?: string;
+            telegram_url?: string;
+            twitter_username?: string;
+            instagram_username?: string;
+            contracts: components["schemas"]["Contract"][];
+        };
+        Contract: {
+            address: string;
+            chain: string;
         };
         MetadataIngestionError: {
             errorType: string;
@@ -1946,6 +2835,49 @@ export interface components {
              */
             fulfillment: string;
         };
+        /** @description An asset to transfer */
+        TransferAsset: {
+            /**
+             * @description The chain the asset is on (e.g. ethereum, base, solana)
+             * @example ethereum
+             */
+            chain: string;
+            /**
+             * @description The contract address of the asset
+             * @example 0xBd3531dA5CF5857e7CfAA92426877b022e612cf8
+             */
+            contract: string;
+            /**
+             * @description The token ID of the asset
+             * @example 1234
+             */
+            token_id: string;
+            /**
+             * @description The quantity to transfer in raw units (1 for ERC721, raw amount for ERC1155/fungible)
+             * @example 1
+             */
+            quantity: string;
+        };
+        /** @description Request to transfer NFTs or tokens between wallets */
+        TransferRequest: {
+            /** @description List of assets to transfer */
+            assets: components["schemas"]["TransferAsset"][];
+            /**
+             * @description Address of the sender wallet
+             * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+             */
+            from_address: string;
+            /**
+             * @description Address of the recipient wallet
+             * @example 0x28c6c06298d514db089934071355e5743bf21d60
+             */
+            to_address: string;
+        };
+        /** @description Response containing ordered blockchain actions to execute for an asset transfer */
+        TransferResponse: {
+            /** @description Ordered list of blockchain actions to execute. Each action is a JSON object with a single field indicating the type (e.g. transferAction, approvalAction) and its associated data. Serialized using proto3 JSON format — fields with default values (empty string, 0, false) may be omitted. */
+            steps: components["schemas"]["JsonNode"][];
+        };
         /** @description Paginated list of tokens */
         TokenPaginatedResponse: {
             /** @description List of tokens */
@@ -1988,6 +2920,8 @@ export interface components {
              * @example 6
              */
             decimals: number;
+            /** @description URL to the token page on OpenSea */
+            opensea_url: string;
             /**
              * Format: double
              * @description Market capitalization in USD
@@ -2003,8 +2937,6 @@ export interface components {
              * @description Price change percentage over the last 24 hours
              */
             price_change_24h?: number;
-            /** @description URL to the token page on OpenSea */
-            opensea_url: string;
         };
         /** @description A currency within a token group */
         TokenGroupCurrencyResponse: {
@@ -2231,35 +3163,39 @@ export interface components {
         /** @description Token (currency) search result */
         TokenSearchResponse: {
             /**
-             * @description Contract address of the token
+             * @description The contract address of the token
              * @example 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
              */
             address: string;
             /**
-             * @description Blockchain the token is on
+             * @description The blockchain the token is on
              * @example ethereum
              */
             chain: string;
             /**
-             * @description Token name
+             * @description The display name of the token
              * @example USD Coin
              */
             name: string;
             /**
-             * @description Token symbol
+             * @description The ticker symbol of the token
              * @example USDC
              */
             symbol: string;
-            /** @description URL of the token image */
+            /** @description URL of the token's image */
             image_url?: string;
-            /** @description Current USD price of the token */
+            /**
+             * @description Current price in USD
+             * @example 1
+             */
             usd_price: string;
             /**
              * Format: int32
-             * @description Number of decimal places for the token
+             * @description Number of decimal places
+             * @example 6
              */
             decimals: number;
-            /** @description URL to the token on OpenSea */
+            /** @description URL to the token page on OpenSea */
             opensea_url: string;
         };
         GetOrderResponse: {
@@ -2277,12 +3213,6 @@ export interface components {
             external_link?: string;
             animation_url?: string;
             traits: components["schemas"]["Trait"][];
-        };
-        Trait: {
-            trait_type: string;
-            display_type?: string;
-            max_value?: string;
-            value: unknown;
         };
         ListingsResponse: {
             listings: components["schemas"]["Listing"][];
@@ -2302,25 +3232,6 @@ export interface components {
             protocol_address?: string;
             chain: string;
             payment?: components["schemas"]["Payment"];
-        };
-        Nft: {
-            identifier: string;
-            collection: string;
-            contract: string;
-            token_standard: string;
-            name?: string;
-            description?: string;
-            image_url?: string;
-            display_image_url?: string;
-            display_animation_url?: string;
-            metadata_url?: string;
-            opensea_url: string;
-            updated_at: string;
-            is_disabled: boolean;
-            is_nsfw: boolean;
-            original_image_url?: string;
-            original_animation_url?: string;
-            traits: components["schemas"]["Trait"][];
         };
         OrderEvent: components["schemas"]["Event"] & {
             event_type: string;
@@ -2424,24 +3335,33 @@ export interface components {
         };
         /** @description Detailed drop information including stages and supply */
         DropDetailedResponse: {
-            /** @description Collection slug */
+            /**
+             * @description Collection slug
+             * @example cool-cats
+             */
             collection_slug: string;
-            /** @description Collection name */
+            /**
+             * @description Collection name
+             * @example Cool Cats
+             */
             collection_name?: string;
             /**
-             * @description Blockchain
+             * @description Blockchain the drop is on
              * @example ethereum
              */
             chain: string;
             /** @description Contract address */
             contract_address: string;
-            /** @description Drop type */
+            /**
+             * @description Drop type
+             * @example seadrop_v1_erc721
+             */
             drop_type: string;
             /** @description Whether the drop is currently minting */
             is_minting: boolean;
             /** @description Collection image URL */
             image_url?: string;
-            /** @description OpenSea URL */
+            /** @description OpenSea URL for the drop */
             opensea_url: string;
             /** @description Drop stages (public sale, presale, etc.) */
             stages: components["schemas"]["DropStageResponse"][];
@@ -2472,35 +3392,23 @@ export interface components {
             /** @description Max tokens mintable per wallet in this stage */
             max_per_wallet: string;
         };
+        /** @description Deploy contract receipt status */
+        DropDeployReceiptResponse: {
+            /**
+             * @description Deployment status: pending, success, or failed
+             * @example success
+             */
+            status: string;
+            /** @description Deployed contract address (only present on success) */
+            contract_address?: string;
+            /** @description Chain slug (only present on success) */
+            chain?: string;
+            /** @description Linked collection slug (only present on success, may take time to materialize) */
+            collection_slug?: string;
+        };
         CollectionPaginatedResponse: {
             collections: components["schemas"]["CollectionResponse"][];
             next?: string;
-        };
-        CollectionResponse: {
-            collection: string;
-            name: string;
-            description?: string;
-            image_url?: string;
-            banner_image_url?: string;
-            owner?: string;
-            safelist_status: string;
-            category?: string;
-            is_disabled: boolean;
-            is_nsfw: boolean;
-            trait_offers_enabled: boolean;
-            collection_offers_enabled: boolean;
-            opensea_url: string;
-            project_url?: string;
-            wiki_url?: string;
-            discord_url?: string;
-            telegram_url?: string;
-            twitter_username?: string;
-            instagram_username?: string;
-            contracts: components["schemas"]["Contract"][];
-        };
-        Contract: {
-            address: string;
-            chain: string;
         };
         CollectionDetailedResponse: {
             collection: string;
@@ -2587,6 +3495,97 @@ export interface components {
             floor_price: number;
             floor_price_symbol: string;
         };
+        /** @description A bidder in an offer aggregate */
+        BidderResponse: {
+            /** @description Wallet address of the bidder */
+            address: string;
+            /**
+             * Format: int32
+             * @description Number of offers from this bidder
+             */
+            quantity: number;
+        };
+        /** @description An aggregated offer bucket */
+        CollectionOfferAggregateResponse: {
+            /** @description Offer price level */
+            offer_price: components["schemas"]["OfferAggregatePriceResponse"];
+            /** @description Total value of offers at this level */
+            total_value: components["schemas"]["OfferAggregatePriceResponse"];
+            /**
+             * Format: int32
+             * @description Total number of offers at this level
+             */
+            total_offers: number;
+            /** @description Bidders at this price level */
+            bidders: components["schemas"]["BidderResponse"][];
+        };
+        /** @description Paginated list of collection offer aggregates */
+        CollectionOfferAggregatesPaginatedResponse: {
+            /** @description List of offer aggregates */
+            offer_aggregates: components["schemas"]["CollectionOfferAggregateResponse"][];
+            /** @description Cursor for the next page of results */
+            next?: string;
+        };
+        /** @description Price information for an offer aggregate */
+        OfferAggregatePriceResponse: {
+            /** @description Price in USD */
+            usd_price: string;
+            /**
+             * Format: double
+             * @description Price in token units
+             */
+            token_unit: number;
+            /** @description Payment token symbol */
+            symbol?: string;
+            /** @description Blockchain chain */
+            chain: string;
+        };
+        /** @description A collection holder */
+        CollectionHolderResponse: {
+            /** @description Wallet address of the holder */
+            address: string;
+            /**
+             * Format: int32
+             * @description Number of items held
+             */
+            quantity: number;
+            /**
+             * Format: float
+             * @description Ownership percentage of the collection
+             */
+            percentage: number;
+        };
+        /** @description Paginated list of collection holders */
+        CollectionHoldersPaginatedResponse: {
+            /** @description List of holders */
+            holders: components["schemas"]["CollectionHolderResponse"][];
+            /** @description Cursor for the next page of results */
+            next?: string;
+        };
+        /** @description Floor price history for a collection */
+        FloorPriceHistoryResponse: {
+            /** @description List of floor price data points */
+            floor_prices: components["schemas"]["FloorPricePointResponse"][];
+        };
+        /** @description A floor price data point */
+        FloorPricePointResponse: {
+            /**
+             * Format: date-time
+             * @description Timestamp of the data point
+             */
+            time: string;
+            /** @description Floor price in USD */
+            usd_price?: string;
+            /**
+             * Format: double
+             * @description Floor price in token units
+             */
+            token_unit?: number;
+            /** @description Payment token symbol */
+            symbol?: string;
+            /** @description Blockchain chain */
+            chain?: string;
+        };
         NftListResponse: {
             nfts: components["schemas"]["Nft"][];
             next?: string;
@@ -2626,117 +3625,96 @@ export interface components {
              */
             block_explorer_url: string;
         };
-        /** @description Detailed token information including stats and social links */
-        TokenDetailedResponse: {
+        /** @description A price history data point */
+        PriceHistoryPointResponse: {
             /**
-             * @description The contract address of the token
-             * @example 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
+             * Format: date-time
+             * @description Timestamp of the price point
              */
-            address: string;
+            time: string;
             /**
-             * @description The blockchain the token is on
-             * @example ethereum
-             */
-            chain: string;
-            /**
-             * @description The display name of the token
-             * @example USD Coin
-             */
-            name: string;
-            /**
-             * @description The ticker symbol of the token
-             * @example USDC
-             */
-            symbol: string;
-            /** @description URL of the token's image */
-            image_url?: string;
-            /** @description A description of the token */
-            description?: string;
-            /**
-             * @description Current price in USD
+             * @description Price in USD
              * @example 1
              */
             usd_price: string;
-            /**
-             * Format: int32
-             * @description Number of decimal places
-             * @example 6
-             */
-            decimals: number;
-            /** @description Market statistics for the token */
-            stats?: components["schemas"]["TokenStatsResponse"];
-            /** @description Social media links for the token */
-            socials?: components["schemas"]["TokenSocialsResponse"];
-            /** @description URL to the token page on OpenSea */
-            opensea_url: string;
-            /**
-             * @description Token safety status based on OpenSea's spam-classification rules. `OK` for tokens that pass all safety checks (the normal case). Categories are intentionally broad and may evolve. Possible values, in decreasing severity: `WARNING` (flagged as risky/suspicious — caution advised), `SPAM` (flagged as spam), `LOW_LIQUIDITY` (insufficient liquidity pool reserves), `OK` (passes all checks).
-             * @default OK
-             * @enum {string}
-             */
-            status: "OK" | "WARNING" | "SPAM" | "LOW_LIQUIDITY";
         };
-        /** @description Social media links for a token */
-        TokenSocialsResponse: {
-            /** @description The token's website URL */
-            website?: string;
-            /** @description The token's Twitter/X handle */
-            twitter_handle?: string;
-            /** @description The token's Telegram identifier */
-            telegram_identifier?: string;
+        /** @description List of price history data points */
+        PriceHistoryResponse: {
+            /** @description List of price history points */
+            prices: components["schemas"]["PriceHistoryPointResponse"][];
         };
-        /** @description Market statistics for a token */
-        TokenStatsResponse: {
+        /** @description An OHLCV candle data point */
+        OhlcvCandleResponse: {
+            /**
+             * Format: date-time
+             * @description Candle timestamp
+             */
+            time: string;
+            /** @description Opening price in USD */
+            open: number;
+            /** @description Highest price in USD */
+            high: number;
+            /** @description Lowest price in USD */
+            low: number;
+            /** @description Closing price in USD */
+            close: number;
+            /** @description Trading volume in USD */
+            volume: number;
+        };
+        /** @description List of OHLCV candle data points */
+        OhlcvResponse: {
+            /** @description List of OHLCV candles */
+            candles: components["schemas"]["OhlcvCandleResponse"][];
+        };
+        /** @description Token amount with contract and value information */
+        TokenAmountResponse: {
+            /** @description Contract address of the token */
+            address: string;
+            /** @description Blockchain the token is on */
+            chain: string;
             /**
              * Format: double
-             * @description Market capitalization in USD
+             * @description Amount in token units
              */
-            market_cap_usd?: number;
+            amount_token: number;
+            /** @description Amount in USD */
+            amount_usd: string;
             /**
              * Format: double
-             * @description Fully diluted valuation in USD
+             * @description Amount in chain-native units
              */
-            fdv_usd?: number;
+            amount_native: number;
+        };
+        /** @description Paginated list of token swap activity events */
+        TokenSwapActivityPaginatedResponse: {
+            /** @description List of swap activity events */
+            swap_events: components["schemas"]["TokenSwapActivityResponse"][];
+            /** @description Cursor for the next page of results */
+            next?: string;
+        };
+        /** @description A token swap activity event */
+        TokenSwapActivityResponse: {
+            /** @description Unique identifier for the swap event */
+            id: string;
             /**
-             * Format: double
-             * @description Circulating supply of the token
+             * Format: date-time
+             * @description Timestamp of the swap
              */
-            circulating_supply?: number;
-            /**
-             * Format: double
-             * @description Maximum supply of the token
-             */
-            max_supply?: number;
-            /**
-             * Format: double
-             * @description Total supply of the token
-             */
-            total_supply?: number;
-            /**
-             * Format: double
-             * @description 24-hour trading volume in USD
-             */
-            volume_24h?: number;
-            /**
-             * Format: double
-             * @description Price change percentage over the last hour
-             */
-            price_change_1h?: number;
-            /**
-             * Format: double
-             * @description Price change percentage over the last 24 hours
-             */
-            price_change_24h?: number;
-            /**
-             * Format: double
-             * @description Price change percentage over the last 7 days
-             */
-            price_change_7d?: number;
-            /**
-             * Format: double
-             * @description Price change percentage over the last 30 days
-             */
-            price_change_30d?: number;
+            timestamp: string;
+            /** @description Address of the sender */
+            sender_address: string;
+            /** @description Token sold in the swap */
+            from_token: components["schemas"]["TokenAmountResponse"];
+            /** @description Token bought in the swap */
+            to_token: components["schemas"]["TokenAmountResponse"];
+            /** @description Transaction hash */
+            transaction_hash: string;
+            /** @description User operation hash (for account abstraction) */
+            user_op_hash?: string;
+            /** @description Swap protocol used */
+            swap_protocol?: string;
+            /** @description Blockchain the swap occurred on */
+            chain: string;
         };
         ContractResponse: {
             address: string;
@@ -2745,43 +3723,38 @@ export interface components {
             contract_standard: string;
             name: string;
         };
-        NftDetailed: {
-            identifier: string;
-            collection: string;
-            contract: string;
-            token_standard: string;
-            name?: string;
-            description?: string;
-            image_url?: string;
-            display_image_url?: string;
-            display_animation_url?: string;
-            metadata_url?: string;
-            opensea_url: string;
-            updated_at: string;
-            is_disabled: boolean;
-            is_nsfw: boolean;
-            original_image_url?: string;
-            original_animation_url?: string;
-            traits: components["schemas"]["Trait"][];
-            animation_url?: string;
-            is_suspicious: boolean;
-            creator: string;
-            owners: components["schemas"]["Owner"][];
-            rarity?: components["schemas"]["Rarity"];
-        };
         NftResponse: {
             nft: components["schemas"]["NftDetailed"];
         };
-        Owner: {
-            address: string;
-            /** Format: int32 */
-            quantity: number;
+        OwnersPaginatedResponse: {
+            owners: components["schemas"]["Owner"][];
+            next?: string;
         };
-        Rarity: {
-            strategy_id: string;
-            strategy_version: string;
-            /** Format: int64 */
-            rank?: number;
+        /** @description Analytics data for an NFT including sales and floor price history */
+        NftAnalyticsResponse: {
+            /** @description List of sale data points */
+            sales: components["schemas"]["NftSalePointResponse"][];
+            /** @description List of floor price data points */
+            floor_prices: components["schemas"]["FloorPricePointResponse"][];
+        };
+        /** @description A sale data point for an NFT */
+        NftSalePointResponse: {
+            /**
+             * Format: date-time
+             * @description Timestamp of the sale
+             */
+            time: string;
+            /** @description Sale price in USD */
+            usd_price: string;
+            /**
+             * Format: double
+             * @description Sale price in token units
+             */
+            token_unit: number;
+            /** @description Payment token symbol */
+            symbol?: string;
+            /** @description Blockchain chain */
+            chain: string;
         };
         AccountResponse: {
             address: string;
@@ -2852,9 +3825,11 @@ export interface components {
             /**
              * Format: int32
              * @description Number of decimal places
-             * @example 18
+             * @example 6
              */
             decimals: number;
+            /** @description URL to the token page on OpenSea */
+            opensea_url: string;
             /**
              * @description Token balance in display units (divided by 10^decimals), not raw/wei
              * @example 1.5
@@ -2865,8 +3840,6 @@ export interface components {
              * @example 3518.51835185
              */
             usd_value: string;
-            /** @description URL to the token page on OpenSea */
-            opensea_url: string;
             /**
              * @description Token status relative to OpenSea's spam-classification rules. `OK` for tokens that pass all spam filters (the normal case); populated with a more specific value for tokens surfaced via `disable_spam_filtering=true` that would normally be hidden. Categories are intentionally broad and may evolve. Possible values, in decreasing severity: `WARNING` (flagged as risky/suspicious — caution advised), `SPAM` (flagged as spam), `LOW_LIQUIDITY` (insufficient pool liquidity), `LOW_VALUE` (dust holding < $0.01), `OK` (passes all filters).
              * @default OK
@@ -2883,6 +3856,105 @@ export interface components {
              * @example 125000.5
              */
             quote_token_liquidity_usd?: string;
+        };
+        /** @description Portfolio stats including total value, P&L, and asset breakdown */
+        PortfolioStatsResponse: {
+            /**
+             * @description Total portfolio value in USD
+             * @example 125430.5
+             */
+            total_value_usd: string;
+            /**
+             * @description NFT portfolio value in USD
+             * @example 98200
+             */
+            nft_value_usd: string;
+            /**
+             * @description Token portfolio value in USD
+             * @example 27230.5
+             */
+            token_value_usd: string;
+            /**
+             * @description Absolute P&L in USD over the timeframe
+             * @example +1250.00
+             */
+            pnl_absolute?: string;
+            /**
+             * @description Percentage P&L over the timeframe
+             * @example +1.01
+             */
+            pnl_percentage?: string;
+            /**
+             * @description The queried timeframe
+             * @example WEEK
+             */
+            timeframe: string;
+        };
+        /** @description A single net worth data point */
+        PortfolioHistoryDataPoint: {
+            /**
+             * Format: date-time
+             * @description Timestamp of the data point
+             * @example 2026-04-28T00:00:00Z
+             */
+            timestamp: string;
+            /**
+             * @description Total portfolio value in USD
+             * @example 124180
+             */
+            value_usd: string;
+            /**
+             * @description Token value in USD
+             * @example 26000
+             */
+            token_value_usd: string;
+            /**
+             * @description NFT value in USD
+             * @example 98180
+             */
+            nft_value_usd: string;
+        };
+        /** @description Net worth time series data */
+        PortfolioHistoryResponse: {
+            /** @description Time series data points */
+            data_points: components["schemas"]["PortfolioHistoryDataPoint"][];
+            /**
+             * @description The queried timeframe
+             * @example WEEK
+             */
+            timeframe: string;
+        };
+        ProfileCollectionResponse: {
+            collection: string;
+            name: string;
+            description?: string;
+            image_url?: string;
+            banner_image_url?: string;
+            owner?: string;
+            safelist_status: string;
+            category?: string;
+            is_disabled: boolean;
+            is_nsfw: boolean;
+            trait_offers_enabled: boolean;
+            collection_offers_enabled: boolean;
+            opensea_url: string;
+            project_url?: string;
+            wiki_url?: string;
+            discord_url?: string;
+            telegram_url?: string;
+            twitter_username?: string;
+            instagram_username?: string;
+            contracts: components["schemas"]["Contract"][];
+            /** Format: int32 */
+            item_count: number;
+            /** Format: int32 */
+            total_quantity: number;
+            /** Format: double */
+            usd_value?: number;
+        };
+        ProfileCollectionsResponse: {
+            collections: components["schemas"]["ProfileCollectionResponse"][];
+            next?: string;
         };
     };
     responses: {
@@ -2956,6 +4028,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TransactionReceiptResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_tokens_batch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchTokensRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TokenBatchResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -3170,6 +4268,32 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    get_nfts_batch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchNftsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NftBatchResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
     sweep_collection: {
         parameters: {
             query?: never;
@@ -3278,6 +4402,40 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    create_listing_actions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateListingActionsRequest"];
+            };
+        };
+        responses: {
+            /** @description Listing creation actions retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CreateListingActionsResponse"];
+                };
+            };
+            /** @description The request is invalid. Possible reasons: items on different chains, invalid addresses, items not found, invalid currency, or prices/quantities not positive. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CreateListingActionsResponse"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
     build_drop_mint_transaction: {
         parameters: {
             query?: never;
@@ -3342,6 +4500,66 @@ export interface operations {
                     "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    deploy_drop_contract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DropDeployRequest"];
+            };
+        };
+        responses: {
+            /** @description Ready-to-sign transaction data for contract deployment */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DropDeployResponse"];
+                };
+            };
+            /** @description Invalid request: unsupported drop_type/token_type combination, bad address format, or missing required fields */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_collections_batch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchCollectionsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CollectionBatchResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -3467,6 +4685,40 @@ export interface operations {
                     "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
+        };
+    };
+    transfer_assets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferRequest"];
+            };
+        };
+        responses: {
+            /** @description Transfer actions retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TransferResponse"];
+                };
+            };
+            /** @description The request is invalid. Possible reasons: empty assets array, invalid addresses, invalid chain, or cross-ecosystem transfer. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TransferResponse"];
+                };
+            };
+            500: components["responses"]["InternalError"];
         };
     };
     get_collection_traits: {
@@ -4344,6 +5596,39 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    get_deploy_contract_receipt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Chain slug (e.g. ethereum, base)
+                 * @example ethereum
+                 */
+                chain: string;
+                /**
+                 * @description Transaction hash of the deployment transaction
+                 * @example 0xabc123...
+                 */
+                tx_hash: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deployment receipt status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DropDeployReceiptResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
     list_collections: {
         parameters: {
             query?: {
@@ -4440,6 +5725,126 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_collection_offer_aggregates: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Number of results to return (default: 20, max: 100)
+                 * @example 20
+                 */
+                limit?: number;
+                /** @description Pagination cursor for next page */
+                cursor?: string;
+                /**
+                 * @description Sort direction (asc or desc)
+                 * @example desc
+                 */
+                sort_direction?: string;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description Collection slug
+                 * @example boredapeyachtclub
+                 */
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Collection offer aggregates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CollectionOfferAggregatesPaginatedResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_collection_holders: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Number of results to return (default: 20, max: 100)
+                 * @example 20
+                 */
+                limit?: number;
+                /** @description Pagination cursor for next page */
+                cursor?: string;
+                /**
+                 * @description Sort direction (asc or desc)
+                 * @example desc
+                 */
+                sort_direction?: string;
+                /** @description Filter by owner address */
+                owned_by?: string;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description Collection slug
+                 * @example boredapeyachtclub
+                 */
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Collection holders */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CollectionHoldersPaginatedResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_collection_floor_prices: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Time window for floor price history. Options: one_minute, five_minutes, fifteen_minutes, one_hour, one_day, seven_days, thirty_days, one_year, all_time
+                 * @example one_day
+                 */
+                timeframe?: string;
+                /** @description Number of data points to return */
+                resolution?: number;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description Collection slug
+                 * @example boredapeyachtclub
+                 */
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Floor price history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FloorPriceHistoryResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -4632,6 +6037,150 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    get_token_price_history: {
+        parameters: {
+            query: {
+                /**
+                 * @description Start time for the price history window (ISO 8601)
+                 * @example 2024-01-01T00:00:00Z
+                 */
+                start_time: string;
+                /**
+                 * @description End time for the price history window (ISO 8601, defaults to now)
+                 * @example 2024-01-02T00:00:00Z
+                 */
+                end_time?: string;
+                /**
+                 * @description Candle bucket size for aggregation (1s, 1m, 5m, 15m, 1h, 4h, 1d)
+                 * @example 1h
+                 */
+                bucket_size?: string;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The blockchain on which the token exists
+                 * @example ethereum
+                 */
+                chain: string;
+                /**
+                 * @description The contract address of the token
+                 * @example 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
+                 */
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PriceHistoryResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_token_ohlcv: {
+        parameters: {
+            query: {
+                /**
+                 * @description Start time for the OHLCV window (ISO 8601)
+                 * @example 2024-01-01T00:00:00Z
+                 */
+                start_time: string;
+                /**
+                 * @description End time for the OHLCV window (ISO 8601, defaults to now)
+                 * @example 2024-01-02T00:00:00Z
+                 */
+                end_time?: string;
+                /**
+                 * @description Candle bucket size (1s, 1m, 5m, 15m, 1h, 4h, 1d)
+                 * @example 1h
+                 */
+                bucket_size: string;
+                /**
+                 * @description Whether to fill empty time windows with zero-volume candles
+                 * @example false
+                 */
+                fill_time_window?: boolean;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The blockchain on which the token exists
+                 * @example ethereum
+                 */
+                chain: string;
+                /**
+                 * @description The contract address of the token
+                 * @example 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
+                 */
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["OhlcvResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_token_activity: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Number of results to return (default: 20, max: 50)
+                 * @example 20
+                 */
+                limit?: number;
+                /** @description Pagination cursor for next page */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The blockchain on which the token exists
+                 * @example ethereum
+                 */
+                chain: string;
+                /**
+                 * @description The contract address of the token
+                 * @example 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
+                 */
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TokenSwapActivityPaginatedResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
     get_payment_token: {
         parameters: {
             query?: never;
@@ -4761,6 +6310,53 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    get_nft_owners: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Number of results to return (default: 20, max: 100)
+                 * @example 20
+                 */
+                limit?: number;
+                /** @description Pagination cursor for next page */
+                next?: string;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The blockchain on which to filter the results
+                 * @example ethereum
+                 */
+                chain: string;
+                /**
+                 * @description The unique public blockchain identifier for the contract
+                 * @example 0x8ba1f109551bD432803012645Hac136c94C19D6e
+                 */
+                address: string;
+                /**
+                 * @description The NFT token id
+                 * @example 1
+                 */
+                identifier: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description NFT owners */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["OwnersPaginatedResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
     get_nft_collection: {
         parameters: {
             query?: never;
@@ -4793,6 +6389,45 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CollectionDetailedResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_nft_analytics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The blockchain on which to filter the results
+                 * @example ethereum
+                 */
+                chain: string;
+                /**
+                 * @description The unique public blockchain identifier for the contract
+                 * @example 0x8ba1f109551bD432803012645Hac136c94C19D6e
+                 */
+                address: string;
+                /**
+                 * @description The NFT token id
+                 * @example 1
+                 */
+                identifier: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description NFT analytics data */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NftAnalyticsResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -4944,6 +6579,265 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TokenBalancePaginatedResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_portfolio_stats: {
+        parameters: {
+            query?: {
+                /** @description Timeframe for P&L calculation: HOUR, DAY, WEEK, MONTH */
+                timeframe?: "HOUR" | "DAY" | "WEEK" | "MONTH";
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The wallet address
+                 * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+                 */
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Portfolio stats */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PortfolioStatsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_portfolio_history: {
+        parameters: {
+            query?: {
+                /** @description Timeframe for history: HOUR, DAY, WEEK, MONTH */
+                timeframe?: "HOUR" | "DAY" | "WEEK" | "MONTH";
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The wallet address
+                 * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+                 */
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Portfolio history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PortfolioHistoryResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_profile_offers_received: {
+        parameters: {
+            query?: {
+                /** @description Cursor for pagination */
+                after?: string;
+                /** @description Number of results to return */
+                limit?: number;
+                /** @description Filter by collection slugs */
+                collection_slugs?: string[];
+                /** @description Filter by chains */
+                chains?: components["schemas"]["ChainIdentifier"][];
+                /** @description Sort by field */
+                sort_by?: "START_TIME" | "TOP_ASSET_OFFER";
+                /** @description Sort direction */
+                sort_direction?: "asc" | "desc";
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The wallet address
+                 * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+                 */
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Offers received for account */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["OffersResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_profile_offers: {
+        parameters: {
+            query?: {
+                /** @description Cursor for pagination */
+                after?: string;
+                /** @description Number of results to return */
+                limit?: number;
+                /** @description Filter by collection slugs */
+                collection_slugs?: string[];
+                /** @description Filter by chains */
+                chains?: components["schemas"]["ChainIdentifier"][];
+                /** @description Sort by field */
+                sort_by?: "START_TIME" | "END_TIME";
+                /** @description Sort direction */
+                sort_direction?: "asc" | "desc";
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The wallet address
+                 * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+                 */
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active offers for account */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["OffersResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_profile_listings: {
+        parameters: {
+            query?: {
+                /** @description Cursor for pagination */
+                after?: string;
+                /** @description Number of results to return */
+                limit?: number;
+                /** @description Filter by collection slugs */
+                collection_slugs?: string[];
+                /** @description Filter by chains */
+                chains?: components["schemas"]["ChainIdentifier"][];
+                /** @description Sort by field */
+                sort_by?: "START_TIME" | "END_TIME";
+                /** @description Sort direction */
+                sort_direction?: "asc" | "desc";
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The wallet address
+                 * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+                 */
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active listings for account */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ListingsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_profile_favorites: {
+        parameters: {
+            query?: {
+                /** @description Cursor for pagination */
+                after?: string;
+                /** @description Number of results to return */
+                limit?: number;
+                /** @description Sort by field */
+                sort_by?: "CREATED_DATE" | "PRICE" | "RARITY" | "LISTING_CREATED_DATE" | "LAST_SALE";
+                /** @description Sort direction */
+                sort_direction?: "asc" | "desc";
+                /** @description Filter by chains */
+                chains?: components["schemas"]["ChainIdentifier"][];
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The wallet address
+                 * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+                 */
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Favorited items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NftListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_profile_collections: {
+        parameters: {
+            query?: {
+                /** @description Cursor for pagination */
+                after?: string;
+                /** @description Number of results to return */
+                limit?: number;
+                /** @description Filter by chains */
+                chains?: components["schemas"]["ChainIdentifier"][];
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The wallet address
+                 * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+                 */
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Collections owned by account */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ProfileCollectionsResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];

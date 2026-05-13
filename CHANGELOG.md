@@ -1,5 +1,26 @@
 # @opensea/api-types
 
+## 0.4.0
+
+### Minor Changes
+
+- c350ca3: Sync OpenAPI spec — 22 new endpoints, 44 new schemas. Pure additive: no paths or schemas removed. Versioned as a minor bump per repo convention for new endpoints.
+
+  **New endpoints (22):**
+
+  - _Batch lookups_: `POST /api/v2/tokens/batch`, `POST /api/v2/nfts/batch`, `POST /api/v2/collections/batch`
+  - _Listings_: `POST /api/v2/listings/actions` (returns ordered approval + Seaport-sign actions)
+  - _Drops_: `POST /api/v2/drops/deploy`, `GET /api/v2/drops/deploy/{chain}/{tx_hash}/receipt`
+  - _Assets_: `POST /api/v2/assets/transfer`
+  - _Collection analytics_: `GET /api/v2/collections/{slug}/offer_aggregates`, `…/holders`, `…/floor_prices`
+  - _Token analytics_: `GET /api/v2/chain/{chain}/token/{address}/price_history`, `…/ohlcv`, `…/activity`
+  - _NFT analytics_: `GET /api/v2/chain/{chain}/contract/{address}/nfts/{identifier}/owners`, `…/analytics`
+  - _Account profile_: `GET /api/v2/account/{address}/portfolio`, `…/portfolio/history`, `…/offers`, `…/offers_received`, `…/listings`, `…/favorites`, `…/collections`
+
+  **New named schema exports** added to `src/index.ts`, grouped by domain (Tokens batch/analytics, NFTs batch/analytics, Collections batch/analytics, Listings actions, Drops deploy, Assets transfer, Account portfolio/profile, Swap costs).
+
+  **Downstream impact** — `@opensea/sdk`, `@opensea/cli`, and `@opensea/skill` follow-ups will land in subsequent PRs to surface these endpoints as methods / commands / scripts.
+
 ## 0.3.0
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 {
   "name": "@opensea/api-types",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Auto-generated TypeScript types from the OpenSea API OpenAPI spec",
   "license": "MIT",
   "author": "OpenSea Developers",

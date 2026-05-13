@@ -116,6 +116,42 @@
         }
       }
     },
+    "/api/v2/tokens/batch": {
+      "post": {
+        "tags": ["Token Endpoints"],
+        "summary": "Get tokens by contract identifiers",
+        "description": "Retrieve multiple tokens in a single request by providing a list of contract identifiers (chain and address). Not-found tokens are silently omitted from the response.",
+        "operationId": "get_tokens_batch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchTokensRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenBatchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/api/v2/swap/execute": {
       "post": {
         "tags": ["Swap Endpoints"],
@@ -444,6 +480,42 @@
         }
       }
     },
+    "/api/v2/nfts/batch": {
+      "post": {
+        "tags": ["NFT Endpoints"],
+        "summary": "Get NFTs by identifiers",
+        "description": "Retrieve multiple NFTs in a single request by providing a list of identifiers (chain, contract address, and token ID). Not-found NFTs are silently omitted from the response.",
+        "operationId": "get_nfts_batch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchNftsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/NftBatchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/api/v2/listings/sweep": {
       "post": {
         "tags": ["Listing Endpoints"],
@@ -573,6 +645,49 @@
         }
       }
     },
+    "/api/v2/listings/actions": {
+      "post": {
+        "tags": ["Listing Endpoints"],
+        "summary": "Get listing creation actions",
+        "description": "Returns the blockchain actions (approvals + Seaport order signing payload) needed to list one or more NFTs. This eliminates the need to construct Seaport orders manually.",
+        "operationId": "create_listing_actions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateListingActionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Listing creation actions retrieved successfully",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateListingActionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid. Possible reasons: items on different chains, invalid addresses, items not found, invalid currency, or prices/quantities not positive.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateListingActionsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/api/v2/drops/{slug}/mint": {
       "post": {
         "tags": ["Drops Endpoints"],
@@ -651,6 +766,85 @@
                 }
               }
             }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/drops/deploy": {
+      "post": {
+        "tags": ["Drops Endpoints"],
+        "summary": "Build deploy contract transaction data",
+        "description": "Returns ready-to-sign transaction data for deploying a new NFT drop contract. The caller is responsible for signing and submitting the transaction.",
+        "operationId": "deploy_drop_contract",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DropDeployRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Ready-to-sign transaction data for contract deployment",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DropDeployResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request: unsupported drop_type/token_type combination, bad address format, or missing required fields",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1ErrorWrapper"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/collections/batch": {
+      "post": {
+        "tags": ["Collection Endpoints"],
+        "summary": "Get collections by slugs",
+        "description": "Retrieve multiple collections in a single request by providing a list of slugs. Results are returned in the same order as the input slugs. Not-found collections are silently omitted.",
+        "operationId": "get_collections_batch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchCollectionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionBatchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
@@ -841,6 +1035,49 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v2/assets/transfer": {
+      "post": {
+        "tags": ["NFT Endpoints"],
+        "summary": "Transfer NFTs or tokens between wallets",
+        "description": "Returns ordered blockchain actions to execute for transferring one or more NFTs or tokens from one wallet to another. Supports bulk transfers of multiple assets in a single request.",
+        "operationId": "transfer_assets",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Transfer actions retrieved successfully",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid. Possible reasons: empty assets array, invalid addresses, invalid chain, or cross-ecosystem transfer.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
           }
         }
       }
@@ -2611,6 +2848,54 @@
         }
       }
     },
+    "/api/v2/drops/deploy/{chain}/{tx_hash}/receipt": {
+      "get": {
+        "tags": ["Drops Endpoints"],
+        "summary": "Get deploy contract receipt",
+        "description": "Check the status of a contract deployment transaction. Returns the deployment status and, on success, the deployed contract address and linked collection slug.",
+        "operationId": "get_deploy_contract_receipt",
+        "parameters": [
+          {
+            "name": "chain",
+            "in": "path",
+            "description": "Chain slug (e.g. ethereum, base)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "ethereum"
+          },
+          {
+            "name": "tx_hash",
+            "in": "path",
+            "description": "Transaction hash of the deployment transaction",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xabc123..."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deployment receipt status",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DropDeployReceiptResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/api/v2/collections": {
       "get": {
         "tags": ["Collection Endpoints"],
@@ -2777,6 +3062,214 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/collections/{slug}/offer_aggregates": {
+      "get": {
+        "tags": ["Collection Endpoints"],
+        "summary": "Get collection offer aggregates",
+        "description": "Get aggregated offer buckets grouped by price level for a collection.",
+        "operationId": "get_collection_offer_aggregates",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Collection slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "boredapeyachtclub"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of results to return (default: 20, max: 100)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            },
+            "example": 20
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Pagination cursor for next page",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_direction",
+            "in": "query",
+            "description": "Sort direction (asc or desc)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "desc"
+            },
+            "example": "desc"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collection offer aggregates",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionOfferAggregatesPaginatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/collections/{slug}/holders": {
+      "get": {
+        "tags": ["Collection Endpoints"],
+        "summary": "Get collection holders",
+        "description": "Get a paginated list of holders for a collection.",
+        "operationId": "get_collection_holders",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Collection slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "boredapeyachtclub"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of results to return (default: 20, max: 100)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            },
+            "example": 20
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Pagination cursor for next page",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_direction",
+            "in": "query",
+            "description": "Sort direction (asc or desc)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "desc"
+            },
+            "example": "desc"
+          },
+          {
+            "name": "owned_by",
+            "in": "query",
+            "description": "Filter by owner address",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collection holders",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionHoldersPaginatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/collections/{slug}/floor_prices": {
+      "get": {
+        "tags": ["Collection Endpoints"],
+        "summary": "Get collection floor price history",
+        "description": "Get time-series floor price data for a collection.",
+        "operationId": "get_collection_floor_prices",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Collection slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "boredapeyachtclub"
+          },
+          {
+            "name": "timeframe",
+            "in": "query",
+            "description": "Time window for floor price history. Options: one_minute, five_minutes, fifteen_minutes, one_hour, one_day, seven_days, thirty_days, one_year, all_time",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "one_day"
+            },
+            "example": "one_day"
+          },
+          {
+            "name": "resolution",
+            "in": "query",
+            "description": "Number of data points to return",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Floor price history",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/FloorPriceHistoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
@@ -3105,6 +3598,246 @@
         }
       }
     },
+    "/api/v2/chain/{chain}/token/{address}/price_history": {
+      "get": {
+        "tags": ["Token Endpoints"],
+        "summary": "Get token price history",
+        "description": "Get historical price data for a specific token.",
+        "operationId": "get_token_price_history",
+        "parameters": [
+          {
+            "name": "chain",
+            "in": "path",
+            "description": "The blockchain on which the token exists",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "ethereum"
+          },
+          {
+            "name": "address",
+            "in": "path",
+            "description": "The contract address of the token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+          },
+          {
+            "name": "start_time",
+            "in": "query",
+            "description": "Start time for the price history window (ISO 8601)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2024-01-01T00:00:00Z"
+          },
+          {
+            "name": "end_time",
+            "in": "query",
+            "description": "End time for the price history window (ISO 8601, defaults to now)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2024-01-02T00:00:00Z"
+          },
+          {
+            "name": "bucket_size",
+            "in": "query",
+            "description": "Candle bucket size for aggregation (1s, 1m, 5m, 15m, 1h, 4h, 1d)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "1h"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceHistoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/chain/{chain}/token/{address}/ohlcv": {
+      "get": {
+        "tags": ["Token Endpoints"],
+        "summary": "Get token OHLCV candles",
+        "description": "Get OHLCV (Open, High, Low, Close, Volume) candlestick data for a specific token.",
+        "operationId": "get_token_ohlcv",
+        "parameters": [
+          {
+            "name": "chain",
+            "in": "path",
+            "description": "The blockchain on which the token exists",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "ethereum"
+          },
+          {
+            "name": "address",
+            "in": "path",
+            "description": "The contract address of the token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+          },
+          {
+            "name": "start_time",
+            "in": "query",
+            "description": "Start time for the OHLCV window (ISO 8601)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2024-01-01T00:00:00Z"
+          },
+          {
+            "name": "end_time",
+            "in": "query",
+            "description": "End time for the OHLCV window (ISO 8601, defaults to now)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2024-01-02T00:00:00Z"
+          },
+          {
+            "name": "bucket_size",
+            "in": "query",
+            "description": "Candle bucket size (1s, 1m, 5m, 15m, 1h, 4h, 1d)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "1h"
+          },
+          {
+            "name": "fill_time_window",
+            "in": "query",
+            "description": "Whether to fill empty time windows with zero-volume candles",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "example": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OhlcvResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/chain/{chain}/token/{address}/activity": {
+      "get": {
+        "tags": ["Token Endpoints"],
+        "summary": "Get token swap activity",
+        "description": "Get paginated swap activity for a specific token on a given chain.",
+        "operationId": "get_token_activity",
+        "parameters": [
+          {
+            "name": "chain",
+            "in": "path",
+            "description": "The blockchain on which the token exists",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "ethereum"
+          },
+          {
+            "name": "address",
+            "in": "path",
+            "description": "The contract address of the token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of results to return (default: 20, max: 50)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            },
+            "example": 20
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Pagination cursor for next page",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenSwapActivityPaginatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/api/v2/chain/{chain}/payment_token/{address}": {
       "get": {
         "tags": ["Contract Endpoints"],
@@ -3333,6 +4066,88 @@
         }
       }
     },
+    "/api/v2/chain/{chain}/contract/{address}/nfts/{identifier}/owners": {
+      "get": {
+        "tags": ["NFT Endpoints"],
+        "summary": "Get NFT owners",
+        "description": "Get a paginated list of owners for a specific NFT. Particularly useful for ERC-1155 tokens which can have multiple owners.",
+        "operationId": "get_nft_owners",
+        "parameters": [
+          {
+            "name": "chain",
+            "in": "path",
+            "description": "The blockchain on which to filter the results",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "ethereum"
+          },
+          {
+            "name": "address",
+            "in": "path",
+            "description": "The unique public blockchain identifier for the contract",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0x8ba1f109551bD432803012645Hac136c94C19D6e"
+          },
+          {
+            "name": "identifier",
+            "in": "path",
+            "description": "The NFT token id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of results to return (default: 20, max: 100)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            },
+            "example": 20
+          },
+          {
+            "name": "next",
+            "in": "query",
+            "description": "Pagination cursor for next page",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "NFT owners",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnersPaginatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/api/v2/chain/{chain}/contract/{address}/nfts/{identifier}/collection": {
       "get": {
         "tags": ["Collection Endpoints"],
@@ -3378,6 +4193,67 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/CollectionDetailedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/chain/{chain}/contract/{address}/nfts/{identifier}/analytics": {
+      "get": {
+        "tags": ["NFT Endpoints"],
+        "summary": "Get NFT analytics",
+        "description": "Get analytics data for a specific NFT including sales history and floor price history.",
+        "operationId": "get_nft_analytics",
+        "parameters": [
+          {
+            "name": "chain",
+            "in": "path",
+            "description": "The blockchain on which to filter the results",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "ethereum"
+          },
+          {
+            "name": "address",
+            "in": "path",
+            "description": "The unique public blockchain identifier for the contract",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0x8ba1f109551bD432803012645Hac136c94C19D6e"
+          },
+          {
+            "name": "identifier",
+            "in": "path",
+            "description": "The NFT token id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "NFT analytics data",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/NftAnalyticsResponse"
                 }
               }
             }
@@ -3669,6 +4545,587 @@
           }
         }
       }
+    },
+    "/api/v2/account/{address}/portfolio": {
+      "get": {
+        "tags": ["Account Endpoints"],
+        "summary": "Get portfolio stats for an account",
+        "description": "Get portfolio analytics including total value, NFT/token breakdown, and P&L for a wallet address over a given timeframe.",
+        "operationId": "get_portfolio_stats",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "The wallet address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+          },
+          {
+            "name": "timeframe",
+            "in": "query",
+            "description": "Timeframe for P&L calculation: HOUR, DAY, WEEK, MONTH",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "DAY",
+              "description": "Timeframe for portfolio analytics queries",
+              "enum": ["HOUR", "DAY", "WEEK", "MONTH"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Portfolio stats",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioStatsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/account/{address}/portfolio/history": {
+      "get": {
+        "tags": ["Account Endpoints"],
+        "summary": "Get portfolio net worth history for an account",
+        "description": "Get net worth time series data for a wallet address over a given timeframe.",
+        "operationId": "get_portfolio_history",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "The wallet address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+          },
+          {
+            "name": "timeframe",
+            "in": "query",
+            "description": "Timeframe for history: HOUR, DAY, WEEK, MONTH",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "DAY",
+              "description": "Timeframe for portfolio analytics queries",
+              "enum": ["HOUR", "DAY", "WEEK", "MONTH"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Portfolio history",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioHistoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/account/{address}/offers_received": {
+      "get": {
+        "tags": ["Account Endpoints"],
+        "summary": "Get offers received by an account",
+        "description": "Get a paginated list of offers received on items owned by a wallet address.",
+        "operationId": "get_profile_offers_received",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "The wallet address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "Cursor for pagination",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of results to return",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          },
+          {
+            "name": "collection_slugs",
+            "in": "query",
+            "description": "Filter by collection slugs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "chains",
+            "in": "query",
+            "description": "Filter by chains",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ChainIdentifier"
+              }
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "description": "Sort by field",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "START_TIME",
+              "enum": ["START_TIME", "TOP_ASSET_OFFER"]
+            }
+          },
+          {
+            "name": "sort_direction",
+            "in": "query",
+            "description": "Sort direction",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "desc",
+              "enum": ["asc", "desc"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Offers received for account",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OffersResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/account/{address}/offers": {
+      "get": {
+        "tags": ["Account Endpoints"],
+        "summary": "Get active offers made by an account",
+        "description": "Get a paginated list of active offers made by a wallet address.",
+        "operationId": "get_profile_offers",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "The wallet address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "Cursor for pagination",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of results to return",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          },
+          {
+            "name": "collection_slugs",
+            "in": "query",
+            "description": "Filter by collection slugs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "chains",
+            "in": "query",
+            "description": "Filter by chains",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ChainIdentifier"
+              }
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "description": "Sort by field",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "START_TIME",
+              "enum": ["START_TIME", "END_TIME"]
+            }
+          },
+          {
+            "name": "sort_direction",
+            "in": "query",
+            "description": "Sort direction",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "desc",
+              "enum": ["asc", "desc"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active offers for account",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OffersResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/account/{address}/listings": {
+      "get": {
+        "tags": ["Account Endpoints"],
+        "summary": "Get active listings for an account",
+        "description": "Get a paginated list of active listings created by a wallet address.",
+        "operationId": "get_profile_listings",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "The wallet address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "Cursor for pagination",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of results to return",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          },
+          {
+            "name": "collection_slugs",
+            "in": "query",
+            "description": "Filter by collection slugs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "chains",
+            "in": "query",
+            "description": "Filter by chains",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ChainIdentifier"
+              }
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "description": "Sort by field",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "START_TIME",
+              "enum": ["START_TIME", "END_TIME"]
+            }
+          },
+          {
+            "name": "sort_direction",
+            "in": "query",
+            "description": "Sort direction",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "desc",
+              "enum": ["asc", "desc"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active listings for account",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/account/{address}/favorites": {
+      "get": {
+        "tags": ["Account Endpoints"],
+        "summary": "Get items favorited by an account",
+        "description": "Get a paginated list of items favorited by a wallet address.",
+        "operationId": "get_profile_favorites",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "The wallet address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "Cursor for pagination",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of results to return",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "description": "Sort by field",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "CREATED_DATE",
+              "enum": [
+                "CREATED_DATE",
+                "PRICE",
+                "RARITY",
+                "LISTING_CREATED_DATE",
+                "LAST_SALE"
+              ]
+            }
+          },
+          {
+            "name": "sort_direction",
+            "in": "query",
+            "description": "Sort direction",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "desc",
+              "enum": ["asc", "desc"]
+            }
+          },
+          {
+            "name": "chains",
+            "in": "query",
+            "description": "Filter by chains",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ChainIdentifier"
+              },
+              "uniqueItems": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Favorited items",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/NftListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/account/{address}/collections": {
+      "get": {
+        "tags": ["Account Endpoints"],
+        "summary": "Get collections owned by an account",
+        "description": "Get a paginated list of collections owned by a wallet address, with ownership data.",
+        "operationId": "get_profile_collections",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "The wallet address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "Cursor for pagination",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of results to return",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          },
+          {
+            "name": "chains",
+            "in": "query",
+            "description": "Filter by chains",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ChainIdentifier"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collections owned by account",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileCollectionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3869,7 +5326,7 @@
           "usd": {
             "type": "string",
             "description": "USD equivalent",
-            "example": 19250.0
+            "example": 19250
           }
         },
         "required": ["amount", "usd"]
@@ -3939,6 +5396,249 @@
           "total_spent"
         ]
       },
+      "BatchTokensRequest": {
+        "type": "object",
+        "description": "Request body for batch token retrieval by contract identifiers",
+        "properties": {
+          "contracts": {
+            "type": "array",
+            "description": "List of token contract identifiers to retrieve",
+            "items": {
+              "$ref": "#/components/schemas/TokenContractInput"
+            }
+          }
+        },
+        "required": ["contracts"]
+      },
+      "TokenContractInput": {
+        "type": "object",
+        "description": "A token contract identifier consisting of chain and address",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "description": "The blockchain the token is on",
+            "example": "ethereum"
+          },
+          "address": {
+            "type": "string",
+            "description": "The contract address of the token",
+            "example": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+          }
+        },
+        "required": ["address", "chain"]
+      },
+      "TokenBaseResponse": {
+        "type": "object",
+        "description": "Common token identity fields shared across token responses",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "The contract address of the token",
+            "example": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+          },
+          "chain": {
+            "type": "string",
+            "description": "The blockchain the token is on",
+            "example": "ethereum"
+          },
+          "name": {
+            "type": "string",
+            "description": "The display name of the token",
+            "example": "USD Coin"
+          },
+          "symbol": {
+            "type": "string",
+            "description": "The ticker symbol of the token",
+            "example": "USDC"
+          },
+          "image_url": {
+            "type": "string",
+            "description": "URL of the token's image"
+          },
+          "usd_price": {
+            "type": "string",
+            "description": "Current price in USD",
+            "example": 1
+          },
+          "decimals": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of decimal places",
+            "example": 6
+          },
+          "opensea_url": {
+            "type": "string",
+            "description": "URL to the token page on OpenSea"
+          }
+        },
+        "required": [
+          "address",
+          "chain",
+          "decimals",
+          "name",
+          "opensea_url",
+          "symbol",
+          "usd_price"
+        ]
+      },
+      "TokenBatchResponse": {
+        "type": "object",
+        "properties": {
+          "tokens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TokenDetailedResponse"
+            }
+          }
+        },
+        "required": ["tokens"]
+      },
+      "TokenDetailedResponse": {
+        "type": "object",
+        "description": "Detailed token information including stats and social links",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "The contract address of the token",
+            "example": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+          },
+          "chain": {
+            "type": "string",
+            "description": "The blockchain the token is on",
+            "example": "ethereum"
+          },
+          "name": {
+            "type": "string",
+            "description": "The display name of the token",
+            "example": "USD Coin"
+          },
+          "symbol": {
+            "type": "string",
+            "description": "The ticker symbol of the token",
+            "example": "USDC"
+          },
+          "image_url": {
+            "type": "string",
+            "description": "URL of the token's image"
+          },
+          "usd_price": {
+            "type": "string",
+            "description": "Current price in USD",
+            "example": 1
+          },
+          "decimals": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of decimal places",
+            "example": 6
+          },
+          "opensea_url": {
+            "type": "string",
+            "description": "URL to the token page on OpenSea"
+          },
+          "description": {
+            "type": "string",
+            "description": "A description of the token"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/TokenStatsResponse",
+            "description": "Market statistics for the token"
+          },
+          "socials": {
+            "$ref": "#/components/schemas/TokenSocialsResponse",
+            "description": "Social media links for the token"
+          },
+          "status": {
+            "type": "string",
+            "default": "OK",
+            "description": "Token safety status based on OpenSea's spam-classification rules. `OK` for tokens that pass all safety checks (the normal case). Categories are intentionally broad and may evolve. Possible values, in decreasing severity: `WARNING` (flagged as risky/suspicious — caution advised), `SPAM` (flagged as spam), `LOW_LIQUIDITY` (insufficient liquidity pool reserves), `OK` (passes all checks).",
+            "enum": ["OK", "WARNING", "SPAM", "LOW_LIQUIDITY"]
+          }
+        },
+        "required": [
+          "address",
+          "chain",
+          "decimals",
+          "name",
+          "opensea_url",
+          "symbol",
+          "usd_price"
+        ]
+      },
+      "TokenSocialsResponse": {
+        "type": "object",
+        "description": "Social media links for a token",
+        "properties": {
+          "website": {
+            "type": "string",
+            "description": "The token's website URL"
+          },
+          "twitter_handle": {
+            "type": "string",
+            "description": "The token's Twitter/X handle"
+          },
+          "telegram_identifier": {
+            "type": "string",
+            "description": "The token's Telegram identifier"
+          }
+        }
+      },
+      "TokenStatsResponse": {
+        "type": "object",
+        "description": "Market statistics for a token",
+        "properties": {
+          "market_cap_usd": {
+            "type": "number",
+            "format": "double",
+            "description": "Market capitalization in USD"
+          },
+          "fdv_usd": {
+            "type": "number",
+            "format": "double",
+            "description": "Fully diluted valuation in USD"
+          },
+          "circulating_supply": {
+            "type": "number",
+            "format": "double",
+            "description": "Circulating supply of the token"
+          },
+          "max_supply": {
+            "type": "number",
+            "format": "double",
+            "description": "Maximum supply of the token"
+          },
+          "total_supply": {
+            "type": "number",
+            "format": "double",
+            "description": "Total supply of the token"
+          },
+          "volume_24h": {
+            "type": "number",
+            "format": "double",
+            "description": "24-hour trading volume in USD"
+          },
+          "price_change_1h": {
+            "type": "number",
+            "format": "double",
+            "description": "Price change percentage over the last hour"
+          },
+          "price_change_24h": {
+            "type": "number",
+            "format": "double",
+            "description": "Price change percentage over the last 24 hours"
+          },
+          "price_change_7d": {
+            "type": "number",
+            "format": "double",
+            "description": "Price change percentage over the last 7 days"
+          },
+          "price_change_30d": {
+            "type": "number",
+            "format": "double",
+            "description": "Price change percentage over the last 30 days"
+          }
+        }
+      },
       "SwapAssetInput": {
         "type": "object",
         "description": "An asset to swap with chain, contract address, and amount",
@@ -3997,6 +5697,32 @@
         },
         "required": ["address", "from_assets", "to_assets"]
       },
+      "SwapCostResponse": {
+        "type": "object",
+        "description": "A cost component of the swap",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The type of cost",
+            "enum": [
+              "GAS",
+              "PROVIDER",
+              "PROTOCOL",
+              "SWAP",
+              "MARKETPLACE",
+              "CREATOR",
+              "MEV_PROTECTION"
+            ],
+            "example": "GAS"
+          },
+          "usd": {
+            "type": "string",
+            "description": "Cost amount in USD",
+            "example": 0.5
+          }
+        },
+        "required": ["type", "usd"]
+      },
       "SwapExecuteResponse": {
         "type": "object",
         "description": "Response containing quote details and executable swap transactions",
@@ -4015,6 +5741,23 @@
         },
         "required": ["quote", "transactions"]
       },
+      "SwapPriceImpact": {
+        "type": "object",
+        "description": "Price impact of the swap",
+        "properties": {
+          "usd": {
+            "type": "string",
+            "description": "Price impact in USD (negative means user loses value)",
+            "example": -1.5
+          },
+          "percent": {
+            "type": "string",
+            "description": "Price impact as a percentage (negative means user loses value)",
+            "example": -0.08
+          }
+        },
+        "required": ["percent", "usd"]
+      },
       "SwapQuoteDetails": {
         "type": "object",
         "description": "Price and fee details for a swap quote",
@@ -4029,7 +5772,7 @@
             "type": "number",
             "format": "double",
             "description": "Total cost of tokens sent in USD",
-            "example": 1869.0
+            "example": 1869
           },
           "slippage_tolerance": {
             "type": "number",
@@ -4048,15 +5791,52 @@
             "format": "int32",
             "description": "Marketplace fee in basis points",
             "example": 50
+          },
+          "price_impact": {
+            "$ref": "#/components/schemas/SwapPriceImpact",
+            "description": "Price impact of the swap (null if unavailable)"
+          },
+          "swap_provider": {
+            "type": "string",
+            "description": "The swap provider that fulfilled this quote (null if unavailable)",
+            "example": "RELAY"
+          },
+          "costs": {
+            "type": "array",
+            "description": "Breakdown of costs for the swap",
+            "items": {
+              "$ref": "#/components/schemas/SwapCostResponse"
+            }
+          },
+          "route_errors": {
+            "type": "array",
+            "description": "Errors encountered for individual swap routes",
+            "items": {
+              "$ref": "#/components/schemas/SwapRouteErrorResponse"
+            }
           }
         },
         "required": [
+          "costs",
           "estimated_duration_ms",
           "marketplace_fee_bps",
+          "route_errors",
           "slippage_tolerance",
           "total_cost_usd",
           "total_price_usd"
         ]
+      },
+      "SwapRouteErrorResponse": {
+        "type": "object",
+        "description": "An error encountered for a specific swap route",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The error type",
+            "example": "INSUFFICIENT_FUNDS"
+          }
+        },
+        "required": ["type"]
       },
       "SwapTransactionResponse": {
         "type": "object",
@@ -4332,6 +6112,10 @@
                 "type": "integer",
                 "format": "int64"
               },
+              "order_created_at": {
+                "type": "integer",
+                "format": "int64"
+              },
               "criteria": {
                 "$ref": "#/components/schemas/Criteria"
               },
@@ -4375,6 +6159,10 @@
             "type": "string"
           },
           "remaining_quantity": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "order_created_at": {
             "type": "integer",
             "format": "int64"
           }
@@ -4505,6 +6293,10 @@
                 "type": "string"
               },
               "remaining_quantity": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "order_created_at": {
                 "type": "integer",
                 "format": "int64"
               },
@@ -5515,6 +7307,263 @@
         },
         "required": ["consideration", "zone", "zoneHash"]
       },
+      "BatchNftsRequest": {
+        "type": "object",
+        "description": "Request body for batch NFT retrieval by identifiers",
+        "properties": {
+          "identifiers": {
+            "type": "array",
+            "description": "List of NFT identifiers to retrieve",
+            "items": {
+              "$ref": "#/components/schemas/NftIdentifierInput"
+            }
+          }
+        },
+        "required": ["identifiers"]
+      },
+      "NftIdentifierInput": {
+        "type": "object",
+        "description": "An NFT identifier consisting of chain, contract address, and token ID",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "description": "The blockchain the NFT is on",
+            "example": "ethereum"
+          },
+          "contract_address": {
+            "type": "string",
+            "description": "The contract address of the NFT",
+            "example": "0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"
+          },
+          "token_id": {
+            "type": "string",
+            "description": "The token ID of the NFT",
+            "example": 1
+          }
+        },
+        "required": ["chain", "contract_address", "token_id"]
+      },
+      "Nft": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string"
+          },
+          "collection": {
+            "type": "string"
+          },
+          "contract": {
+            "type": "string"
+          },
+          "token_standard": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "display_image_url": {
+            "type": "string"
+          },
+          "display_animation_url": {
+            "type": "string"
+          },
+          "metadata_url": {
+            "type": "string"
+          },
+          "opensea_url": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "is_disabled": {
+            "type": "boolean"
+          },
+          "is_nsfw": {
+            "type": "boolean"
+          },
+          "original_image_url": {
+            "type": "string"
+          },
+          "original_animation_url": {
+            "type": "string"
+          },
+          "traits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Trait"
+            }
+          }
+        },
+        "required": [
+          "collection",
+          "contract",
+          "identifier",
+          "is_disabled",
+          "is_nsfw",
+          "opensea_url",
+          "token_standard",
+          "traits",
+          "updated_at"
+        ]
+      },
+      "NftBatchResponse": {
+        "type": "object",
+        "properties": {
+          "nfts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NftDetailed"
+            }
+          }
+        },
+        "required": ["nfts"]
+      },
+      "NftDetailed": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string"
+          },
+          "collection": {
+            "type": "string"
+          },
+          "contract": {
+            "type": "string"
+          },
+          "token_standard": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "display_image_url": {
+            "type": "string"
+          },
+          "display_animation_url": {
+            "type": "string"
+          },
+          "metadata_url": {
+            "type": "string"
+          },
+          "opensea_url": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "is_disabled": {
+            "type": "boolean"
+          },
+          "is_nsfw": {
+            "type": "boolean"
+          },
+          "original_image_url": {
+            "type": "string"
+          },
+          "original_animation_url": {
+            "type": "string"
+          },
+          "traits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Trait"
+            }
+          },
+          "animation_url": {
+            "type": "string"
+          },
+          "is_suspicious": {
+            "type": "boolean"
+          },
+          "creator": {
+            "type": "string"
+          },
+          "owners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Owner"
+            }
+          },
+          "rarity": {
+            "$ref": "#/components/schemas/Rarity"
+          }
+        },
+        "required": [
+          "collection",
+          "contract",
+          "creator",
+          "identifier",
+          "is_disabled",
+          "is_nsfw",
+          "is_suspicious",
+          "opensea_url",
+          "owners",
+          "token_standard",
+          "traits",
+          "updated_at"
+        ]
+      },
+      "Owner": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "quantity_string": {
+            "type": "string"
+          }
+        },
+        "required": ["address", "quantity", "quantity_string"]
+      },
+      "Rarity": {
+        "type": "object",
+        "properties": {
+          "strategy_id": {
+            "type": "string"
+          },
+          "strategy_version": {
+            "type": "string"
+          },
+          "rank": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": ["strategy_id", "strategy_version"]
+      },
+      "Trait": {
+        "type": "object",
+        "properties": {
+          "trait_type": {
+            "type": "string"
+          },
+          "display_type": {
+            "type": "string"
+          },
+          "max_value": {
+            "type": "string"
+          },
+          "value": {}
+        },
+        "required": ["trait_type", "value"]
+      },
       "CrossChainPaymentToken": {
         "type": "object",
         "description": "Payment token to use for cross-chain fulfillment",
@@ -5554,7 +7603,7 @@
           "max_price_per_item": {
             "type": "string",
             "description": "Maximum price per item in the payment token's units",
-            "example": 10.0
+            "example": 10
           },
           "buyer": {
             "type": "string",
@@ -5689,6 +7738,89 @@
         },
         "required": ["transactions"]
       },
+      "CreateListingActionsRequest": {
+        "type": "object",
+        "description": "Request to get listing creation actions",
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "Items to list for sale",
+            "items": {
+              "$ref": "#/components/schemas/ListingItem"
+            }
+          },
+          "address": {
+            "type": "string",
+            "description": "Maker (seller) wallet address",
+            "example": "0x..."
+          },
+          "use_creator_fee": {
+            "type": "boolean",
+            "description": "Whether to include creator fees. Defaults to true."
+          },
+          "taker": {
+            "type": "string",
+            "description": "Optional taker address for private listings"
+          }
+        },
+        "required": ["address", "items"]
+      },
+      "ListingItem": {
+        "type": "object",
+        "description": "An item to list for sale",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "description": "Chain of the item (e.g. 'ethereum', 'base')",
+            "example": "ethereum"
+          },
+          "contract": {
+            "type": "string",
+            "description": "Contract address of the NFT",
+            "example": "0x..."
+          },
+          "token_id": {
+            "type": "string",
+            "description": "Token ID of the NFT",
+            "example": 1234
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Quantity to list (use 1 for ERC-721)",
+            "example": 1
+          },
+          "price": {
+            "$ref": "#/components/schemas/ListingPrice",
+            "description": "Price per item"
+          },
+          "start_time": {
+            "type": "string",
+            "description": "Listing start time in ISO 8601 format. Defaults to now.",
+            "example": "2026-05-01T00:00:00Z"
+          },
+          "end_time": {
+            "type": "string",
+            "description": "Listing end time in ISO 8601 format. Defaults to 30 days from start.",
+            "example": "2026-06-01T00:00:00Z"
+          }
+        },
+        "required": ["chain", "contract", "price", "quantity", "token_id"]
+      },
+      "CreateListingActionsResponse": {
+        "type": "object",
+        "description": "Response containing blockchain actions to execute for listing creation",
+        "properties": {
+          "steps": {
+            "type": "array",
+            "description": "Ordered list of blockchain actions to execute. May include approval actions (e.g. setApprovalForAll) and a createListingsAction containing the Seaport order to sign. Serialized using proto3 JSON format — fields with default values (empty string, 0, false) may be omitted.",
+            "items": {
+              "$ref": "#/components/schemas/JsonNode"
+            }
+          }
+        },
+        "required": ["steps"]
+      },
       "DropMintResponse": {
         "type": "object",
         "description": "Ready-to-sign mint transaction data",
@@ -5744,6 +7876,197 @@
           }
         },
         "required": ["minter", "quantity"]
+      },
+      "DropDeployResponse": {
+        "type": "object",
+        "description": "Ready-to-sign deploy contract transaction data",
+        "properties": {
+          "to": {
+            "type": "string",
+            "description": "Transaction target contract address"
+          },
+          "data": {
+            "type": "string",
+            "description": "Encoded transaction data (hex)"
+          },
+          "value": {
+            "type": "string",
+            "description": "Transaction value in wei (hex)"
+          },
+          "chain": {
+            "type": "string",
+            "description": "Chain identifier"
+          }
+        },
+        "required": ["chain", "data", "to", "value"]
+      },
+      "DropDeployRequest": {
+        "type": "object",
+        "description": "Deploy contract request parameters",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "description": "Chain slug (e.g. \"ethereum\", \"base\")",
+            "example": "ethereum",
+            "minLength": 1
+          },
+          "contract_name": {
+            "type": "string",
+            "description": "Name for the new contract",
+            "example": "My NFT Collection",
+            "minLength": 1
+          },
+          "contract_symbol": {
+            "type": "string",
+            "description": "Symbol for the new contract",
+            "example": "MNFT",
+            "minLength": 1
+          },
+          "drop_type": {
+            "type": "string",
+            "description": "Drop type (see validation error for supported values)",
+            "example": "seadrop_v1_erc721",
+            "minLength": 1
+          },
+          "token_type": {
+            "type": "string",
+            "description": "Token type (see validation error for supported values)",
+            "example": "erc721_standard",
+            "minLength": 1
+          },
+          "sender": {
+            "type": "string",
+            "description": "Deployer wallet address",
+            "example": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "chain",
+          "contract_name",
+          "contract_symbol",
+          "drop_type",
+          "sender",
+          "token_type"
+        ]
+      },
+      "BatchCollectionsRequest": {
+        "type": "object",
+        "description": "Request body for batch collection retrieval by slugs",
+        "properties": {
+          "slugs": {
+            "type": "array",
+            "description": "List of collection slugs to retrieve",
+            "example": ["boredapeyachtclub", "doodles-official"],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["slugs"]
+      },
+      "CollectionBatchResponse": {
+        "type": "object",
+        "properties": {
+          "collections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CollectionResponse"
+            }
+          }
+        },
+        "required": ["collections"]
+      },
+      "CollectionResponse": {
+        "type": "object",
+        "properties": {
+          "collection": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "banner_image_url": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "safelist_status": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "is_disabled": {
+            "type": "boolean"
+          },
+          "is_nsfw": {
+            "type": "boolean"
+          },
+          "trait_offers_enabled": {
+            "type": "boolean"
+          },
+          "collection_offers_enabled": {
+            "type": "boolean"
+          },
+          "opensea_url": {
+            "type": "string"
+          },
+          "project_url": {
+            "type": "string"
+          },
+          "wiki_url": {
+            "type": "string"
+          },
+          "discord_url": {
+            "type": "string"
+          },
+          "telegram_url": {
+            "type": "string"
+          },
+          "twitter_username": {
+            "type": "string"
+          },
+          "instagram_username": {
+            "type": "string"
+          },
+          "contracts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contract"
+            }
+          }
+        },
+        "required": [
+          "collection",
+          "collection_offers_enabled",
+          "contracts",
+          "is_disabled",
+          "is_nsfw",
+          "name",
+          "opensea_url",
+          "safelist_status",
+          "trait_offers_enabled"
+        ]
+      },
+      "Contract": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "chain": {
+            "type": "string"
+          }
+        },
+        "required": ["address", "chain"]
       },
       "MetadataIngestionError": {
         "type": "object",
@@ -5904,6 +8227,71 @@
         },
         "required": ["fulfillment", "read", "write"]
       },
+      "TransferAsset": {
+        "type": "object",
+        "description": "An asset to transfer",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "description": "The chain the asset is on (e.g. ethereum, base, solana)",
+            "example": "ethereum"
+          },
+          "contract": {
+            "type": "string",
+            "description": "The contract address of the asset",
+            "example": "0xBd3531dA5CF5857e7CfAA92426877b022e612cf8"
+          },
+          "token_id": {
+            "type": "string",
+            "description": "The token ID of the asset",
+            "example": 1234
+          },
+          "quantity": {
+            "type": "string",
+            "description": "The quantity to transfer in raw units (1 for ERC721, raw amount for ERC1155/fungible)",
+            "example": 1
+          }
+        },
+        "required": ["chain", "contract", "quantity", "token_id"]
+      },
+      "TransferRequest": {
+        "type": "object",
+        "description": "Request to transfer NFTs or tokens between wallets",
+        "properties": {
+          "assets": {
+            "type": "array",
+            "description": "List of assets to transfer",
+            "items": {
+              "$ref": "#/components/schemas/TransferAsset"
+            }
+          },
+          "from_address": {
+            "type": "string",
+            "description": "Address of the sender wallet",
+            "example": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+          },
+          "to_address": {
+            "type": "string",
+            "description": "Address of the recipient wallet",
+            "example": "0x28c6c06298d514db089934071355e5743bf21d60"
+          }
+        },
+        "required": ["assets", "from_address", "to_address"]
+      },
+      "TransferResponse": {
+        "type": "object",
+        "description": "Response containing ordered blockchain actions to execute for an asset transfer",
+        "properties": {
+          "steps": {
+            "type": "array",
+            "description": "Ordered list of blockchain actions to execute. Each action is a JSON object with a single field indicating the type (e.g. transferAction, approvalAction) and its associated data. Serialized using proto3 JSON format — fields with default values (empty string, 0, false) may be omitted.",
+            "items": {
+              "$ref": "#/components/schemas/JsonNode"
+            }
+          }
+        },
+        "required": ["steps"]
+      },
       "TokenPaginatedResponse": {
         "type": "object",
         "description": "Paginated list of tokens",
@@ -5953,13 +8341,17 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1.0
+            "example": 1
           },
           "decimals": {
             "type": "integer",
             "format": "int32",
             "description": "Number of decimal places",
             "example": 6
+          },
+          "opensea_url": {
+            "type": "string",
+            "description": "URL to the token page on OpenSea"
           },
           "market_cap_usd": {
             "type": "number",
@@ -5975,10 +8367,6 @@
             "type": "number",
             "format": "double",
             "description": "Price change percentage over the last 24 hours"
-          },
-          "opensea_url": {
-            "type": "string",
-            "description": "URL to the token page on OpenSea"
           }
         },
         "required": [
@@ -6388,40 +8776,42 @@
         "properties": {
           "address": {
             "type": "string",
-            "description": "Contract address of the token",
+            "description": "The contract address of the token",
             "example": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
           },
           "chain": {
             "type": "string",
-            "description": "Blockchain the token is on",
+            "description": "The blockchain the token is on",
             "example": "ethereum"
           },
           "name": {
             "type": "string",
-            "description": "Token name",
+            "description": "The display name of the token",
             "example": "USD Coin"
           },
           "symbol": {
             "type": "string",
-            "description": "Token symbol",
+            "description": "The ticker symbol of the token",
             "example": "USDC"
           },
           "image_url": {
             "type": "string",
-            "description": "URL of the token image"
+            "description": "URL of the token's image"
           },
           "usd_price": {
             "type": "string",
-            "description": "Current USD price of the token"
+            "description": "Current price in USD",
+            "example": 1
           },
           "decimals": {
             "type": "integer",
             "format": "int32",
-            "description": "Number of decimal places for the token"
+            "description": "Number of decimal places",
+            "example": 6
           },
           "opensea_url": {
             "type": "string",
-            "description": "URL to the token on OpenSea"
+            "description": "URL to the token page on OpenSea"
           }
         },
         "required": [
@@ -6493,22 +8883,6 @@
         },
         "required": ["traits"]
       },
-      "Trait": {
-        "type": "object",
-        "properties": {
-          "trait_type": {
-            "type": "string"
-          },
-          "display_type": {
-            "type": "string"
-          },
-          "max_value": {
-            "type": "string"
-          },
-          "value": {}
-        },
-        "required": ["trait_type", "value"]
-      },
       "ListingsResponse": {
         "type": "object",
         "properties": {
@@ -6577,76 +8951,6 @@
           }
         },
         "required": ["chain", "event_timestamp", "event_type"]
-      },
-      "Nft": {
-        "type": "object",
-        "properties": {
-          "identifier": {
-            "type": "string"
-          },
-          "collection": {
-            "type": "string"
-          },
-          "contract": {
-            "type": "string"
-          },
-          "token_standard": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "image_url": {
-            "type": "string"
-          },
-          "display_image_url": {
-            "type": "string"
-          },
-          "display_animation_url": {
-            "type": "string"
-          },
-          "metadata_url": {
-            "type": "string"
-          },
-          "opensea_url": {
-            "type": "string"
-          },
-          "updated_at": {
-            "type": "string"
-          },
-          "is_disabled": {
-            "type": "boolean"
-          },
-          "is_nsfw": {
-            "type": "boolean"
-          },
-          "original_image_url": {
-            "type": "string"
-          },
-          "original_animation_url": {
-            "type": "string"
-          },
-          "traits": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Trait"
-            }
-          }
-        },
-        "required": [
-          "collection",
-          "contract",
-          "identifier",
-          "is_disabled",
-          "is_nsfw",
-          "opensea_url",
-          "token_standard",
-          "traits",
-          "updated_at"
-        ]
       },
       "OrderEvent": {
         "allOf": [
@@ -6933,15 +9237,17 @@
         "properties": {
           "collection_slug": {
             "type": "string",
-            "description": "Collection slug"
+            "description": "Collection slug",
+            "example": "cool-cats"
           },
           "collection_name": {
             "type": "string",
-            "description": "Collection name"
+            "description": "Collection name",
+            "example": "Cool Cats"
           },
           "chain": {
             "type": "string",
-            "description": "Blockchain",
+            "description": "Blockchain the drop is on",
             "example": "ethereum"
           },
           "contract_address": {
@@ -6950,7 +9256,8 @@
           },
           "drop_type": {
             "type": "string",
-            "description": "Drop type"
+            "description": "Drop type",
+            "example": "seadrop_v1_erc721"
           },
           "is_minting": {
             "type": "boolean",
@@ -6962,7 +9269,7 @@
           },
           "opensea_url": {
             "type": "string",
-            "description": "OpenSea URL"
+            "description": "OpenSea URL for the drop"
           },
           "stages": {
             "type": "array",
@@ -7037,6 +9344,30 @@
           "uuid"
         ]
       },
+      "DropDeployReceiptResponse": {
+        "type": "object",
+        "description": "Deploy contract receipt status",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Deployment status: pending, success, or failed",
+            "example": "success"
+          },
+          "contract_address": {
+            "type": "string",
+            "description": "Deployed contract address (only present on success)"
+          },
+          "chain": {
+            "type": "string",
+            "description": "Chain slug (only present on success)"
+          },
+          "collection_slug": {
+            "type": "string",
+            "description": "Linked collection slug (only present on success, may take time to materialize)"
+          }
+        },
+        "required": ["status"]
+      },
       "CollectionPaginatedResponse": {
         "type": "object",
         "properties": {
@@ -7051,97 +9382,6 @@
           }
         },
         "required": ["collections"]
-      },
-      "CollectionResponse": {
-        "type": "object",
-        "properties": {
-          "collection": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "image_url": {
-            "type": "string"
-          },
-          "banner_image_url": {
-            "type": "string"
-          },
-          "owner": {
-            "type": "string"
-          },
-          "safelist_status": {
-            "type": "string"
-          },
-          "category": {
-            "type": "string"
-          },
-          "is_disabled": {
-            "type": "boolean"
-          },
-          "is_nsfw": {
-            "type": "boolean"
-          },
-          "trait_offers_enabled": {
-            "type": "boolean"
-          },
-          "collection_offers_enabled": {
-            "type": "boolean"
-          },
-          "opensea_url": {
-            "type": "string"
-          },
-          "project_url": {
-            "type": "string"
-          },
-          "wiki_url": {
-            "type": "string"
-          },
-          "discord_url": {
-            "type": "string"
-          },
-          "telegram_url": {
-            "type": "string"
-          },
-          "twitter_username": {
-            "type": "string"
-          },
-          "instagram_username": {
-            "type": "string"
-          },
-          "contracts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Contract"
-            }
-          }
-        },
-        "required": [
-          "collection",
-          "collection_offers_enabled",
-          "contracts",
-          "is_disabled",
-          "is_nsfw",
-          "name",
-          "opensea_url",
-          "safelist_status",
-          "trait_offers_enabled"
-        ]
-      },
-      "Contract": {
-        "type": "object",
-        "properties": {
-          "address": {
-            "type": "string"
-          },
-          "chain": {
-            "type": "string"
-          }
-        },
-        "required": ["address", "chain"]
       },
       "CollectionDetailedResponse": {
         "type": "object",
@@ -7421,6 +9661,173 @@
           "volume"
         ]
       },
+      "BidderResponse": {
+        "type": "object",
+        "description": "A bidder in an offer aggregate",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "Wallet address of the bidder"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of offers from this bidder"
+          }
+        },
+        "required": ["address", "quantity"]
+      },
+      "CollectionOfferAggregateResponse": {
+        "type": "object",
+        "description": "An aggregated offer bucket",
+        "properties": {
+          "offer_price": {
+            "$ref": "#/components/schemas/OfferAggregatePriceResponse",
+            "description": "Offer price level"
+          },
+          "total_value": {
+            "$ref": "#/components/schemas/OfferAggregatePriceResponse",
+            "description": "Total value of offers at this level"
+          },
+          "total_offers": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Total number of offers at this level"
+          },
+          "bidders": {
+            "type": "array",
+            "description": "Bidders at this price level",
+            "items": {
+              "$ref": "#/components/schemas/BidderResponse"
+            }
+          }
+        },
+        "required": ["bidders", "offer_price", "total_offers", "total_value"]
+      },
+      "CollectionOfferAggregatesPaginatedResponse": {
+        "type": "object",
+        "description": "Paginated list of collection offer aggregates",
+        "properties": {
+          "offer_aggregates": {
+            "type": "array",
+            "description": "List of offer aggregates",
+            "items": {
+              "$ref": "#/components/schemas/CollectionOfferAggregateResponse"
+            }
+          },
+          "next": {
+            "type": "string",
+            "description": "Cursor for the next page of results"
+          }
+        },
+        "required": ["offer_aggregates"]
+      },
+      "OfferAggregatePriceResponse": {
+        "type": "object",
+        "description": "Price information for an offer aggregate",
+        "properties": {
+          "usd_price": {
+            "type": "string",
+            "description": "Price in USD"
+          },
+          "token_unit": {
+            "type": "number",
+            "format": "double",
+            "description": "Price in token units"
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Payment token symbol"
+          },
+          "chain": {
+            "type": "string",
+            "description": "Blockchain chain"
+          }
+        },
+        "required": ["chain", "token_unit", "usd_price"]
+      },
+      "CollectionHolderResponse": {
+        "type": "object",
+        "description": "A collection holder",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "Wallet address of the holder"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of items held"
+          },
+          "percentage": {
+            "type": "number",
+            "format": "float",
+            "description": "Ownership percentage of the collection"
+          }
+        },
+        "required": ["address", "percentage", "quantity"]
+      },
+      "CollectionHoldersPaginatedResponse": {
+        "type": "object",
+        "description": "Paginated list of collection holders",
+        "properties": {
+          "holders": {
+            "type": "array",
+            "description": "List of holders",
+            "items": {
+              "$ref": "#/components/schemas/CollectionHolderResponse"
+            }
+          },
+          "next": {
+            "type": "string",
+            "description": "Cursor for the next page of results"
+          }
+        },
+        "required": ["holders"]
+      },
+      "FloorPriceHistoryResponse": {
+        "type": "object",
+        "description": "Floor price history for a collection",
+        "properties": {
+          "floor_prices": {
+            "type": "array",
+            "description": "List of floor price data points",
+            "items": {
+              "$ref": "#/components/schemas/FloorPricePointResponse"
+            }
+          }
+        },
+        "required": ["floor_prices"]
+      },
+      "FloorPricePointResponse": {
+        "type": "object",
+        "description": "A floor price data point",
+        "properties": {
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the data point"
+          },
+          "usd_price": {
+            "type": "string",
+            "description": "Floor price in USD"
+          },
+          "token_unit": {
+            "type": "number",
+            "format": "double",
+            "description": "Floor price in token units"
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Payment token symbol"
+          },
+          "chain": {
+            "type": "string",
+            "description": "Blockchain chain"
+          }
+        },
+        "required": ["time"]
+      },
       "NftListResponse": {
         "type": "object",
         "properties": {
@@ -7493,151 +9900,187 @@
           "symbol"
         ]
       },
-      "TokenDetailedResponse": {
+      "PriceHistoryPointResponse": {
         "type": "object",
-        "description": "Detailed token information including stats and social links",
+        "description": "A price history data point",
         "properties": {
-          "address": {
+          "time": {
             "type": "string",
-            "description": "The contract address of the token",
-            "example": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
-          },
-          "chain": {
-            "type": "string",
-            "description": "The blockchain the token is on",
-            "example": "ethereum"
-          },
-          "name": {
-            "type": "string",
-            "description": "The display name of the token",
-            "example": "USD Coin"
-          },
-          "symbol": {
-            "type": "string",
-            "description": "The ticker symbol of the token",
-            "example": "USDC"
-          },
-          "image_url": {
-            "type": "string",
-            "description": "URL of the token's image"
-          },
-          "description": {
-            "type": "string",
-            "description": "A description of the token"
+            "format": "date-time",
+            "description": "Timestamp of the price point"
           },
           "usd_price": {
             "type": "string",
-            "description": "Current price in USD",
-            "example": 1.0
-          },
-          "decimals": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Number of decimal places",
-            "example": 6
-          },
-          "stats": {
-            "$ref": "#/components/schemas/TokenStatsResponse",
-            "description": "Market statistics for the token"
-          },
-          "socials": {
-            "$ref": "#/components/schemas/TokenSocialsResponse",
-            "description": "Social media links for the token"
-          },
-          "opensea_url": {
+            "description": "Price in USD",
+            "example": 1
+          }
+        },
+        "required": ["time", "usd_price"]
+      },
+      "PriceHistoryResponse": {
+        "type": "object",
+        "description": "List of price history data points",
+        "properties": {
+          "prices": {
+            "type": "array",
+            "description": "List of price history points",
+            "items": {
+              "$ref": "#/components/schemas/PriceHistoryPointResponse"
+            }
+          }
+        },
+        "required": ["prices"]
+      },
+      "OhlcvCandleResponse": {
+        "type": "object",
+        "description": "An OHLCV candle data point",
+        "properties": {
+          "time": {
             "type": "string",
-            "description": "URL to the token page on OpenSea"
+            "format": "date-time",
+            "description": "Candle timestamp"
           },
-          "status": {
+          "open": {
+            "type": "number",
+            "description": "Opening price in USD"
+          },
+          "high": {
+            "type": "number",
+            "description": "Highest price in USD"
+          },
+          "low": {
+            "type": "number",
+            "description": "Lowest price in USD"
+          },
+          "close": {
+            "type": "number",
+            "description": "Closing price in USD"
+          },
+          "volume": {
+            "type": "number",
+            "description": "Trading volume in USD"
+          }
+        },
+        "required": ["close", "high", "low", "open", "time", "volume"]
+      },
+      "OhlcvResponse": {
+        "type": "object",
+        "description": "List of OHLCV candle data points",
+        "properties": {
+          "candles": {
+            "type": "array",
+            "description": "List of OHLCV candles",
+            "items": {
+              "$ref": "#/components/schemas/OhlcvCandleResponse"
+            }
+          }
+        },
+        "required": ["candles"]
+      },
+      "TokenAmountResponse": {
+        "type": "object",
+        "description": "Token amount with contract and value information",
+        "properties": {
+          "address": {
             "type": "string",
-            "default": "OK",
-            "description": "Token safety status based on OpenSea's spam-classification rules. `OK` for tokens that pass all safety checks (the normal case). Categories are intentionally broad and may evolve. Possible values, in decreasing severity: `WARNING` (flagged as risky/suspicious — caution advised), `SPAM` (flagged as spam), `LOW_LIQUIDITY` (insufficient liquidity pool reserves), `OK` (passes all checks).",
-            "enum": ["OK", "WARNING", "SPAM", "LOW_LIQUIDITY"]
+            "description": "Contract address of the token"
+          },
+          "chain": {
+            "type": "string",
+            "description": "Blockchain the token is on"
+          },
+          "amount_token": {
+            "type": "number",
+            "format": "double",
+            "description": "Amount in token units"
+          },
+          "amount_usd": {
+            "type": "string",
+            "description": "Amount in USD"
+          },
+          "amount_native": {
+            "type": "number",
+            "format": "double",
+            "description": "Amount in chain-native units"
           }
         },
         "required": [
           "address",
-          "chain",
-          "decimals",
-          "name",
-          "opensea_url",
-          "symbol",
-          "usd_price"
+          "amount_native",
+          "amount_token",
+          "amount_usd",
+          "chain"
         ]
       },
-      "TokenSocialsResponse": {
+      "TokenSwapActivityPaginatedResponse": {
         "type": "object",
-        "description": "Social media links for a token",
+        "description": "Paginated list of token swap activity events",
         "properties": {
-          "website": {
-            "type": "string",
-            "description": "The token's website URL"
+          "swap_events": {
+            "type": "array",
+            "description": "List of swap activity events",
+            "items": {
+              "$ref": "#/components/schemas/TokenSwapActivityResponse"
+            }
           },
-          "twitter_handle": {
+          "next": {
             "type": "string",
-            "description": "The token's Twitter/X handle"
-          },
-          "telegram_identifier": {
-            "type": "string",
-            "description": "The token's Telegram identifier"
+            "description": "Cursor for the next page of results"
           }
-        }
+        },
+        "required": ["swap_events"]
       },
-      "TokenStatsResponse": {
+      "TokenSwapActivityResponse": {
         "type": "object",
-        "description": "Market statistics for a token",
+        "description": "A token swap activity event",
         "properties": {
-          "market_cap_usd": {
-            "type": "number",
-            "format": "double",
-            "description": "Market capitalization in USD"
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the swap event"
           },
-          "fdv_usd": {
-            "type": "number",
-            "format": "double",
-            "description": "Fully diluted valuation in USD"
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the swap"
           },
-          "circulating_supply": {
-            "type": "number",
-            "format": "double",
-            "description": "Circulating supply of the token"
+          "sender_address": {
+            "type": "string",
+            "description": "Address of the sender"
           },
-          "max_supply": {
-            "type": "number",
-            "format": "double",
-            "description": "Maximum supply of the token"
+          "from_token": {
+            "$ref": "#/components/schemas/TokenAmountResponse",
+            "description": "Token sold in the swap"
           },
-          "total_supply": {
-            "type": "number",
-            "format": "double",
-            "description": "Total supply of the token"
+          "to_token": {
+            "$ref": "#/components/schemas/TokenAmountResponse",
+            "description": "Token bought in the swap"
           },
-          "volume_24h": {
-            "type": "number",
-            "format": "double",
-            "description": "24-hour trading volume in USD"
+          "transaction_hash": {
+            "type": "string",
+            "description": "Transaction hash"
           },
-          "price_change_1h": {
-            "type": "number",
-            "format": "double",
-            "description": "Price change percentage over the last hour"
+          "user_op_hash": {
+            "type": "string",
+            "description": "User operation hash (for account abstraction)"
           },
-          "price_change_24h": {
-            "type": "number",
-            "format": "double",
-            "description": "Price change percentage over the last 24 hours"
+          "swap_protocol": {
+            "type": "string",
+            "description": "Swap protocol used"
           },
-          "price_change_7d": {
-            "type": "number",
-            "format": "double",
-            "description": "Price change percentage over the last 7 days"
-          },
-          "price_change_30d": {
-            "type": "number",
-            "format": "double",
-            "description": "Price change percentage over the last 30 days"
+          "chain": {
+            "type": "string",
+            "description": "Blockchain the swap occurred on"
           }
-        }
+        },
+        "required": [
+          "chain",
+          "from_token",
+          "id",
+          "sender_address",
+          "timestamp",
+          "to_token",
+          "transaction_hash"
+        ]
       },
       "ContractResponse": {
         "type": "object",
@@ -7666,97 +10109,6 @@
           "name"
         ]
       },
-      "NftDetailed": {
-        "type": "object",
-        "properties": {
-          "identifier": {
-            "type": "string"
-          },
-          "collection": {
-            "type": "string"
-          },
-          "contract": {
-            "type": "string"
-          },
-          "token_standard": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "image_url": {
-            "type": "string"
-          },
-          "display_image_url": {
-            "type": "string"
-          },
-          "display_animation_url": {
-            "type": "string"
-          },
-          "metadata_url": {
-            "type": "string"
-          },
-          "opensea_url": {
-            "type": "string"
-          },
-          "updated_at": {
-            "type": "string"
-          },
-          "is_disabled": {
-            "type": "boolean"
-          },
-          "is_nsfw": {
-            "type": "boolean"
-          },
-          "original_image_url": {
-            "type": "string"
-          },
-          "original_animation_url": {
-            "type": "string"
-          },
-          "traits": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Trait"
-            }
-          },
-          "animation_url": {
-            "type": "string"
-          },
-          "is_suspicious": {
-            "type": "boolean"
-          },
-          "creator": {
-            "type": "string"
-          },
-          "owners": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Owner"
-            }
-          },
-          "rarity": {
-            "$ref": "#/components/schemas/Rarity"
-          }
-        },
-        "required": [
-          "collection",
-          "contract",
-          "creator",
-          "identifier",
-          "is_disabled",
-          "is_nsfw",
-          "is_suspicious",
-          "opensea_url",
-          "owners",
-          "token_standard",
-          "traits",
-          "updated_at"
-        ]
-      },
       "NftResponse": {
         "type": "object",
         "properties": {
@@ -7766,34 +10118,70 @@
         },
         "required": ["nft"]
       },
-      "Owner": {
+      "OwnersPaginatedResponse": {
         "type": "object",
         "properties": {
-          "address": {
-            "type": "string"
+          "owners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Owner"
+            }
           },
-          "quantity": {
-            "type": "integer",
-            "format": "int32"
+          "next": {
+            "type": "string"
           }
         },
-        "required": ["address", "quantity"]
+        "required": ["owners"]
       },
-      "Rarity": {
+      "NftAnalyticsResponse": {
         "type": "object",
+        "description": "Analytics data for an NFT including sales and floor price history",
         "properties": {
-          "strategy_id": {
-            "type": "string"
+          "sales": {
+            "type": "array",
+            "description": "List of sale data points",
+            "items": {
+              "$ref": "#/components/schemas/NftSalePointResponse"
+            }
           },
-          "strategy_version": {
-            "type": "string"
-          },
-          "rank": {
-            "type": "integer",
-            "format": "int64"
+          "floor_prices": {
+            "type": "array",
+            "description": "List of floor price data points",
+            "items": {
+              "$ref": "#/components/schemas/FloorPricePointResponse"
+            }
           }
         },
-        "required": ["strategy_id", "strategy_version"]
+        "required": ["floor_prices", "sales"]
+      },
+      "NftSalePointResponse": {
+        "type": "object",
+        "description": "A sale data point for an NFT",
+        "properties": {
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the sale"
+          },
+          "usd_price": {
+            "type": "string",
+            "description": "Sale price in USD"
+          },
+          "token_unit": {
+            "type": "number",
+            "format": "double",
+            "description": "Sale price in token units"
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Payment token symbol"
+          },
+          "chain": {
+            "type": "string",
+            "description": "Blockchain chain"
+          }
+        },
+        "required": ["chain", "time", "token_unit", "usd_price"]
       },
       "AccountResponse": {
         "type": "object",
@@ -7911,13 +10299,17 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1.0
+            "example": 1
           },
           "decimals": {
             "type": "integer",
             "format": "int32",
             "description": "Number of decimal places",
-            "example": 18
+            "example": 6
+          },
+          "opensea_url": {
+            "type": "string",
+            "description": "URL to the token page on OpenSea"
           },
           "quantity": {
             "type": "string",
@@ -7928,10 +10320,6 @@
             "type": "string",
             "description": "Total USD value of the balance (quantity * usd_price)",
             "example": 3518.51835185
-          },
-          "opensea_url": {
-            "type": "string",
-            "description": "URL to the token page on OpenSea"
           },
           "status": {
             "type": "string",
@@ -7961,6 +10349,208 @@
           "usd_price",
           "usd_value"
         ]
+      },
+      "PortfolioStatsResponse": {
+        "type": "object",
+        "description": "Portfolio stats including total value, P&L, and asset breakdown",
+        "properties": {
+          "total_value_usd": {
+            "type": "string",
+            "description": "Total portfolio value in USD",
+            "example": 125430.5
+          },
+          "nft_value_usd": {
+            "type": "string",
+            "description": "NFT portfolio value in USD",
+            "example": 98200
+          },
+          "token_value_usd": {
+            "type": "string",
+            "description": "Token portfolio value in USD",
+            "example": 27230.5
+          },
+          "pnl_absolute": {
+            "type": "string",
+            "description": "Absolute P&L in USD over the timeframe",
+            "example": "+1250.00"
+          },
+          "pnl_percentage": {
+            "type": "string",
+            "description": "Percentage P&L over the timeframe",
+            "example": "+1.01"
+          },
+          "timeframe": {
+            "type": "string",
+            "description": "The queried timeframe",
+            "example": "WEEK"
+          }
+        },
+        "required": [
+          "nft_value_usd",
+          "timeframe",
+          "token_value_usd",
+          "total_value_usd"
+        ]
+      },
+      "PortfolioHistoryDataPoint": {
+        "type": "object",
+        "description": "A single net worth data point",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the data point",
+            "example": "2026-04-28T00:00:00Z"
+          },
+          "value_usd": {
+            "type": "string",
+            "description": "Total portfolio value in USD",
+            "example": 124180
+          },
+          "token_value_usd": {
+            "type": "string",
+            "description": "Token value in USD",
+            "example": 26000
+          },
+          "nft_value_usd": {
+            "type": "string",
+            "description": "NFT value in USD",
+            "example": 98180
+          }
+        },
+        "required": [
+          "nft_value_usd",
+          "timestamp",
+          "token_value_usd",
+          "value_usd"
+        ]
+      },
+      "PortfolioHistoryResponse": {
+        "type": "object",
+        "description": "Net worth time series data",
+        "properties": {
+          "data_points": {
+            "type": "array",
+            "description": "Time series data points",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioHistoryDataPoint"
+            }
+          },
+          "timeframe": {
+            "type": "string",
+            "description": "The queried timeframe",
+            "example": "WEEK"
+          }
+        },
+        "required": ["data_points", "timeframe"]
+      },
+      "ProfileCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "collection": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "banner_image_url": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "safelist_status": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "is_disabled": {
+            "type": "boolean"
+          },
+          "is_nsfw": {
+            "type": "boolean"
+          },
+          "trait_offers_enabled": {
+            "type": "boolean"
+          },
+          "collection_offers_enabled": {
+            "type": "boolean"
+          },
+          "opensea_url": {
+            "type": "string"
+          },
+          "project_url": {
+            "type": "string"
+          },
+          "wiki_url": {
+            "type": "string"
+          },
+          "discord_url": {
+            "type": "string"
+          },
+          "telegram_url": {
+            "type": "string"
+          },
+          "twitter_username": {
+            "type": "string"
+          },
+          "instagram_username": {
+            "type": "string"
+          },
+          "contracts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contract"
+            }
+          },
+          "item_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total_quantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "usd_value": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "required": [
+          "collection",
+          "collection_offers_enabled",
+          "contracts",
+          "is_disabled",
+          "is_nsfw",
+          "item_count",
+          "name",
+          "opensea_url",
+          "safelist_status",
+          "total_quantity",
+          "trait_offers_enabled"
+        ]
+      },
+      "ProfileCollectionsResponse": {
+        "type": "object",
+        "properties": {
+          "collections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileCollectionResponse"
+            }
+          },
+          "next": {
+            "type": "string"
+          }
+        },
+        "required": ["collections"]
       }
     },
     "responses": {

@@ -25,6 +25,23 @@ export type Fee = Schemas["Fee"]
 export type PaymentToken = Schemas["PaymentToken"]
 export type PricingCurrencies = Schemas["PricingCurrencies"]
 
+// Collections — batch
+export type BatchCollectionsRequest = Schemas["BatchCollectionsRequest"]
+export type CollectionBatchResponse = Schemas["CollectionBatchResponse"]
+
+// Collections — offer aggregates, holders, floor prices
+export type BidderResponse = Schemas["BidderResponse"]
+export type CollectionOfferAggregateResponse =
+  Schemas["CollectionOfferAggregateResponse"]
+export type CollectionOfferAggregatesPaginatedResponse =
+  Schemas["CollectionOfferAggregatesPaginatedResponse"]
+export type OfferAggregatePriceResponse = Schemas["OfferAggregatePriceResponse"]
+export type CollectionHolderResponse = Schemas["CollectionHolderResponse"]
+export type CollectionHoldersPaginatedResponse =
+  Schemas["CollectionHoldersPaginatedResponse"]
+export type FloorPriceHistoryResponse = Schemas["FloorPriceHistoryResponse"]
+export type FloorPricePointResponse = Schemas["FloorPricePointResponse"]
+
 // NFTs
 export type Nft = Schemas["Nft"]
 export type NftDetailed = Schemas["NftDetailed"]
@@ -36,6 +53,16 @@ export type Trait = Schemas["Trait"]
 export type TraitData = Schemas["TraitData"]
 export type NumericTraitData = Schemas["NumericTraitData"]
 export type NumericTraitCriteria = Schemas["NumericTraitCriteria"]
+
+// NFTs — batch
+export type BatchNftsRequest = Schemas["BatchNftsRequest"]
+export type NftIdentifierInput = Schemas["NftIdentifierInput"]
+export type NftBatchResponse = Schemas["NftBatchResponse"]
+
+// NFTs — analytics and owners
+export type OwnersPaginatedResponse = Schemas["OwnersPaginatedResponse"]
+export type NftAnalyticsResponse = Schemas["NftAnalyticsResponse"]
+export type NftSalePointResponse = Schemas["NftSalePointResponse"]
 
 // Orders
 export type Order = Schemas["Order"]
@@ -52,6 +79,12 @@ export type CriteriaRequest = Schemas["CriteriaRequest"]
 // Listings — sweep
 export type SweepCollectionRequest = Schemas["SweepCollectionRequest"]
 export type SweepCollectionResponse = Schemas["SweepCollectionResponse"]
+
+// Listings — actions
+export type CreateListingActionsRequest = Schemas["CreateListingActionsRequest"]
+export type CreateListingActionsResponse =
+  Schemas["CreateListingActionsResponse"]
+export type ListingItem = Schemas["ListingItem"]
 
 // Transactions
 export type TransactionReceiptRequest = Schemas["TransactionReceiptRequest"]
@@ -107,9 +140,30 @@ export type TokenDetailedResponse = Schemas["TokenDetailedResponse"]
 export type TokenPaginatedResponse = Schemas["TokenPaginatedResponse"]
 export type TokenSocialsResponse = Schemas["TokenSocialsResponse"]
 export type TokenStatsResponse = Schemas["TokenStatsResponse"]
+export type TokenBaseResponse = Schemas["TokenBaseResponse"]
 export type TokenBalanceResponse = Schemas["TokenBalanceResponse"]
 export type TokenBalancePaginatedResponse =
   Schemas["TokenBalancePaginatedResponse"]
+
+// Tokens — batch
+export type BatchTokensRequest = Schemas["BatchTokensRequest"]
+export type TokenContractInput = Schemas["TokenContractInput"]
+export type TokenBatchResponse = Schemas["TokenBatchResponse"]
+
+// Tokens — analytics
+export type PriceHistoryResponse = Schemas["PriceHistoryResponse"]
+export type PriceHistoryPointResponse = Schemas["PriceHistoryPointResponse"]
+export type OhlcvResponse = Schemas["OhlcvResponse"]
+export type OhlcvCandleResponse = Schemas["OhlcvCandleResponse"]
+export type TokenSwapActivityPaginatedResponse =
+  Schemas["TokenSwapActivityPaginatedResponse"]
+export type TokenSwapActivityResponse = Schemas["TokenSwapActivityResponse"]
+export type TokenAmountResponse = Schemas["TokenAmountResponse"]
+
+// Swap — costs and errors
+export type SwapCostResponse = Schemas["SwapCostResponse"]
+export type SwapPriceImpact = Schemas["SwapPriceImpact"]
+export type SwapRouteErrorResponse = Schemas["SwapRouteErrorResponse"]
 
 // Token Groups
 export type TokenGroupResponse = Schemas["TokenGroupResponse"]
@@ -147,6 +201,23 @@ export type DropStageResponse = Schemas["DropStageResponse"]
 export type DropPaginatedResponse = Schemas["DropPaginatedResponse"]
 export type DropMintRequest = Schemas["DropMintRequest"]
 export type DropMintResponse = Schemas["DropMintResponse"]
+
+// Drops — deploy
+export type DropDeployRequest = Schemas["DropDeployRequest"]
+export type DropDeployResponse = Schemas["DropDeployResponse"]
+export type DropDeployReceiptResponse = Schemas["DropDeployReceiptResponse"]
+
+// Assets — transfer
+export type TransferRequest = Schemas["TransferRequest"]
+export type TransferAsset = Schemas["TransferAsset"]
+export type TransferResponse = Schemas["TransferResponse"]
+
+// Account — portfolio and profile
+export type PortfolioStatsResponse = Schemas["PortfolioStatsResponse"]
+export type PortfolioHistoryResponse = Schemas["PortfolioHistoryResponse"]
+export type PortfolioHistoryDataPoint = Schemas["PortfolioHistoryDataPoint"]
+export type ProfileCollectionResponse = Schemas["ProfileCollectionResponse"]
+export type ProfileCollectionsResponse = Schemas["ProfileCollectionsResponse"]
 
 // Chains
 export type ChainResponse = Schemas["ChainResponse"]
