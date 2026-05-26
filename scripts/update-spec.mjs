@@ -8,6 +8,7 @@
  *   node scripts/update-spec.mjs
  */
 
+import { execFileSync } from "node:child_process";
 import { existsSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,6 +32,16 @@ try {
       `${Object.keys(spec.paths || {}).length} paths, ` +
       `${Object.keys(spec.components?.schemas || {}).length} schemas`,
   );
+
+  // Match the repo's JSON formatting (biome inlines short arrays at lineWidth
+  // 80) so diffs reflect real spec changes, not formatter drift.
+  try {
+    execFileSync("pnpm", ["exec", "biome", "format", "--write", outPath], {
+      stdio: "inherit",
+    });
+  } catch (err) {
+    console.warn(`biome format failed (continuing): ${err.message}`);
+  }
 } catch (err) {
   console.error(`Failed to fetch spec: ${err.message}`);
   if (existsSync(outPath)) {

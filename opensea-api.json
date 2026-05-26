@@ -2906,17 +2906,17 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Number of collections to return per page",
+            "description": "Number of items to return per page",
             "required": false,
             "schema": {
               "type": "integer",
               "format": "int32",
-              "description": "Number of collections to return per page",
-              "example": 10,
-              "maximum": 100,
+              "description": "Number of items to return per page",
+              "example": 20,
+              "maximum": 200,
               "minimum": 1
             },
-            "example": 10
+            "example": 20
           },
           {
             "name": "next.value",
@@ -6108,6 +6108,9 @@
               "protocol_address": {
                 "type": "string"
               },
+              "asset": {
+                "$ref": "#/components/schemas/OrderAsset"
+              },
               "remaining_quantity": {
                 "type": "integer",
                 "format": "int64"
@@ -6158,6 +6161,9 @@
           "protocol_address": {
             "type": "string"
           },
+          "asset": {
+            "$ref": "#/components/schemas/OrderAsset"
+          },
           "remaining_quantity": {
             "type": "integer",
             "format": "int64"
@@ -6168,6 +6174,18 @@
           }
         },
         "required": ["chain", "order_hash", "remaining_quantity"]
+      },
+      "OrderAsset": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string"
+          },
+          "contract": {
+            "type": "string"
+          }
+        },
+        "required": ["contract"]
       },
       "Parameters": {
         "type": "object",
@@ -6291,6 +6309,9 @@
               },
               "protocol_address": {
                 "type": "string"
+              },
+              "asset": {
+                "$ref": "#/components/schemas/OrderAsset"
               },
               "remaining_quantity": {
                 "type": "integer",
@@ -7499,6 +7520,9 @@
           },
           "rarity": {
             "$ref": "#/components/schemas/Rarity"
+          },
+          "subscription": {
+            "$ref": "#/components/schemas/SubscriptionInfoResponse"
           }
         },
         "required": [
@@ -7547,6 +7571,22 @@
           }
         },
         "required": ["strategy_id", "strategy_version"]
+      },
+      "SubscriptionInfoResponse": {
+        "type": "object",
+        "properties": {
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "is_renewable": {
+            "type": "boolean"
+          },
+          "is_expired": {
+            "type": "boolean"
+          }
+        },
+        "required": ["is_expired", "is_renewable"]
       },
       "Trait": {
         "type": "object",

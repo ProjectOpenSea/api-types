@@ -2075,6 +2075,7 @@ export interface components {
             chain: string;
             protocol_data?: components["schemas"]["ProtocolData"];
             protocol_address?: string;
+            asset?: components["schemas"]["OrderAsset"];
             /** Format: int64 */
             remaining_quantity: number;
             /** Format: int64 */
@@ -2089,10 +2090,15 @@ export interface components {
             chain: string;
             protocol_data?: components["schemas"]["ProtocolData"];
             protocol_address?: string;
+            asset?: components["schemas"]["OrderAsset"];
             /** Format: int64 */
             remaining_quantity: number;
             /** Format: int64 */
             order_created_at?: number;
+        };
+        OrderAsset: {
+            identifier?: string;
+            contract: string;
         };
         Parameters: {
             offerer: string;
@@ -2129,6 +2135,7 @@ export interface components {
             chain: string;
             protocol_data?: components["schemas"]["ProtocolData"];
             protocol_address?: string;
+            asset?: components["schemas"]["OrderAsset"];
             /** Format: int64 */
             remaining_quantity: number;
             /** Format: int64 */
@@ -2491,6 +2498,7 @@ export interface components {
             creator: string;
             owners: components["schemas"]["Owner"][];
             rarity?: components["schemas"]["Rarity"];
+            subscription?: components["schemas"]["SubscriptionInfoResponse"];
         };
         Owner: {
             address: string;
@@ -2503,6 +2511,12 @@ export interface components {
             strategy_version: string;
             /** Format: int64 */
             rank?: number;
+        };
+        SubscriptionInfoResponse: {
+            /** Format: date-time */
+            expires_at?: string;
+            is_renewable: boolean;
+            is_expired: boolean;
         };
         Trait: {
             trait_type: string;
@@ -5633,8 +5647,8 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Number of collections to return per page
-                 * @example 10
+                 * @description Number of items to return per page
+                 * @example 20
                  */
                 limit?: number;
                 "next.value"?: string;

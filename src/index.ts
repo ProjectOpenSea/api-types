@@ -53,6 +53,7 @@ export type Trait = Schemas["Trait"]
 export type TraitData = Schemas["TraitData"]
 export type NumericTraitData = Schemas["NumericTraitData"]
 export type NumericTraitCriteria = Schemas["NumericTraitCriteria"]
+export type SubscriptionInfoResponse = Schemas["SubscriptionInfoResponse"]
 
 // NFTs — batch
 export type BatchNftsRequest = Schemas["BatchNftsRequest"]
@@ -66,6 +67,7 @@ export type NftSalePointResponse = Schemas["NftSalePointResponse"]
 
 // Orders
 export type Order = Schemas["Order"]
+export type OrderAsset = Schemas["OrderAsset"]
 export type Offer = Schemas["Offer"]
 export type Listing = Schemas["Listing"]
 export type OffersResponse = Schemas["OffersResponse"]

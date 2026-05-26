@@ -1,5 +1,27 @@
 # @opensea/api-types
 
+## 0.4.1
+
+### Patch Changes
+
+- 7969189: Sync OpenAPI spec — pure additive: `Order.asset` and `NftDetailed.subscription` field additions plus pagination defaults loosened on `/api/v2/collections`.
+
+  **New on `Order`:**
+
+  - `asset?: OrderAsset` — `{ identifier?: string; contract: string }`. Surfaces the NFT contract + token ID without loading `protocol_data`. `identifier` is null for collection/criteria offers. Powers the profile endpoints (`/account/{address}/listings`, `/offers`, `/offers_received`) where `protocol_data` is intentionally null for performance. Source: ProjectOpenSea/os2-core#42022.
+
+  **New on `NftDetailed`:**
+
+  - `subscription?: SubscriptionInfoResponse` — `{ expires_at?: string; is_renewable: boolean; is_expired: boolean }`.
+
+  **Loosened on `GET /api/v2/collections`:**
+
+  - `limit` default `10` → `20`, max `100` → `200`.
+
+  **Named exports added:** `OrderAsset`, `SubscriptionInfoResponse`.
+
+  **Tooling:** `update-spec` now runs `biome format` on the output so future syncs don't churn on formatter differences.
+
 ## 0.4.0
 
 ### Minor Changes
