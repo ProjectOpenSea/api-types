@@ -77,6 +77,10 @@ export type ListingOrOffer = Schemas["ListingOrOffer"]
 export type Price = Schemas["Price"]
 export type ListingPrice = Schemas["ListingPrice"]
 export type CriteriaRequest = Schemas["CriteriaRequest"]
+export type BuildOfferResponse = Schemas["BuildOfferResponse"]
+export type CancelRequest = Schemas["CancelRequest"]
+export type CancelResponse = Schemas["CancelResponse"]
+export type PartialParameters = Schemas["PartialParameters"]
 
 // Listings — sweep
 export type SweepCollectionRequest = Schemas["SweepCollectionRequest"]

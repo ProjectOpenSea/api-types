@@ -1,5 +1,11 @@
 # @opensea/api-types
 
+## 0.4.2
+
+### Patch Changes
+
+- fb03c09: Add named exports for `BuildOfferResponse`, `CancelRequest`, `CancelResponse`, and `PartialParameters` — these were in the generated schemas but not surfaced. Pure additive.
+
 ## 0.4.1
 
 ### Patch Changes
