@@ -2,235 +2,41 @@
  * @opensea/api-types
  *
  * Auto-generated TypeScript types from the OpenSea API v2 OpenAPI spec.
- * Re-run `pnpm --filter @opensea/api-types run build` after updating opensea-api.json.
+ * Re-run `pnpm --filter @opensea/api-types run build` after updating
+ * opensea-api.json.
+ *
+ * Schema types (everything under `components.schemas`) are re-exported from
+ * `./schemas-generated.ts`, which is regenerated from the spec on every
+ * build. That eliminates the manual-curation gap — when the spec gains a
+ * new schema, downstream consumers can import it immediately with no
+ * intermediate step. Hand-written sections below cover the things the
+ * generator can't infer mechanically (operations helpers, response
+ * envelopes, namespace re-exports).
  */
 
 export type { components, operations, paths } from "./generated.js"
 
 import type { components, operations } from "./generated.js"
 
-// ── Schema types (components.schemas) ───────────────────────────────
+// ── Namespace re-export ─────────────────────────────────────────────
 
+/**
+ * The full `components.schemas` namespace. Useful when you want to look up
+ * a schema dynamically (e.g. `Schemas["SomeRequest"]`) instead of via the
+ * named export.
+ */
 export type Schemas = components["schemas"]
 
-export type ChainIdentifier = Schemas["ChainIdentifier"]
+// ── Auto-generated schema types ─────────────────────────────────────
+// Every `components.schemas.*` entry from opensea-api.json is exported by
+// name from ./schemas-generated. Regenerate via `pnpm run generate`.
 
-// Collections
-export type CollectionResponse = Schemas["CollectionResponse"]
-export type CollectionDetailedResponse = Schemas["CollectionDetailedResponse"]
-export type CollectionPaginatedResponse = Schemas["CollectionPaginatedResponse"]
-export type CollectionStatsResponse = Schemas["CollectionStatsResponse"]
-export type CollectionRarity = Schemas["CollectionRarity"]
-export type Fee = Schemas["Fee"]
-export type PaymentToken = Schemas["PaymentToken"]
-export type PricingCurrencies = Schemas["PricingCurrencies"]
+export * from "./schemas-generated.js"
 
-// Collections — batch
-export type BatchCollectionsRequest = Schemas["BatchCollectionsRequest"]
-export type CollectionBatchResponse = Schemas["CollectionBatchResponse"]
+// ── Response envelopes (components.responses) ───────────────────────
+// These live under `components.responses`, not `components.schemas`, so
+// they aren't covered by the auto-generated schema exports.
 
-// Collections — offer aggregates, holders, floor prices
-export type BidderResponse = Schemas["BidderResponse"]
-export type CollectionOfferAggregateResponse =
-  Schemas["CollectionOfferAggregateResponse"]
-export type CollectionOfferAggregatesPaginatedResponse =
-  Schemas["CollectionOfferAggregatesPaginatedResponse"]
-export type OfferAggregatePriceResponse = Schemas["OfferAggregatePriceResponse"]
-export type CollectionHolderResponse = Schemas["CollectionHolderResponse"]
-export type CollectionHoldersPaginatedResponse =
-  Schemas["CollectionHoldersPaginatedResponse"]
-export type FloorPriceHistoryResponse = Schemas["FloorPriceHistoryResponse"]
-export type FloorPricePointResponse = Schemas["FloorPricePointResponse"]
-
-// NFTs
-export type Nft = Schemas["Nft"]
-export type NftDetailed = Schemas["NftDetailed"]
-export type NftResponse = Schemas["NftResponse"]
-export type NftListResponse = Schemas["NftListResponse"]
-export type Owner = Schemas["Owner"]
-export type Rarity = Schemas["Rarity"]
-export type Trait = Schemas["Trait"]
-export type TraitData = Schemas["TraitData"]
-export type NumericTraitData = Schemas["NumericTraitData"]
-export type NumericTraitCriteria = Schemas["NumericTraitCriteria"]
-export type SubscriptionInfoResponse = Schemas["SubscriptionInfoResponse"]
-
-// NFTs — batch
-export type BatchNftsRequest = Schemas["BatchNftsRequest"]
-export type NftIdentifierInput = Schemas["NftIdentifierInput"]
-export type NftBatchResponse = Schemas["NftBatchResponse"]
-
-// NFTs — analytics and owners
-export type OwnersPaginatedResponse = Schemas["OwnersPaginatedResponse"]
-export type NftAnalyticsResponse = Schemas["NftAnalyticsResponse"]
-export type NftSalePointResponse = Schemas["NftSalePointResponse"]
-
-// Orders
-export type Order = Schemas["Order"]
-export type OrderAsset = Schemas["OrderAsset"]
-export type Offer = Schemas["Offer"]
-export type Listing = Schemas["Listing"]
-export type OffersResponse = Schemas["OffersResponse"]
-export type ListingsResponse = Schemas["ListingsResponse"]
-export type GetOrderResponse = Schemas["GetOrderResponse"]
-export type ListingOrOffer = Schemas["ListingOrOffer"]
-export type Price = Schemas["Price"]
-export type ListingPrice = Schemas["ListingPrice"]
-export type CriteriaRequest = Schemas["CriteriaRequest"]
-export type BuildOfferResponse = Schemas["BuildOfferResponse"]
-export type CancelRequest = Schemas["CancelRequest"]
-export type CancelResponse = Schemas["CancelResponse"]
-export type PartialParameters = Schemas["PartialParameters"]
-
-// Listings — sweep
-export type SweepCollectionRequest = Schemas["SweepCollectionRequest"]
-export type SweepCollectionResponse = Schemas["SweepCollectionResponse"]
-
-// Listings — actions
-export type CreateListingActionsRequest = Schemas["CreateListingActionsRequest"]
-export type CreateListingActionsResponse =
-  Schemas["CreateListingActionsResponse"]
-export type ListingItem = Schemas["ListingItem"]
-
-// Transactions
-export type TransactionReceiptRequest = Schemas["TransactionReceiptRequest"]
-export type TransactionReceiptResponse = Schemas["TransactionReceiptResponse"]
-
-// Fulfillment
-export type FulfillListingResponse = Schemas["FulfillListingResponse"]
-export type FulfillmentData = Schemas["FulfillmentData"]
-export type TransactionData = Schemas["TransactionData"]
-export type OrderData = Schemas["OrderData"]
-
-// Cross-chain fulfillment
-export type CrossChainFulfillmentRequest =
-  Schemas["CrossChainFulfillmentRequest"]
-export type CrossChainFulfillmentResponse =
-  Schemas["CrossChainFulfillmentResponse"]
-export type CrossChainPaymentToken = Schemas["CrossChainPaymentToken"]
-export type FulfillerObject = Schemas["FulfillerObject"]
-export type ListingObject = Schemas["ListingObject"]
-
-// Seaport
-export type SeaportParameters = Schemas["SeaportParameters"]
-export type SeaportRequest = Schemas["SeaportRequest"]
-export type ProtocolData = Schemas["ProtocolData"]
-export type ConsiderationItem = Schemas["ConsiderationItem"]
-export type OfferItem = Schemas["OfferItem"]
-
-// Events
-export type AssetEventsResponse = Schemas["AssetEventsResponse"]
-export type Event = Schemas["Event"]
-export type OrderEvent = Schemas["OrderEvent"]
-export type SaleEvent = Schemas["SaleEvent"]
-export type TransferEvent = Schemas["TransferEvent"]
-export type Payment = Schemas["Payment"]
-
-// Accounts
-export type AccountResponse = Schemas["AccountResponse"]
-export type AccountResolveResponse = Schemas["AccountResolveResponse"]
-export type SocialMediaAccount = Schemas["SocialMediaAccount"]
-
-// Contracts
-export type Contract = Schemas["Contract"]
-export type ContractResponse = Schemas["ContractResponse"]
-
-// Metadata
-export type AssetMetadataResponse = Schemas["AssetMetadataResponse"]
-export type MetadataIngestionError = Schemas["MetadataIngestionError"]
-export type ValidateMetadataResponse = Schemas["ValidateMetadataResponse"]
-
-// Tokens
-export type TokenResponse = Schemas["TokenResponse"]
-export type TokenDetailedResponse = Schemas["TokenDetailedResponse"]
-export type TokenPaginatedResponse = Schemas["TokenPaginatedResponse"]
-export type TokenSocialsResponse = Schemas["TokenSocialsResponse"]
-export type TokenStatsResponse = Schemas["TokenStatsResponse"]
-export type TokenBaseResponse = Schemas["TokenBaseResponse"]
-export type TokenBalanceResponse = Schemas["TokenBalanceResponse"]
-export type TokenBalancePaginatedResponse =
-  Schemas["TokenBalancePaginatedResponse"]
-
-// Tokens — batch
-export type BatchTokensRequest = Schemas["BatchTokensRequest"]
-export type TokenContractInput = Schemas["TokenContractInput"]
-export type TokenBatchResponse = Schemas["TokenBatchResponse"]
-
-// Tokens — analytics
-export type PriceHistoryResponse = Schemas["PriceHistoryResponse"]
-export type PriceHistoryPointResponse = Schemas["PriceHistoryPointResponse"]
-export type OhlcvResponse = Schemas["OhlcvResponse"]
-export type OhlcvCandleResponse = Schemas["OhlcvCandleResponse"]
-export type TokenSwapActivityPaginatedResponse =
-  Schemas["TokenSwapActivityPaginatedResponse"]
-export type TokenSwapActivityResponse = Schemas["TokenSwapActivityResponse"]
-export type TokenAmountResponse = Schemas["TokenAmountResponse"]
-
-// Swap — costs and errors
-export type SwapCostResponse = Schemas["SwapCostResponse"]
-export type SwapPriceImpact = Schemas["SwapPriceImpact"]
-export type SwapRouteErrorResponse = Schemas["SwapRouteErrorResponse"]
-
-// Token Groups
-export type TokenGroupResponse = Schemas["TokenGroupResponse"]
-export type TokenGroupPaginatedResponse = Schemas["TokenGroupPaginatedResponse"]
-export type TokenGroupStatsResponse = Schemas["TokenGroupStatsResponse"]
-export type TokenGroupRollingStatsResponse =
-  Schemas["TokenGroupRollingStatsResponse"]
-export type TokenGroupSocialsResponse = Schemas["TokenGroupSocialsResponse"]
-export type TokenGroupCurrencyResponse = Schemas["TokenGroupCurrencyResponse"]
-
-// Auth / API keys
-export type InstantApiKeyResponse = Schemas["InstantApiKeyResponse"]
-export type RateLimitsResponse = Schemas["RateLimitsResponse"]
-
-// Swap
-export type SwapQuoteResponse = Schemas["SwapQuoteResponse"]
-export type SwapQuoteDetails = Schemas["SwapQuoteDetails"]
-export type SwapQuoteInput = Schemas["SwapQuoteInput"]
-export type SwapTransactionResponse = Schemas["SwapTransactionResponse"]
-export type SwapExecuteRequest = Schemas["SwapExecuteRequest"]
-export type SwapExecuteResponse = Schemas["SwapExecuteResponse"]
-
-// Search
-export type SearchResponse = Schemas["SearchResponse"]
-export type SearchResultResponse = Schemas["SearchResultResponse"]
-export type AccountSearchResponse = Schemas["AccountSearchResponse"]
-export type CollectionSearchResponse = Schemas["CollectionSearchResponse"]
-export type NftSearchResponse = Schemas["NftSearchResponse"]
-export type TokenSearchResponse = Schemas["TokenSearchResponse"]
-
-// Drops
-export type DropResponse = Schemas["DropResponse"]
-export type DropDetailedResponse = Schemas["DropDetailedResponse"]
-export type DropStageResponse = Schemas["DropStageResponse"]
-export type DropPaginatedResponse = Schemas["DropPaginatedResponse"]
-export type DropMintRequest = Schemas["DropMintRequest"]
-export type DropMintResponse = Schemas["DropMintResponse"]
-
-// Drops — deploy
-export type DropDeployRequest = Schemas["DropDeployRequest"]
-export type DropDeployResponse = Schemas["DropDeployResponse"]
-export type DropDeployReceiptResponse = Schemas["DropDeployReceiptResponse"]
-
-// Assets — transfer
-export type TransferRequest = Schemas["TransferRequest"]
-export type TransferAsset = Schemas["TransferAsset"]
-export type TransferResponse = Schemas["TransferResponse"]
-
-// Account — portfolio and profile
-export type PortfolioStatsResponse = Schemas["PortfolioStatsResponse"]
-export type PortfolioHistoryResponse = Schemas["PortfolioHistoryResponse"]
-export type PortfolioHistoryDataPoint = Schemas["PortfolioHistoryDataPoint"]
-export type ProfileCollectionResponse = Schemas["ProfileCollectionResponse"]
-export type ProfileCollectionsResponse = Schemas["ProfileCollectionsResponse"]
-
-// Chains
-export type ChainResponse = Schemas["ChainResponse"]
-export type ChainListResponse = Schemas["ChainListResponse"]
-
-// Error responses
-export type V1ErrorWrapper = Schemas["V1ErrorWrapper"]
 export type Responses = components["responses"]
 export type BadRequest = Responses["BadRequest"]
 export type Unauthorized = Responses["Unauthorized"]

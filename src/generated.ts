@@ -1172,6 +1172,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/chain/{chain}/token/{address}/liquidity-pools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get token liquidity pools
+         * @description Get liquidity pools for a specific token.
+         */
+        get: operations["get_token_liquidity_pools"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/chain/{chain}/token/{address}/holders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get token holders
+         * @description Get paginated list of holders for a specific token, including quantity held and USD value.
+         */
+        get: operations["get_token_holders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/chain/{chain}/token/{address}/activity": {
         parameters: {
             query?: never;
@@ -1812,6 +1852,11 @@ export interface components {
             twitter_handle?: string;
             /** @description The token's Telegram identifier */
             telegram_identifier?: string;
+            /**
+             * Format: int64
+             * @description Twitter/X follower count
+             */
+            twitter_follower_count?: number;
         };
         /** @description Market statistics for a token */
         TokenStatsResponse: {
@@ -2453,6 +2498,17 @@ export interface components {
              */
             token_id: string;
         };
+        AgentBindingResponse: {
+            agent_id: string;
+            binding_contract: string;
+            agent: components["schemas"]["AgentNftResponse"];
+            registered_by?: string;
+        };
+        AgentNftResponse: {
+            chain: string;
+            token_id: string;
+            contract_address: string;
+        };
         Nft: {
             identifier: string;
             collection: string;
@@ -2499,6 +2555,7 @@ export interface components {
             owners: components["schemas"]["Owner"][];
             rarity?: components["schemas"]["Rarity"];
             subscription?: components["schemas"]["SubscriptionInfoResponse"];
+            agent_binding?: components["schemas"]["AgentBindingResponse"];
         };
         Owner: {
             address: string;
@@ -3679,6 +3736,92 @@ export interface components {
         OhlcvResponse: {
             /** @description List of OHLCV candles */
             candles: components["schemas"]["OhlcvCandleResponse"][];
+        };
+        /** @description A liquidity pool for a token */
+        TokenLiquidityPoolResponse: {
+            /** @description Pool protocol type (e.g. UNISWAP_V2, UNISWAP_V3) */
+            pool_type: string;
+            /** @description Unique identifier for the pool */
+            pool_identifier: string;
+            /** @description On-chain address of the pool contract */
+            pool_address?: string;
+            /** @description Base token contract identifier (chain/address) */
+            base_token: string;
+            /** @description Quote token contract identifier (chain/address) */
+            quote_token: string;
+            /** @description USD value of base token reserves */
+            base_reserve_usd?: number;
+            /** @description USD value of quote token reserves */
+            quote_reserve_usd?: number;
+            /** @description Total USD value of reserves in the pool */
+            total_reserve_usd?: number;
+            /**
+             * Format: float
+             * @description Bonding curve progress percentage (0-100)
+             */
+            bonding_curve_progress?: number;
+            /** @description Whether the token has graduated from its bonding curve */
+            is_graduated?: boolean;
+        };
+        /** @description Paginated list of liquidity pools for a token */
+        TokenLiquidityPoolsResponse: {
+            /** @description List of liquidity pools */
+            pools: components["schemas"]["TokenLiquidityPoolResponse"][];
+            /** @description Cursor for the next page of results */
+            next?: string;
+        };
+        /** @description Holder distribution health metrics for a token */
+        TokenHolderDistributionResponse: {
+            /**
+             * Format: int32
+             * @description Total number of holders with a non-zero balance
+             */
+            total_holders: number;
+            /**
+             * Format: float
+             * @description Percentage of total supply held by the top 1% of holders (0-100)
+             */
+            top_one_percent_concentration: number;
+            /**
+             * Format: int32
+             * @description Health score from 0-100 (higher = more distributed)
+             */
+            health_score: number;
+            /**
+             * @description Human-readable label for the health score
+             * @enum {string}
+             */
+            health_label: "STRONG" | "HEALTHY" | "CONCERNING" | "BAD";
+        };
+        /** @description A holder of a token */
+        TokenHolderResponse: {
+            /** @description Token quantity in display units */
+            quantity: number;
+            /**
+             * Format: float
+             * @description Percentage of total supply held by this address
+             */
+            percentage_held?: number;
+            /** @description USD value of the holding */
+            usd_value?: number;
+            /** @description Wallet address of the holder */
+            owner_address: string;
+            /** @description Display name of the holder */
+            owner_display_name?: string;
+        };
+        /** @description Paginated list of token holders */
+        TokenHoldersResponse: {
+            /** @description List of token holders */
+            holders: components["schemas"]["TokenHolderResponse"][];
+            /**
+             * Format: int32
+             * @description Total number of holders
+             */
+            total_count?: number;
+            /** @description Holder distribution health metrics */
+            distribution?: components["schemas"]["TokenHolderDistributionResponse"];
+            /** @description Cursor for the next page of results */
+            next?: string;
         };
         /** @description Token amount with contract and value information */
         TokenAmountResponse: {
@@ -5965,6 +6108,8 @@ export interface operations {
                  *     ]
                  */
                 traits?: string;
+                /** @description Filter by NFTs that have an ERC-8217 agent binding */
+                has_agent_binding?: boolean;
                 /**
                  * @description Number of items to return per page
                  * @example 20
@@ -6148,6 +6293,96 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["OhlcvResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_token_liquidity_pools: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Number of results to return (default: 20, max: 50)
+                 * @example 20
+                 */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The blockchain on which the token exists
+                 * @example ethereum
+                 */
+                chain: string;
+                /**
+                 * @description The contract address of the token
+                 * @example 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
+                 */
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TokenLiquidityPoolsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_token_holders: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Number of results to return (default: 20, max: 100)
+                 * @example 20
+                 */
+                limit?: number;
+                /** @description Pagination cursor for next page */
+                cursor?: string;
+                /**
+                 * @description Sort field (default: QUANTITY)
+                 * @example QUANTITY
+                 */
+                sort_by?: "QUANTITY";
+                /**
+                 * @description Sort direction (default: desc)
+                 * @example desc
+                 */
+                sort_direction?: "asc" | "desc";
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The blockchain on which the token exists
+                 * @example ethereum
+                 */
+                chain: string;
+                /**
+                 * @description The contract address of the token
+                 * @example 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
+                 */
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TokenHoldersResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];

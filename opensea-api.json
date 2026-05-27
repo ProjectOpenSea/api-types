@@ -3475,6 +3475,15 @@
             ]
           },
           {
+            "name": "has_agent_binding",
+            "in": "query",
+            "description": "Filter by NFTs that have an ERC-8217 agent binding",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "description": "Number of items to return per page",
@@ -3756,6 +3765,157 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/OhlcvResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/chain/{chain}/token/{address}/liquidity-pools": {
+      "get": {
+        "tags": ["Token Endpoints"],
+        "summary": "Get token liquidity pools",
+        "description": "Get liquidity pools for a specific token.",
+        "operationId": "get_token_liquidity_pools",
+        "parameters": [
+          {
+            "name": "chain",
+            "in": "path",
+            "description": "The blockchain on which the token exists",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "ethereum"
+          },
+          {
+            "name": "address",
+            "in": "path",
+            "description": "The contract address of the token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of results to return (default: 20, max: 50)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            },
+            "example": 20
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenLiquidityPoolsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/chain/{chain}/token/{address}/holders": {
+      "get": {
+        "tags": ["Token Endpoints"],
+        "summary": "Get token holders",
+        "description": "Get paginated list of holders for a specific token, including quantity held and USD value.",
+        "operationId": "get_token_holders",
+        "parameters": [
+          {
+            "name": "chain",
+            "in": "path",
+            "description": "The blockchain on which the token exists",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "ethereum"
+          },
+          {
+            "name": "address",
+            "in": "path",
+            "description": "The contract address of the token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of results to return (default: 20, max: 100)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            },
+            "example": 20
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Pagination cursor for next page",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "description": "Sort field (default: QUANTITY)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["QUANTITY"]
+            },
+            "example": "QUANTITY"
+          },
+          {
+            "name": "sort_direction",
+            "in": "query",
+            "description": "Sort direction (default: desc)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["asc", "desc"]
+            },
+            "example": "desc"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenHoldersResponse"
                 }
               }
             }
@@ -5580,6 +5740,11 @@
           "telegram_identifier": {
             "type": "string",
             "description": "The token's Telegram identifier"
+          },
+          "twitter_follower_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Twitter/X follower count"
           }
         }
       },
@@ -7364,6 +7529,39 @@
         },
         "required": ["chain", "contract_address", "token_id"]
       },
+      "AgentBindingResponse": {
+        "type": "object",
+        "properties": {
+          "agent_id": {
+            "type": "string"
+          },
+          "binding_contract": {
+            "type": "string"
+          },
+          "agent": {
+            "$ref": "#/components/schemas/AgentNftResponse"
+          },
+          "registered_by": {
+            "type": "string"
+          }
+        },
+        "required": ["agent", "agent_id", "binding_contract"]
+      },
+      "AgentNftResponse": {
+        "type": "object",
+        "properties": {
+          "chain": {
+            "type": "string"
+          },
+          "token_id": {
+            "type": "string"
+          },
+          "contract_address": {
+            "type": "string"
+          }
+        },
+        "required": ["chain", "contract_address", "token_id"]
+      },
       "Nft": {
         "type": "object",
         "properties": {
@@ -7523,6 +7721,9 @@
           },
           "subscription": {
             "$ref": "#/components/schemas/SubscriptionInfoResponse"
+          },
+          "agent_binding": {
+            "$ref": "#/components/schemas/AgentBindingResponse"
           }
         },
         "required": [
@@ -10016,6 +10217,164 @@
           }
         },
         "required": ["candles"]
+      },
+      "TokenLiquidityPoolResponse": {
+        "type": "object",
+        "description": "A liquidity pool for a token",
+        "properties": {
+          "pool_type": {
+            "type": "string",
+            "description": "Pool protocol type (e.g. UNISWAP_V2, UNISWAP_V3)"
+          },
+          "pool_identifier": {
+            "type": "string",
+            "description": "Unique identifier for the pool"
+          },
+          "pool_address": {
+            "type": "string",
+            "description": "On-chain address of the pool contract"
+          },
+          "base_token": {
+            "type": "string",
+            "description": "Base token contract identifier (chain/address)"
+          },
+          "quote_token": {
+            "type": "string",
+            "description": "Quote token contract identifier (chain/address)"
+          },
+          "base_reserve_usd": {
+            "type": "number",
+            "description": "USD value of base token reserves"
+          },
+          "quote_reserve_usd": {
+            "type": "number",
+            "description": "USD value of quote token reserves"
+          },
+          "total_reserve_usd": {
+            "type": "number",
+            "description": "Total USD value of reserves in the pool"
+          },
+          "bonding_curve_progress": {
+            "type": "number",
+            "format": "float",
+            "description": "Bonding curve progress percentage (0-100)"
+          },
+          "is_graduated": {
+            "type": "boolean",
+            "description": "Whether the token has graduated from its bonding curve"
+          }
+        },
+        "required": [
+          "base_token",
+          "pool_identifier",
+          "pool_type",
+          "quote_token"
+        ]
+      },
+      "TokenLiquidityPoolsResponse": {
+        "type": "object",
+        "description": "Paginated list of liquidity pools for a token",
+        "properties": {
+          "pools": {
+            "type": "array",
+            "description": "List of liquidity pools",
+            "items": {
+              "$ref": "#/components/schemas/TokenLiquidityPoolResponse"
+            }
+          },
+          "next": {
+            "type": "string",
+            "description": "Cursor for the next page of results"
+          }
+        },
+        "required": ["pools"]
+      },
+      "TokenHolderDistributionResponse": {
+        "type": "object",
+        "description": "Holder distribution health metrics for a token",
+        "properties": {
+          "total_holders": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Total number of holders with a non-zero balance"
+          },
+          "top_one_percent_concentration": {
+            "type": "number",
+            "format": "float",
+            "description": "Percentage of total supply held by the top 1% of holders (0-100)"
+          },
+          "health_score": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Health score from 0-100 (higher = more distributed)"
+          },
+          "health_label": {
+            "type": "string",
+            "description": "Human-readable label for the health score",
+            "enum": ["STRONG", "HEALTHY", "CONCERNING", "BAD"]
+          }
+        },
+        "required": [
+          "health_label",
+          "health_score",
+          "top_one_percent_concentration",
+          "total_holders"
+        ]
+      },
+      "TokenHolderResponse": {
+        "type": "object",
+        "description": "A holder of a token",
+        "properties": {
+          "quantity": {
+            "type": "number",
+            "description": "Token quantity in display units"
+          },
+          "percentage_held": {
+            "type": "number",
+            "format": "float",
+            "description": "Percentage of total supply held by this address"
+          },
+          "usd_value": {
+            "type": "number",
+            "description": "USD value of the holding"
+          },
+          "owner_address": {
+            "type": "string",
+            "description": "Wallet address of the holder"
+          },
+          "owner_display_name": {
+            "type": "string",
+            "description": "Display name of the holder"
+          }
+        },
+        "required": ["owner_address", "quantity"]
+      },
+      "TokenHoldersResponse": {
+        "type": "object",
+        "description": "Paginated list of token holders",
+        "properties": {
+          "holders": {
+            "type": "array",
+            "description": "List of token holders",
+            "items": {
+              "$ref": "#/components/schemas/TokenHolderResponse"
+            }
+          },
+          "total_count": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Total number of holders"
+          },
+          "distribution": {
+            "$ref": "#/components/schemas/TokenHolderDistributionResponse",
+            "description": "Holder distribution health metrics"
+          },
+          "next": {
+            "type": "string",
+            "description": "Cursor for the next page of results"
+          }
+        },
+        "required": ["holders"]
       },
       "TokenAmountResponse": {
         "type": "object",

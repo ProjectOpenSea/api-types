@@ -1,5 +1,36 @@
 # @opensea/api-types
 
+## 0.4.3
+
+### Patch Changes
+
+- 96928f4: Auto-generate named schema exports so every `components.schemas.*` from the OpenAPI spec is reachable as a named import — no manual curation step.
+
+  ## What changed
+
+  - New `src/schemas-generated.ts` (auto-built from `opensea-api.json`) exports a named type for every schema in the spec. The previous hand-curated list in `src/index.ts` covered 147 of 199 schemas; the remaining 52 are now surfaced.
+  - `src/index.ts` re-exports `./schemas-generated` and keeps the hand-written sections (response envelopes, operation helpers).
+  - `pnpm run generate` now invokes `scripts/generate-schema-exports.mjs` after `openapi-typescript` so the schema-export list always tracks the spec.
+  - New CI guard: `scripts/check-consumer-imports.mjs` greps every `from "@opensea/api-types"` import across the workspace and verifies each named import appears in the built `dist/index.d.ts`. Wired into CI as the `API Types consumer imports` job — runs on every PR, not gated by path filter, because a consumer-package change can introduce an unsurfaced import without touching api-types itself (the exact failure mode that briefly broke order posting in SDK 11.0).
+
+  Both additions are belt-and-suspenders: auto-gen ensures the index never falls behind the spec; the CI guard ensures the index hasn't been broken by any change.
+
+- 90702a7: Sync OpenAPI spec — add Token holders/liquidity-pools endpoints, NftDetailed.agent_binding, Token.twitter_follower_count.
+
+  ## New endpoints
+
+  - `GET /api/v2/chain/{chain}/token/{address}/liquidity-pools` — paginated liquidity pools for a token (`TokenLiquidityPoolsResponse` → `TokenLiquidityPoolResponse[]`, exposes pool type, pool/contract address, base/quote reserves in USD, bonding-curve progress, graduation flag).
+  - `GET /api/v2/chain/{chain}/token/{address}/holders` — paginated token holders (`TokenHoldersResponse` → `TokenHolderResponse[]` plus aggregate `TokenHolderDistributionResponse` with total holders, top-1% concentration, and a `STRONG | HEALTHY | CONCERNING | BAD` health label).
+
+  ## New / changed schemas
+
+  - `NftDetailed`: optional `agent_binding: AgentBindingResponse` (ERC-8217 agent binding — exposes `agent_id`, `binding_contract`, the bound `AgentNftResponse`, optional `registered_by`).
+  - `Token` (token base): optional `twitter_follower_count: int64`.
+  - NFT list endpoint: new optional `has_agent_binding: boolean` query filter.
+  - New named exports: `AgentBindingResponse`, `AgentNftResponse`, `TokenHolderResponse`, `TokenHoldersResponse`, `TokenHolderDistributionResponse`, `TokenLiquidityPoolResponse`, `TokenLiquidityPoolsResponse`.
+
+  All changes are additive — no consumer breakage. SDK/CLI/skill don't need updates to keep working; wrapping the two new endpoints (typed SDK methods, CLI commands, skill shell scripts) is follow-up work.
+
 ## 0.4.2
 
 ### Patch Changes
