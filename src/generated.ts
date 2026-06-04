@@ -395,7 +395,7 @@ export interface paths {
         put?: never;
         /**
          * Create an instant API key
-         * @description Creates a free-tier API key instantly without authentication. The key can be used immediately for all API endpoints. Rate limited to 3 keys per hour per IP. Keys expire after 30 days.
+         * @description Creates a free-tier API key instantly without authentication. The key can be used immediately for all API endpoints. Rate limited to 2 keys per hour per IP. Keys expire after 30 days.
          */
         post: operations["create_instant_api_key"];
         delete?: never;
@@ -436,6 +436,66 @@ export interface paths {
          * @description Get all available traits for a collection with their value counts and data types.
          */
         get: operations["get_collection_traits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/tools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * [Beta] List registered tools
+         * @description [Beta] List verified registered tools with optional sorting and filtering. This endpoint is under active development and may change without notice.
+         */
+        get: operations["list_tools"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/tools/{registry_chain}/{registry_addr}/{tool_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * [Beta] Get a registered tool
+         * @description [Beta] Get a registered tool by its composite key: registry chain, registry address, and tool ID. Includes pricing recipients and NFT collection info for gated tools. This endpoint is under active development and may change without notice.
+         */
+        get: operations["get_tool"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/tools/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * [Beta] Search registered tools
+         * @description [Beta] Search for verified registered tools by name, tags, creator, or other criteria. This endpoint is under active development and may change without notice.
+         */
+        get: operations["search_tools"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2022,6 +2082,12 @@ export interface components {
              * @example RELAY
              */
             swap_provider?: string;
+            /**
+             * Format: double
+             * @description Recommended slippage tolerance based on volatility analysis (null if unavailable)
+             * @example 2
+             */
+            recommended_slippage?: number;
             /** @description Breakdown of costs for the swap */
             costs: components["schemas"]["SwapCostResponse"][];
             /** @description Errors encountered for individual swap routes */
@@ -2948,6 +3014,115 @@ export interface components {
         TransferResponse: {
             /** @description Ordered list of blockchain actions to execute. Each action is a JSON object with a single field indicating the type (e.g. transferAction, approvalAction) and its associated data. Serialized using proto3 JSON format — fields with default values (empty string, 0, false) may be omitted. */
             steps: components["schemas"]["JsonNode"][];
+        };
+        ToolListItemResponse: {
+            tool_id: string;
+            registry_chain: string;
+            registry_addr: string;
+            creator: string;
+            metadata_uri: string;
+            manifest_hash: string;
+            endpoint_url?: string;
+            endpoint_domain?: string;
+            manifest_hash_verified: boolean;
+            is_active: boolean;
+            created_at: string;
+            updated_at: string;
+        };
+        ToolListPaginatedResponse: {
+            tools: components["schemas"]["ToolListItemResponse"][];
+            next?: string;
+        };
+        RegisteredToolResponse: {
+            tool_id: string;
+            registry_chain: string;
+            registry_addr: string;
+            creator: string;
+            metadata_uri: string;
+            manifest_hash: string;
+            endpoint_url?: string;
+            endpoint_domain?: string;
+            manifest_hash_verified: boolean;
+            is_active: boolean;
+            created_at: string;
+            updated_at: string;
+            name?: string;
+            description?: string;
+            tags?: string[];
+            inputs?: unknown;
+            outputs?: unknown;
+            creator_address?: string;
+            endpoint?: string;
+            access?: components["schemas"]["ToolAccessResponse"];
+            pricing_recipients: components["schemas"]["ToolPricingRecipientResponse"][];
+        };
+        ToolAccessResponse: {
+            open_access: boolean;
+            logic: string;
+            requirements: components["schemas"]["ToolRequirementResponse"][];
+        };
+        ToolCollectionResponse: {
+            slug: string;
+            name: string;
+            image_url?: string;
+            opensea_url: string;
+            contracts: components["schemas"]["Contract"][];
+        };
+        ToolPricingRecipientResponse: {
+            recipient: string;
+            payment_chain: string;
+            asset: string;
+            protocol: string;
+            amount_per_call: string;
+            created_at: string;
+        };
+        ToolRequirementResponse: {
+            kind: string;
+            type: string;
+            collection_address?: string;
+            token_id?: string;
+            /** Format: int32 */
+            min_tier?: number;
+            token_address?: string;
+            min_balance?: string;
+            data?: string;
+            label?: string;
+            links?: {
+                [key: string]: string;
+            };
+            collection?: components["schemas"]["ToolCollectionResponse"];
+        };
+        ToolPaymentStatsResponse: {
+            /** Format: int64 */
+            total_payments: number;
+            /** Format: double */
+            total_volume_usd: number;
+            /** Format: int64 */
+            unique_buyers: number;
+            /** Format: int64 */
+            payments_last_24h: number;
+            /** Format: int64 */
+            payments_last_7d: number;
+        };
+        ToolSearchPaginatedResponse: {
+            results: components["schemas"]["ToolSearchResultResponse"][];
+            next?: string;
+        };
+        ToolSearchResultResponse: {
+            tool_id: string;
+            registry_chain: string;
+            registry_addr: string;
+            name: string;
+            description: string;
+            tags: string[];
+            creator: string;
+            creator_display_name: string;
+            endpoint_domain: string;
+            access_type: string;
+            payment_stats?: components["schemas"]["ToolPaymentStatsResponse"];
+            created_at: string;
+            pricing_recipients?: components["schemas"]["ToolPricingRecipientResponse"][];
+            access?: components["schemas"]["ToolAccessResponse"];
         };
         /** @description Paginated list of tokens */
         TokenPaginatedResponse: {
@@ -4907,6 +5082,112 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    list_tools: {
+        parameters: {
+            query?: {
+                /** @description Sort by: newest, oldest */
+                sort_by?: string;
+                /** @description Filter by access type: open, nft_gated, token_gated, subscription, gated */
+                type?: string;
+                /**
+                 * @description Number of items to return per page
+                 * @example 20
+                 */
+                limit?: number;
+                "cursor.value"?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ToolListPaginatedResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_tool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Registry chain ID (e.g. 1, 8453) */
+                registry_chain: string;
+                /** @description Registry contract address */
+                registry_addr: string;
+                /** @description Numeric tool ID */
+                tool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RegisteredToolResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    search_tools: {
+        parameters: {
+            query?: {
+                /** @description Search query text */
+                query?: string;
+                /** @description Filter by registry chain ID */
+                registry_chain?: string;
+                /** @description Filter by tags */
+                tags?: string[];
+                /** @description Filter by access type: open, nft_gated, subscription */
+                access_type?: string;
+                /** @description Filter by creator address */
+                creator?: string;
+                /** @description Sort by: relevance, newest, most_used */
+                sort_by?: string;
+                /** @description Include pricing recipients and access requirements per result. Defaults to true; set false for a lighter list response. */
+                include_details?: boolean;
+                /**
+                 * @description Number of items to return per page
+                 * @example 20
+                 */
+                limit?: number;
+                "cursor.value"?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ToolSearchPaginatedResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
     get_trending_tokens: {
         parameters: {
             query?: {
@@ -6348,16 +6629,6 @@ export interface operations {
                 limit?: number;
                 /** @description Pagination cursor for next page */
                 cursor?: string;
-                /**
-                 * @description Sort field (default: QUANTITY)
-                 * @example QUANTITY
-                 */
-                sort_by?: "QUANTITY";
-                /**
-                 * @description Sort direction (default: desc)
-                 * @example desc
-                 */
-                sort_direction?: "asc" | "desc";
             };
             header?: never;
             path: {

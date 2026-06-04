@@ -1,5 +1,11 @@
 # @opensea/api-types
 
+## 0.4.4
+
+### Patch Changes
+
+- Add `[Beta]` tool registry endpoint schemas to the OpenAPI spec and generated types: `GET /api/v2/tools` (list) and the tool search endpoint, along with the `RegisteredToolResponse`, `ToolSearchPaginatedResponse`, `ToolListPaginatedResponse`, and supporting tool response types. All additive; no consumer breakage.
+
 ## 0.4.3
 
 ### Patch Changes

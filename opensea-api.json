@@ -75,6 +75,10 @@
       "description": "Analytics endpoints to retrieve events, stats, and trading data"
     },
     {
+      "name": "Tool Endpoints [Beta]",
+      "description": "[Beta] Tool endpoints for discovering and inspecting registered onchain tools. This API is under active development and may change without notice."
+    },
+    {
       "name": "Transaction Endpoints",
       "description": "Transaction endpoints for checking transaction receipts and status"
     }
@@ -993,7 +997,7 @@
       "post": {
         "tags": ["Auth Endpoints"],
         "summary": "Create an instant API key",
-        "description": "Creates a free-tier API key instantly without authentication. The key can be used immediately for all API endpoints. Rate limited to 3 keys per hour per IP. Keys expire after 30 days.",
+        "description": "Creates a free-tier API key instantly without authentication. The key can be used immediately for all API endpoints. Rate limited to 2 keys per hour per IP. Keys expire after 30 days.",
         "operationId": "create_instant_api_key",
         "responses": {
           "201": {
@@ -1138,6 +1142,253 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/tools": {
+      "get": {
+        "tags": ["Tool Endpoints [Beta]"],
+        "summary": "[Beta] List registered tools",
+        "description": "[Beta] List verified registered tools with optional sorting and filtering. This endpoint is under active development and may change without notice.",
+        "operationId": "list_tools",
+        "parameters": [
+          {
+            "name": "sort_by",
+            "in": "query",
+            "description": "Sort by: newest, oldest",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "newest"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Filter by access type: open, nft_gated, token_gated, subscription, gated",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items to return per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "Number of items to return per page",
+              "example": 20,
+              "maximum": 200,
+              "minimum": 1
+            },
+            "example": 20
+          },
+          {
+            "name": "cursor.value",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolListPaginatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/tools/{registry_chain}/{registry_addr}/{tool_id}": {
+      "get": {
+        "tags": ["Tool Endpoints [Beta]"],
+        "summary": "[Beta] Get a registered tool",
+        "description": "[Beta] Get a registered tool by its composite key: registry chain, registry address, and tool ID. Includes pricing recipients and NFT collection info for gated tools. This endpoint is under active development and may change without notice.",
+        "operationId": "get_tool",
+        "parameters": [
+          {
+            "name": "registry_chain",
+            "in": "path",
+            "description": "Registry chain ID (e.g. 1, 8453)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "registry_addr",
+            "in": "path",
+            "description": "Registry contract address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tool_id",
+            "in": "path",
+            "description": "Numeric tool ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisteredToolResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/tools/search": {
+      "get": {
+        "tags": ["Tool Endpoints [Beta]"],
+        "summary": "[Beta] Search registered tools",
+        "description": "[Beta] Search for verified registered tools by name, tags, creator, or other criteria. This endpoint is under active development and may change without notice.",
+        "operationId": "search_tools",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "description": "Search query text",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "registry_chain",
+            "in": "query",
+            "description": "Filter by registry chain ID",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "description": "Filter by tags",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "access_type",
+            "in": "query",
+            "description": "Filter by access type: open, nft_gated, subscription",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "creator",
+            "in": "query",
+            "description": "Filter by creator address",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "description": "Sort by: relevance, newest, most_used",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "relevance"
+            }
+          },
+          {
+            "name": "include_details",
+            "in": "query",
+            "description": "Include pricing recipients and access requirements per result. Defaults to true; set false for a lighter list response.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items to return per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "Number of items to return per page",
+              "example": 20,
+              "maximum": 200,
+              "minimum": 1
+            },
+            "example": 20
+          },
+          {
+            "name": "cursor.value",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolSearchPaginatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
@@ -3885,28 +4136,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "sort_by",
-            "in": "query",
-            "description": "Sort field (default: QUANTITY)",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "enum": ["QUANTITY"]
-            },
-            "example": "QUANTITY"
-          },
-          {
-            "name": "sort_direction",
-            "in": "query",
-            "description": "Sort direction (default: desc)",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "enum": ["asc", "desc"]
-            },
-            "example": "desc"
           }
         ],
         "responses": {
@@ -5965,6 +6194,12 @@
             "type": "string",
             "description": "The swap provider that fulfilled this quote (null if unavailable)",
             "example": "RELAY"
+          },
+          "recommended_slippage": {
+            "type": "number",
+            "format": "double",
+            "description": "Recommended slippage tolerance based on volatility analysis (null if unavailable)",
+            "example": 2
           },
           "costs": {
             "type": "array",
@@ -8533,6 +8768,386 @@
         },
         "required": ["steps"]
       },
+      "ToolListItemResponse": {
+        "type": "object",
+        "properties": {
+          "tool_id": {
+            "type": "string"
+          },
+          "registry_chain": {
+            "type": "string"
+          },
+          "registry_addr": {
+            "type": "string"
+          },
+          "creator": {
+            "type": "string"
+          },
+          "metadata_uri": {
+            "type": "string"
+          },
+          "manifest_hash": {
+            "type": "string"
+          },
+          "endpoint_url": {
+            "type": "string"
+          },
+          "endpoint_domain": {
+            "type": "string"
+          },
+          "manifest_hash_verified": {
+            "type": "boolean"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "creator",
+          "is_active",
+          "manifest_hash",
+          "manifest_hash_verified",
+          "metadata_uri",
+          "registry_addr",
+          "registry_chain",
+          "tool_id",
+          "updated_at"
+        ]
+      },
+      "ToolListPaginatedResponse": {
+        "type": "object",
+        "properties": {
+          "tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolListItemResponse"
+            }
+          },
+          "next": {
+            "type": "string"
+          }
+        },
+        "required": ["tools"]
+      },
+      "RegisteredToolResponse": {
+        "type": "object",
+        "properties": {
+          "tool_id": {
+            "type": "string"
+          },
+          "registry_chain": {
+            "type": "string"
+          },
+          "registry_addr": {
+            "type": "string"
+          },
+          "creator": {
+            "type": "string"
+          },
+          "metadata_uri": {
+            "type": "string"
+          },
+          "manifest_hash": {
+            "type": "string"
+          },
+          "endpoint_url": {
+            "type": "string"
+          },
+          "endpoint_domain": {
+            "type": "string"
+          },
+          "manifest_hash_verified": {
+            "type": "boolean"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "inputs": {},
+          "outputs": {},
+          "creator_address": {
+            "type": "string"
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "access": {
+            "$ref": "#/components/schemas/ToolAccessResponse"
+          },
+          "pricing_recipients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolPricingRecipientResponse"
+            }
+          }
+        },
+        "required": [
+          "created_at",
+          "creator",
+          "is_active",
+          "manifest_hash",
+          "manifest_hash_verified",
+          "metadata_uri",
+          "pricing_recipients",
+          "registry_addr",
+          "registry_chain",
+          "tool_id",
+          "updated_at"
+        ]
+      },
+      "ToolAccessResponse": {
+        "type": "object",
+        "properties": {
+          "open_access": {
+            "type": "boolean"
+          },
+          "logic": {
+            "type": "string"
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolRequirementResponse"
+            }
+          }
+        },
+        "required": ["logic", "open_access", "requirements"]
+      },
+      "ToolCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "opensea_url": {
+            "type": "string"
+          },
+          "contracts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contract"
+            }
+          }
+        },
+        "required": ["contracts", "name", "opensea_url", "slug"]
+      },
+      "ToolPricingRecipientResponse": {
+        "type": "object",
+        "properties": {
+          "recipient": {
+            "type": "string"
+          },
+          "payment_chain": {
+            "type": "string"
+          },
+          "asset": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "amount_per_call": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount_per_call",
+          "asset",
+          "created_at",
+          "payment_chain",
+          "protocol",
+          "recipient"
+        ]
+      },
+      "ToolRequirementResponse": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "collection_address": {
+            "type": "string"
+          },
+          "token_id": {
+            "type": "string"
+          },
+          "min_tier": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "token_address": {
+            "type": "string"
+          },
+          "min_balance": {
+            "type": "string"
+          },
+          "data": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "links": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "collection": {
+            "$ref": "#/components/schemas/ToolCollectionResponse"
+          }
+        },
+        "required": ["kind", "type"]
+      },
+      "ToolPaymentStatsResponse": {
+        "type": "object",
+        "properties": {
+          "total_payments": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_volume_usd": {
+            "type": "number",
+            "format": "double"
+          },
+          "unique_buyers": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "payments_last_24h": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "payments_last_7d": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "payments_last_24h",
+          "payments_last_7d",
+          "total_payments",
+          "total_volume_usd",
+          "unique_buyers"
+        ]
+      },
+      "ToolSearchPaginatedResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolSearchResultResponse"
+            }
+          },
+          "next": {
+            "type": "string"
+          }
+        },
+        "required": ["results"]
+      },
+      "ToolSearchResultResponse": {
+        "type": "object",
+        "properties": {
+          "tool_id": {
+            "type": "string"
+          },
+          "registry_chain": {
+            "type": "string"
+          },
+          "registry_addr": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "creator": {
+            "type": "string"
+          },
+          "creator_display_name": {
+            "type": "string"
+          },
+          "endpoint_domain": {
+            "type": "string"
+          },
+          "access_type": {
+            "type": "string"
+          },
+          "payment_stats": {
+            "$ref": "#/components/schemas/ToolPaymentStatsResponse"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "pricing_recipients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolPricingRecipientResponse"
+            }
+          },
+          "access": {
+            "$ref": "#/components/schemas/ToolAccessResponse"
+          }
+        },
+        "required": [
+          "access_type",
+          "created_at",
+          "creator",
+          "creator_display_name",
+          "description",
+          "endpoint_domain",
+          "name",
+          "registry_addr",
+          "registry_chain",
+          "tags",
+          "tool_id"
+        ]
+      },
       "TokenPaginatedResponse": {
         "type": "object",
         "description": "Paginated list of tokens",
@@ -11027,6 +11642,10 @@
     {
       "name": "Analytics & Events",
       "tags": ["Analytics Endpoints"]
+    },
+    {
+      "name": "Tools [Beta]",
+      "tags": ["Tool Endpoints [Beta]"]
     },
     {
       "name": "Transactions",
