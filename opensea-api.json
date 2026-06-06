@@ -120,6 +120,42 @@
         }
       }
     },
+    "/api/v2/tools/usage": {
+      "post": {
+        "tags": ["Tool Endpoints [Beta]"],
+        "summary": "[Beta] Report tool usage (metrics only)",
+        "description": "[Beta] Report verified tool usage for metrics and analytics purposes only. Supports verification_type: eip3009_authorization (free tools, identity proof) or x402_settlement (paid tools, onchain USDC payment verification). This endpoint does NOT trigger any onchain transactions. This endpoint is under active development and may change without notice.",
+        "operationId": "report_tool_usage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolUsageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolUsageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/api/v2/tokens/batch": {
       "post": {
         "tags": ["Token Endpoints"],
@@ -5785,6 +5821,98 @@
           "total_spent"
         ]
       },
+      "Eip3009Fields": {
+        "type": "object",
+        "properties": {
+          "caller_address": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string"
+          },
+          "chain_id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "value": {
+            "type": "integer"
+          },
+          "valid_after": {
+            "type": "integer"
+          },
+          "valid_before": {
+            "type": "integer"
+          },
+          "nonce": {
+            "type": "string"
+          }
+        }
+      },
+      "ToolUsageRequest": {
+        "type": "object",
+        "properties": {
+          "verification_type": {
+            "type": "string"
+          },
+          "tool_chain_id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "tool_registry_address": {
+            "type": "string"
+          },
+          "tool_onchain_id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "latency_ms": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "eip3009": {
+            "$ref": "#/components/schemas/Eip3009Fields"
+          },
+          "x402": {
+            "$ref": "#/components/schemas/X402SettlementFields"
+          }
+        }
+      },
+      "X402SettlementFields": {
+        "type": "object",
+        "properties": {
+          "caller_address": {
+            "type": "string"
+          },
+          "tx_hash": {
+            "type": "string"
+          },
+          "chain_id": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ToolUsageResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "verification_type": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "verification_type", "verified"]
+      },
       "BatchTokensRequest": {
         "type": "object",
         "description": "Request body for batch token retrieval by contract identifiers",
@@ -10076,6 +10204,14 @@
           "opensea_url": {
             "type": "string",
             "description": "OpenSea URL for the drop"
+          },
+          "active_stage": {
+            "$ref": "#/components/schemas/DropStageResponse",
+            "description": "The currently-minting stage, if the drop is live. Null if not minting."
+          },
+          "next_stage": {
+            "$ref": "#/components/schemas/DropStageResponse",
+            "description": "The earliest upcoming stage by start_time when the drop is not currently minting (e.g. before it starts or between stages). Null if the drop is live or has no future stages."
           }
         },
         "required": [
@@ -10085,72 +10221,6 @@
           "drop_type",
           "is_minting",
           "opensea_url"
-        ]
-      },
-      "DropDetailedResponse": {
-        "type": "object",
-        "description": "Detailed drop information including stages and supply",
-        "properties": {
-          "collection_slug": {
-            "type": "string",
-            "description": "Collection slug",
-            "example": "cool-cats"
-          },
-          "collection_name": {
-            "type": "string",
-            "description": "Collection name",
-            "example": "Cool Cats"
-          },
-          "chain": {
-            "type": "string",
-            "description": "Blockchain the drop is on",
-            "example": "ethereum"
-          },
-          "contract_address": {
-            "type": "string",
-            "description": "Contract address"
-          },
-          "drop_type": {
-            "type": "string",
-            "description": "Drop type",
-            "example": "seadrop_v1_erc721"
-          },
-          "is_minting": {
-            "type": "boolean",
-            "description": "Whether the drop is currently minting"
-          },
-          "image_url": {
-            "type": "string",
-            "description": "Collection image URL"
-          },
-          "opensea_url": {
-            "type": "string",
-            "description": "OpenSea URL for the drop"
-          },
-          "stages": {
-            "type": "array",
-            "description": "Drop stages (public sale, presale, etc.)",
-            "items": {
-              "$ref": "#/components/schemas/DropStageResponse"
-            }
-          },
-          "total_supply": {
-            "type": "string",
-            "description": "Total minted supply"
-          },
-          "max_supply": {
-            "type": "string",
-            "description": "Maximum supply"
-          }
-        },
-        "required": [
-          "chain",
-          "collection_slug",
-          "contract_address",
-          "drop_type",
-          "is_minting",
-          "opensea_url",
-          "stages"
         ]
       },
       "DropStageResponse": {
@@ -10198,6 +10268,80 @@
           "stage_type",
           "start_time",
           "uuid"
+        ]
+      },
+      "DropDetailedResponse": {
+        "type": "object",
+        "description": "Detailed drop information including stages and supply",
+        "properties": {
+          "collection_slug": {
+            "type": "string",
+            "description": "Collection slug",
+            "example": "cool-cats"
+          },
+          "collection_name": {
+            "type": "string",
+            "description": "Collection name",
+            "example": "Cool Cats"
+          },
+          "chain": {
+            "type": "string",
+            "description": "Blockchain the drop is on",
+            "example": "ethereum"
+          },
+          "contract_address": {
+            "type": "string",
+            "description": "Contract address"
+          },
+          "drop_type": {
+            "type": "string",
+            "description": "Drop type",
+            "example": "seadrop_v1_erc721"
+          },
+          "is_minting": {
+            "type": "boolean",
+            "description": "Whether the drop is currently minting"
+          },
+          "image_url": {
+            "type": "string",
+            "description": "Collection image URL"
+          },
+          "opensea_url": {
+            "type": "string",
+            "description": "OpenSea URL for the drop"
+          },
+          "active_stage": {
+            "$ref": "#/components/schemas/DropStageResponse",
+            "description": "The currently-minting stage, if the drop is live. Null if not minting."
+          },
+          "next_stage": {
+            "$ref": "#/components/schemas/DropStageResponse",
+            "description": "The earliest upcoming stage by start_time when the drop is not currently minting (e.g. before it starts or between stages). Null if the drop is live or has no future stages."
+          },
+          "stages": {
+            "type": "array",
+            "description": "Drop stages (public sale, presale, etc.)",
+            "items": {
+              "$ref": "#/components/schemas/DropStageResponse"
+            }
+          },
+          "total_supply": {
+            "type": "string",
+            "description": "Total minted supply"
+          },
+          "max_supply": {
+            "type": "string",
+            "description": "Maximum supply"
+          }
+        },
+        "required": [
+          "chain",
+          "collection_slug",
+          "contract_address",
+          "drop_type",
+          "is_minting",
+          "opensea_url",
+          "stages"
         ]
       },
       "DropDeployReceiptResponse": {

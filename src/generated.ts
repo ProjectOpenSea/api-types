@@ -24,6 +24,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/tools/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * [Beta] Report tool usage (metrics only)
+         * @description [Beta] Report verified tool usage for metrics and analytics purposes only. Supports verification_type: eip3009_authorization (free tools, identity proof) or x402_settlement (paid tools, onchain USDC payment verification). This endpoint does NOT trigger any onchain transactions. This endpoint is under active development and may change without notice.
+         */
+        post: operations["report_tool_usage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/tokens/batch": {
         parameters: {
             query?: never;
@@ -1794,6 +1814,41 @@ export interface components {
             missing_assets: components["schemas"]["AssetIdentifierResponse"][];
             /** @description Whether a cross-chain refund was issued */
             cross_chain_refunded?: boolean;
+        };
+        Eip3009Fields: {
+            caller_address?: string;
+            signature?: string;
+            /** Format: int64 */
+            chain_id?: number;
+            from?: string;
+            to?: string;
+            value?: number;
+            valid_after?: number;
+            valid_before?: number;
+            nonce?: string;
+        };
+        ToolUsageRequest: {
+            verification_type?: string;
+            /** Format: int64 */
+            tool_chain_id?: number;
+            tool_registry_address?: string;
+            /** Format: int64 */
+            tool_onchain_id?: number;
+            /** Format: int64 */
+            latency_ms?: number;
+            eip3009?: components["schemas"]["Eip3009Fields"];
+            x402?: components["schemas"]["X402SettlementFields"];
+        };
+        X402SettlementFields: {
+            caller_address?: string;
+            tx_hash?: string;
+            /** Format: int64 */
+            chain_id?: number;
+        };
+        ToolUsageResponse: {
+            id: string;
+            verified: boolean;
+            verification_type: string;
         };
         /** @description Request body for batch token retrieval by contract identifiers */
         BatchTokensRequest: {
@@ -3578,6 +3633,32 @@ export interface components {
             image_url?: string;
             /** @description OpenSea URL for the drop */
             opensea_url: string;
+            /** @description The currently-minting stage, if the drop is live. Null if not minting. */
+            active_stage?: components["schemas"]["DropStageResponse"];
+            /** @description The earliest upcoming stage by start_time when the drop is not currently minting (e.g. before it starts or between stages). Null if the drop is live or has no future stages. */
+            next_stage?: components["schemas"]["DropStageResponse"];
+        };
+        /** @description A mint stage within a drop */
+        DropStageResponse: {
+            /** @description Stage UUID */
+            uuid: string;
+            /**
+             * @description Stage type
+             * @example public_sale
+             */
+            stage_type: string;
+            /** @description Stage label/name */
+            label?: string;
+            /** @description Mint price per token in wei (decimal string) */
+            price?: string;
+            /** @description Currency contract address (e.g. 0x0000...0000 for native token) */
+            price_currency_address: string;
+            /** @description Stage start time (ISO 8601) */
+            start_time: string;
+            /** @description Stage end time (ISO 8601) */
+            end_time: string;
+            /** @description Max tokens mintable per wallet in this stage */
+            max_per_wallet: string;
         };
         /** @description Detailed drop information including stages and supply */
         DropDetailedResponse: {
@@ -3609,34 +3690,16 @@ export interface components {
             image_url?: string;
             /** @description OpenSea URL for the drop */
             opensea_url: string;
+            /** @description The currently-minting stage, if the drop is live. Null if not minting. */
+            active_stage?: components["schemas"]["DropStageResponse"];
+            /** @description The earliest upcoming stage by start_time when the drop is not currently minting (e.g. before it starts or between stages). Null if the drop is live or has no future stages. */
+            next_stage?: components["schemas"]["DropStageResponse"];
             /** @description Drop stages (public sale, presale, etc.) */
             stages: components["schemas"]["DropStageResponse"][];
             /** @description Total minted supply */
             total_supply?: string;
             /** @description Maximum supply */
             max_supply?: string;
-        };
-        /** @description A mint stage within a drop */
-        DropStageResponse: {
-            /** @description Stage UUID */
-            uuid: string;
-            /**
-             * @description Stage type
-             * @example public_sale
-             */
-            stage_type: string;
-            /** @description Stage label/name */
-            label?: string;
-            /** @description Mint price per token in wei (decimal string) */
-            price?: string;
-            /** @description Currency contract address (e.g. 0x0000...0000 for native token) */
-            price_currency_address: string;
-            /** @description Stage start time (ISO 8601) */
-            start_time: string;
-            /** @description Stage end time (ISO 8601) */
-            end_time: string;
-            /** @description Max tokens mintable per wallet in this stage */
-            max_per_wallet: string;
         };
         /** @description Deploy contract receipt status */
         DropDeployReceiptResponse: {
@@ -4360,6 +4423,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TransactionReceiptResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    report_tool_usage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToolUsageRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ToolUsageResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];

@@ -1,5 +1,11 @@
 # @opensea/api-types
 
+## 0.5.0
+
+### Minor Changes
+
+- Sync OpenAPI spec. Adds the `POST /api/v2/tools/usage` endpoint and new schema types (`Eip3009Fields`, `X402SettlementFields`, `ToolUsageRequest`, `ToolUsageResponse`), and adds `active_stage`/`next_stage` fields to `DropResponse` and `DropDetailedResponse`. All changes are additive and non-breaking.
+
 ## 0.4.4
 
 ### Patch Changes

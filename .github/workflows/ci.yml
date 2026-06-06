@@ -14,7 +14,10 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
-      - run: npm install
+      # --legacy-peer-deps mirrors pnpm's permissive peer-dep behavior used in the
+      # monorepo. Without it, npm install fails on openapi-typescript@^7 which
+      # declares a strict `typescript@^5.x` peer while we ship typescript@^6.
+      - run: npm install --legacy-peer-deps
       - run: npm run build
       - run: npm run lint
       - run: npm test
