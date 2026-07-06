@@ -35,7 +35,7 @@ export interface paths {
         put?: never;
         /**
          * [Beta] Report tool usage (metrics only)
-         * @description [Beta] Report verified tool usage for metrics and analytics purposes only. Supports verification_type: eip3009_authorization (free tools, identity proof) or x402_settlement (paid tools, onchain USDC payment verification). This endpoint does NOT trigger any onchain transactions. This endpoint is under active development and may change without notice.
+         * @description [Beta] Report verified tool usage for metrics and analytics purposes only. Supports verification_type: eip3009_authorization (free tools, identity proof) or x402_settlement (paid tools, onchain USDC payment verification). Identify the tool by providing tool_chain_id + tool_registry_address + tool_onchain_id, or alternatively just tool_endpoint (the tool's canonical URL). This endpoint does NOT trigger any onchain transactions. This endpoint is under active development and may change without notice.
          */
         post: operations["report_tool_usage"];
         delete?: never;
@@ -444,6 +444,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/accounts/wallets/siwx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Link a wallet to the authenticated account
+         * @description Verify control of a wallet using a SIWX signature and link it to the authenticated account.
+         */
+        post: operations["link_wallet_with_siwx"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/traits/{slug}": {
         parameters: {
             query?: never;
@@ -496,6 +516,26 @@ export interface paths {
          * @description [Beta] Get a registered tool by its composite key: registry chain, registry address, and tool ID. Includes pricing recipients and NFT collection info for gated tools. This endpoint is under active development and may change without notice.
          */
         get: operations["get_tool"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/tools/{registry_chain}/{registry_addr}/{tool_id}/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * [Beta] Get activity for a registered tool
+         * @description [Beta] Returns merged x402 payment events and usage reports for a tool, deduplicated by transaction hash. Each event includes an attribution field indicating confidence level. This endpoint is under active development and may change without notice.
+         */
+        get: operations["get_tool_activity"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1572,6 +1612,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/account/{address}/pnl": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get trading P&L for an account
+         * @description Get aggregated realized and unrealized trading profit and loss across all currencies held by a wallet address. Returns 200 with figures (which may be zero for a real but flat wallet) when OpenSea has indexed P&L for the wallet, and 404 only when no P&L has been indexed for it — letting consumers distinguish "indexed but flat" from "not indexed".
+         */
+        get: operations["get_wallet_pnl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/account/{address}/pnl/token-transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get token transfers for a wallet's position in a currency
+         * @description Get a paginated, transfer-level breakdown of a wallet's position in a single currency (identified by contract_address + chain). Combine `direction` and `transfer_type` to distinguish zero-cost acquisitions (airdrops, CEX transfers) from buys.
+         */
+        get: operations["get_wallet_token_transfers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/account/{address}/pnl/closed-positions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get closed (realized) trading positions for an account
+         * @description Get a paginated, per-trade breakdown of a wallet's realized P&L. Each closed position reflects FIFO (first-in, first-out) cost-basis lot matching.
+         */
+        get: operations["get_wallet_closed_positions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/account/{address}/offers_received": {
         parameters: {
             query?: never;
@@ -1641,7 +1741,7 @@ export interface paths {
         };
         /**
          * Get items favorited by an account
-         * @description Get a paginated list of items favorited by a wallet address.
+         * @description Get a paginated list of items favorited by a wallet address. Requires wallet identity authentication; the requested address must belong to the authenticated account.
          */
         get: operations["get_profile_favorites"];
         put?: never;
@@ -1682,7 +1782,7 @@ export interface components {
          * @example ethereum
          * @enum {string}
          */
-        ChainIdentifier: "blast" | "base" | "ethereum" | "zora" | "arbitrum" | "sei" | "avalanche" | "polygon" | "optimism" | "ape_chain" | "flow" | "b3" | "soneium" | "ronin" | "bera_chain" | "solana" | "shape" | "unichain" | "gunzilla" | "abstract" | "animechain" | "hyperevm" | "somnia" | "monad" | "hyperliquid" | "megaeth" | "ink";
+        ChainIdentifier: "blast" | "base" | "ethereum" | "zora" | "arbitrum" | "sei" | "avalanche" | "polygon" | "optimism" | "ape_chain" | "flow" | "b3" | "soneium" | "ronin" | "bera_chain" | "solana" | "shape" | "unichain" | "gunzilla" | "abstract" | "animechain" | "hyperevm" | "somnia" | "monad" | "hyperliquid" | "megaeth" | "ink" | "robinhood";
         /** @description An asset with quantity in base units */
         AssetQuantityInput: {
             /**
@@ -1834,6 +1934,7 @@ export interface components {
             tool_registry_address?: string;
             /** Format: int64 */
             tool_onchain_id?: number;
+            tool_endpoint?: string;
             /** Format: int64 */
             latency_ms?: number;
             eip3009?: components["schemas"]["Eip3009Fields"];
@@ -1882,7 +1983,7 @@ export interface components {
             chain: string;
             /**
              * @description The display name of the token
-             * @example USD Coin
+             * @example USDC
              */
             name: string;
             /**
@@ -1923,7 +2024,7 @@ export interface components {
             chain: string;
             /**
              * @description The display name of the token
-             * @example USD Coin
+             * @example USDC
              */
             name: string;
             /**
@@ -2167,8 +2268,10 @@ export interface components {
             to?: string;
             /** @description The transaction data. For EVM chains: hex-encoded calldata. For SVM chains: comma-separated instructions in programId:data format. */
             data: string;
-            /** @description The native token value to send with the transaction */
+            /** @description The native token value to send with the transaction (decimal) */
             value?: string;
+            /** @description The native token value to send with the transaction (hex, 0x-prefixed) */
+            value_hex?: string;
         };
         ConsiderationItem: {
             /** Format: int32 */
@@ -2537,7 +2640,10 @@ export interface components {
             chain: number;
             to: string;
             value: string;
+            value_hex?: string;
             input_data: components["schemas"]["FulfillAdvancedOrder"] | components["schemas"]["FulfillAvailableAdvancedOrders"] | components["schemas"]["FulfillAvailableOrders"] | components["schemas"]["FulfillBasicOrder"] | components["schemas"]["FulfillOrder"] | components["schemas"]["MatchAdvancedOrders"] | components["schemas"]["MatchOrders"];
+            /** @description 4-byte hex attribution suffix (e.g. 0xcdb44011) to append to the ABI-encoded calldata before submitting the transaction onchain. Appending this suffix attributes the fill to OpenSea; omitting it does not affect execution. */
+            calldata_suffix?: string;
         };
         Type: {
             value?: unknown;
@@ -2648,6 +2754,8 @@ export interface components {
             original_image_url?: string;
             original_animation_url?: string;
             traits: components["schemas"]["Trait"][];
+            /** Format: double */
+            estimated_value_usd?: number;
         };
         NftBatchResponse: {
             nfts: components["schemas"]["NftDetailed"][];
@@ -2670,6 +2778,8 @@ export interface components {
             original_image_url?: string;
             original_animation_url?: string;
             traits: components["schemas"]["Trait"][];
+            /** Format: double */
+            estimated_value_usd?: number;
             animation_url?: string;
             is_suspicious: boolean;
             creator: string;
@@ -2830,7 +2940,7 @@ export interface components {
              */
             quantity: number;
             /** @description Price per item */
-            price: components["schemas"]["ListingPrice"];
+            price: components["schemas"]["ListingPriceInput"];
             /**
              * @description Listing start time in ISO 8601 format. Defaults to now.
              * @example 2026-05-01T00:00:00Z
@@ -2841,6 +2951,19 @@ export interface components {
              * @example 2026-06-01T00:00:00Z
              */
             end_time?: string;
+        };
+        /** @description Price for a listing item */
+        ListingPriceInput: {
+            /**
+             * @description Price amount in the currency's unit (e.g. '5.0' for 5 ETH)
+             * @example 5
+             */
+            amount: string;
+            /**
+             * @description Contract address of the payment currency (use 0x0000000000000000000000000000000000000000 for native token)
+             * @example 0x0000000000000000000000000000000000000000
+             */
+            currency: string;
         };
         /** @description Response containing blockchain actions to execute for listing creation */
         CreateListingActionsResponse: {
@@ -3070,6 +3193,14 @@ export interface components {
             /** @description Ordered list of blockchain actions to execute. Each action is a JSON object with a single field indicating the type (e.g. transferAction, approvalAction) and its associated data. Serialized using proto3 JSON format — fields with default values (empty string, 0, false) may be omitted. */
             steps: components["schemas"]["JsonNode"][];
         };
+        LinkWalletSiwxRequest: {
+            message: components["schemas"]["JsonNode"];
+            signature: string;
+            chainArch: string;
+        };
+        WalletLinkResponse: {
+            linkedWalletAddress: string;
+        };
         ToolListItemResponse: {
             tool_id: string;
             registry_chain: string;
@@ -3102,6 +3233,9 @@ export interface components {
             created_at: string;
             updated_at: string;
             name?: string;
+            display_name: string;
+            health_status: string;
+            access_tier: string;
             description?: string;
             tags?: string[];
             inputs?: unknown;
@@ -3109,6 +3243,8 @@ export interface components {
             creator_address?: string;
             endpoint?: string;
             access?: components["schemas"]["ToolAccessResponse"];
+            image_url?: string;
+            featured_image_url?: string;
             pricing_recipients: components["schemas"]["ToolPricingRecipientResponse"][];
         };
         ToolAccessResponse: {
@@ -3130,6 +3266,11 @@ export interface components {
             protocol: string;
             amount_per_call: string;
             created_at: string;
+            asset_symbol?: string;
+            /** Format: int32 */
+            asset_decimals?: number;
+            asset_image_url?: string;
+            amount_per_call_usd?: string;
         };
         ToolRequirementResponse: {
             kind: string;
@@ -3146,6 +3287,25 @@ export interface components {
                 [key: string]: string;
             };
             collection?: components["schemas"]["ToolCollectionResponse"];
+        };
+        ToolActivityEventResponse: {
+            id: string;
+            type: string;
+            attribution: string;
+            paid: boolean;
+            caller_address: string;
+            seller_address?: string;
+            timestamp: string;
+            amount?: string;
+            asset?: string;
+            /** Format: int64 */
+            chain_id?: number;
+            tx_hash?: string;
+            candidate_tool_slugs: string[];
+        };
+        ToolActivityPaginatedResponse: {
+            activity: components["schemas"]["ToolActivityEventResponse"][];
+            next?: string;
         };
         ToolPaymentStatsResponse: {
             /** Format: int64 */
@@ -3168,6 +3328,7 @@ export interface components {
             registry_chain: string;
             registry_addr: string;
             name: string;
+            display_name: string;
             description: string;
             tags: string[];
             creator: string;
@@ -3176,6 +3337,8 @@ export interface components {
             access_type: string;
             payment_stats?: components["schemas"]["ToolPaymentStatsResponse"];
             created_at: string;
+            image_url?: string;
+            featured_image_url?: string;
             pricing_recipients?: components["schemas"]["ToolPricingRecipientResponse"][];
             access?: components["schemas"]["ToolAccessResponse"];
         };
@@ -3200,7 +3363,7 @@ export interface components {
             chain: string;
             /**
              * @description The display name of the token
-             * @example USD Coin
+             * @example USDC
              */
             name: string;
             /**
@@ -3475,7 +3638,7 @@ export interface components {
             chain: string;
             /**
              * @description The display name of the token
-             * @example USD Coin
+             * @example USDC
              */
             name: string;
             /**
@@ -4202,7 +4365,7 @@ export interface components {
             chain: string;
             /**
              * @description The display name of the token
-             * @example USD Coin
+             * @example USDC
              */
             name: string;
             /**
@@ -4319,6 +4482,148 @@ export interface components {
              */
             timeframe: string;
         };
+        /** @description Aggregated realized and unrealized trading P&L across all currencies held by a wallet */
+        WalletPnlResponse: {
+            /**
+             * @description Realized P&L in USD from closed positions
+             * @example +1840.25
+             */
+            realized_pnl_usd: string;
+            /**
+             * @description Unrealized P&L in USD from open positions
+             * @example -320.1
+             */
+            unrealized_pnl_usd: string;
+            /**
+             * @description Total P&L in USD (realized + unrealized)
+             * @example +1520.15
+             */
+            total_pnl_usd: string;
+            /**
+             * @description Net amount invested in USD
+             * @example 12500
+             */
+            net_invested_usd: string;
+            /**
+             * @description Current USD value of the wallet's open positions (net_invested + unrealized P&L). Provides a visible anchor for the unrealized figure.
+             * @example 12179.9
+             */
+            current_value_usd: string;
+            /**
+             * @description Total return as a signed percentage in percent units (e.g. +12.16 means +12.16%, -8.40 means -8.40%). Not a 0-1 ratio.
+             * @example +12.16
+             */
+            return_percentage: string;
+        };
+        /** @description A single token transfer that contributed to a wallet's position in a currency. Combine `direction` and `transfer_type` to distinguish zero-cost acquisitions (e.g. AIRDROP, CEX_TRANSFER) from buys (e.g. SWAP_BUY). */
+        PositionTokenTransferResponse: {
+            /**
+             * @description Transfer direction relative to the wallet (e.g. IN, OUT).
+             * @example IN
+             */
+            direction: string;
+            /**
+             * @description Raw token quantity transferred, in token base units, as a string to preserve precision.
+             * @example 1500000000
+             */
+            quantity_raw: string;
+            /**
+             * @description Token price in USD at the time of the transfer, or null if unknown.
+             * @example 0.0425
+             */
+            price_usd?: string;
+            /**
+             * @description USD value of the transfer, or null if unknown.
+             * @example 63.75
+             */
+            value_usd?: string;
+            /**
+             * @description Transaction hash/signature of the transfer.
+             * @example 0xabc123
+             */
+            tx_signature: string;
+            /**
+             * Format: date-time
+             * @description Block time of the transfer, or null if unknown.
+             * @example 2026-04-28T00:00:00Z
+             */
+            block_time?: string;
+            /**
+             * @description Type of transfer, used to distinguish zero-cost acquisitions (e.g. AIRDROP, CEX_TRANSFER) from buys/sells (e.g. SWAP_BUY, SWAP_SELL). Null if unclassified.
+             * @example SWAP_BUY
+             */
+            transfer_type?: string;
+        };
+        /** @description A page of token transfers contributing to a wallet's position in a currency */
+        PositionTokenTransfersResponse: {
+            /** @description The token transfers for this page */
+            token_transfers: components["schemas"]["PositionTokenTransferResponse"][];
+            /**
+             * Format: int32
+             * @description Total number of token transfers for the position across all pages
+             * @example 17
+             */
+            total_count: number;
+            /** @description Cursor for the next page of results, or null if there are no more pages */
+            next?: string;
+        };
+        /** @description A single realized (closed) trading position. Realized P&L and cost basis are computed via FIFO (first-in, first-out) lot matching. */
+        ClosedPositionResponse: {
+            /** @description The currency that was traded. Null if the currency is no longer surfaced (e.g. under trust & safety enforcement). */
+            currency?: components["schemas"]["TokenBaseResponse"];
+            /**
+             * @description Realized profit or loss in USD for this position (FIFO). Signed.
+             * @example +1840.25
+             */
+            realized_pnl_usd: string;
+            /**
+             * @description Realized return as a signed percentage in percent units (e.g. +12.16 means +12.16%). Not a 0-1 ratio.
+             * @example +12.16
+             */
+            return_percentage: string;
+            /**
+             * @description Total USD proceeds from the sells that closed this position.
+             * @example 5200
+             */
+            total_proceeds_usd: string;
+            /**
+             * @description Total USD cost basis of the tokens sold, via FIFO lot matching.
+             * @example 3359.75
+             */
+            total_cost_basis_usd: string;
+            /**
+             * @description Average cost per token in USD (FIFO).
+             * @example 0.0425
+             */
+            avg_cost_per_token_usd: string;
+            /**
+             * Format: date-time
+             * @description When the position was closed (last sell). Null if unknown.
+             * @example 2026-04-28T00:00:00Z
+             */
+            closed_at?: string;
+            /** @description Whether this was a round-trip OpenSea trade (bought and sold on OpenSea). */
+            is_opensea_trade: boolean;
+            /**
+             * Format: date-time
+             * @description When the tokens in this position were first acquired. Null if unknown.
+             * @example 2026-01-15T00:00:00Z
+             */
+            first_acquired_at?: string;
+        };
+        /** @description A page of a wallet's closed (realized) trading positions */
+        ClosedPositionsResponse: {
+            /** @description The closed positions for this page */
+            closed_positions: components["schemas"]["ClosedPositionResponse"][];
+            /**
+             * Format: int32
+             * @description Total number of closed positions for the wallet across all pages
+             * @example 42
+             */
+            total_count: number;
+            /** @description Cursor for the next page of results, or null if there are no more pages */
+            next?: string;
+        };
         ProfileCollectionResponse: {
             collection: string;
             name: string;
@@ -4351,6 +4656,12 @@ export interface components {
             collections: components["schemas"]["ProfileCollectionResponse"][];
             next?: string;
         };
+        /**
+         * @description OAuth-style scope recognized by the OpenSea API for wallet-authenticated requests
+         * @example read:favorites
+         * @enum {string}
+         */
+        AuthScope: "read:eligibility" | "read:favorites" | "read:rewards" | "write:orders" | "write:drops" | "write:wallets";
     };
     responses: {
         /** @description For error reasons, review the response data. */
@@ -5142,6 +5453,42 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    link_wallet_with_siwx: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkWalletSiwxRequest"];
+            };
+        };
+        responses: {
+            /** @description Wallet linked successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletLinkResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletLinkResponse"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
     get_collection_traits: {
         parameters: {
             query?: never;
@@ -5178,6 +5525,8 @@ export interface operations {
                 sort_by?: string;
                 /** @description Filter by access type: open, nft_gated, token_gated, subscription, gated */
                 type?: string;
+                /** @description Filter by source: onchain, x402_bazaar, x402_bankr. Defaults to all sources when omitted. */
+                source?: string;
                 /**
                  * @description Number of items to return per page
                  * @example 20
@@ -5211,7 +5560,7 @@ export interface operations {
             path: {
                 /** @description Registry chain ID (e.g. 1, 8453) */
                 registry_chain: string;
-                /** @description Registry contract address */
+                /** @description Registry contract address: an onchain EVM address, or x402_bazaar / x402_bankr for x402 tools */
                 registry_addr: string;
                 /** @description Numeric tool ID */
                 tool_id: string;
@@ -5234,6 +5583,43 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    get_tool_activity: {
+        parameters: {
+            query?: {
+                /** @description Include payments attributed only by creator address */
+                include_creator_payments?: boolean;
+                /** @description Maximum number of results (1-100) */
+                limit?: number;
+                /** @description Offset for pagination */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Registry chain ID (e.g. 1, 8453) */
+                registry_chain: string;
+                /** @description Registry contract address: an onchain EVM address, or x402_bazaar / x402_bankr for x402 tools */
+                registry_addr: string;
+                /** @description Numeric tool ID */
+                tool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ToolActivityPaginatedResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
     search_tools: {
         parameters: {
             query?: {
@@ -5247,6 +5633,10 @@ export interface operations {
                 access_type?: string;
                 /** @description Filter by creator address */
                 creator?: string;
+                /** @description Filter by source: onchain, x402_bazaar, x402_bankr. Defaults to all sources when omitted. */
+                source?: string;
+                /** @description Filter to tools gated by owning an NFT in this collection (slug). Unknown slugs return no results. */
+                collection?: string;
                 /** @description Sort by: relevance, newest, most_used */
                 sort_by?: string;
                 /** @description Include pricing recipients and access requirements per result. Defaults to true; set false for a lighter list response. */
@@ -7256,6 +7646,113 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    get_wallet_pnl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The wallet address
+                 * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+                 */
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallet trading P&L. Indexed wallets return 200 even when all figures are zero (real but flat). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["WalletPnlResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_wallet_token_transfers: {
+        parameters: {
+            query: {
+                /**
+                 * @description The currency's contract address
+                 * @example 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
+                 */
+                contract_address: string;
+                /**
+                 * @description The chain the currency is on
+                 * @example ethereum
+                 */
+                chain: string;
+                /** @description Number of results to return per page (1-200, default 20) */
+                limit?: number;
+                /** @description Cursor for the next page of results */
+                next?: string;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The wallet address
+                 * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+                 */
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Position token transfers */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PositionTokenTransfersResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_wallet_closed_positions: {
+        parameters: {
+            query?: {
+                /** @description Sort order: TOP_TRADES (default) or RECENT */
+                sort_by?: string;
+                /** @description Number of results to return per page (1-200, default 20) */
+                limit?: number;
+                /** @description Cursor for the next page of results */
+                next?: string;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The wallet address
+                 * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+                 */
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Closed positions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ClosedPositionsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
     get_profile_offers_received: {
         parameters: {
             query?: {
@@ -7415,6 +7912,17 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NftListResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
         };
     };

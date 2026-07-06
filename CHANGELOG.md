@@ -1,5 +1,25 @@
 # @opensea/api-types
 
+## 0.6.0
+
+### Minor Changes
+
+- c460fc1: Sync OpenAPI spec: add wallet trading P&L endpoints and schemas —
+  `GET /api/v2/account/{address}/pnl` (`WalletPnlResponse`),
+  `/pnl/closed-positions` (`ClosedPositionsResponse`, `ClosedPositionResponse`),
+  and `/pnl/token-transfers` (`PositionTokenTransfersResponse`,
+  `PositionTokenTransferResponse`). Also adds `ListingPriceInput` and removes the
+  `@Hidden` favorites path from the published spec.
+- ef89be8: Sync OpenAPI spec: adds the `AuthScope` schema (now exported as a named type)
+  with per-scope `x-enum-descriptions` / `x-enum-display-names` metadata. Adds
+  the package's first runtime export, `AUTH_SCOPES` (with `AuthScopeInfo` type)
+  — scope names, display names, and descriptions generated from the spec at
+  codegen time.
+
+### Patch Changes
+
+- e59df7f: Sync OpenAPI spec: add tool activity endpoint, `robinhood` chain, `source`/`collection` search filters, `calldata_suffix` on fulfillment, SIWX wallet-link endpoint (`POST /api/v2/accounts/wallets/siwx` with `LinkWalletSiwxRequest`/`WalletLinkResponse`), re-published `GET /api/v2/account/{address}/favorites`, and the new `write:wallets` auth scope (also added to the SDK's `OPENSEA_SCOPES`)
+
 ## 0.5.0
 
 ### Minor Changes

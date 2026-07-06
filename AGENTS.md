@@ -20,8 +20,10 @@ pnpm run test          # Run smoke tests with Vitest
 | `scripts/update-spec.mjs` | Fetches the latest spec; falls back to existing local file on network errors |
 | `src/generated.ts` | Auto-generated types from `openapi-typescript` — do not edit manually |
 | `src/schemas-generated.ts` | Auto-generated named re-exports of every `components.schemas.*` entry — do not edit manually |
-| `src/index.ts` | Hand-written. Re-exports `schemas-generated.ts`, plus response envelopes and operation helpers |
+| `src/auth-scopes-generated.ts` | Auto-generated runtime scope metadata (`AUTH_SCOPES`, `AuthScopeInfo`) derived from the spec's `AuthScope` schema — do not edit manually |
+| `src/index.ts` | Hand-written. Re-exports `schemas-generated.ts` and `auth-scopes-generated.ts`, plus response envelopes and operation helpers |
 | `scripts/generate-schema-exports.mjs` | Emits `schemas-generated.ts` from the spec; runs as part of `pnpm run generate` |
+| `scripts/generate-auth-scopes.mjs` | Emits `auth-scopes-generated.ts` from the spec's `AuthScope` schema; runs as part of `pnpm run generate` |
 | `scripts/check-consumer-imports.mjs` | CI guard — verifies every name workspace packages import from `@opensea/api-types` is in the built `dist/index.d.ts` |
 | `test/smoke.test.ts` | Smoke test verifying the generated types compile and export correctly |
 

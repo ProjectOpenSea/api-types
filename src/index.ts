@@ -33,6 +33,12 @@ export type Schemas = components["schemas"]
 
 export * from "./schemas-generated.js"
 
+// ── Auto-generated runtime values ───────────────────────────────────
+// Scope metadata (names + descriptions) derived from the spec's AuthScope
+// schema. Regenerate via `pnpm run generate`.
+
+export { AUTH_SCOPES, type AuthScopeInfo } from "./auth-scopes-generated.js"
+
 // ── Response envelopes (components.responses) ───────────────────────
 // These live under `components.responses`, not `components.schemas`, so
 // they aren't covered by the auto-generated schema exports.
