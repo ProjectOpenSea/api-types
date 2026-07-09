@@ -1,5 +1,11 @@
 # @opensea/api-types
 
+## 0.7.0
+
+### Minor Changes
+
+- df2b152: Sync OpenAPI spec: add SIWX wallet-link endpoint schema updates (nonce generation, message signing, and wallet-link verification endpoints with new request/response types)
+
 ## 0.6.0
 
 ### Minor Changes
