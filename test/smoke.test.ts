@@ -25,6 +25,7 @@ import type {
   paths,
   Schemas,
 } from "../src/index.js"
+import { AUTH_SCOPES } from "../src/index.js"
 
 describe("@opensea/api-types smoke tests", () => {
   it("paths covers known API endpoints", () => {
@@ -91,5 +92,25 @@ describe("@opensea/api-types smoke tests", () => {
     ]
     expect(validChains).toContain("ethereum")
     expect(validChains).toContain("base")
+  })
+
+  it("exports the production wallet auth scopes", () => {
+    expect(AUTH_SCOPES.map(scope => scope.name)).toEqual([
+      "read:eligibility",
+      "read:favorites",
+      "write:favorites",
+      "write:orders",
+      "write:drops",
+      "write:collections",
+      "write:profile",
+      "write:wallets",
+    ])
+    expect(AUTH_SCOPES.find(scope => scope.name === "write:profile")).toEqual(
+      expect.objectContaining({
+        group: "write",
+        endpoints: expect.arrayContaining(["/api/v2/profile/shelves"]),
+        mcpTools: ["manage_profile"],
+      }),
+    )
   })
 })

@@ -1,5 +1,16 @@
 # @opensea/api-types
 
+## 0.8.0
+
+### Minor Changes
+
+- df2b152: Add the public SIWX wallet-link endpoint schemas used by agent wallet-link flows.
+- 4bef9a5: Sync the full public scoped wallet API and generate scope groups, endpoint mappings, and MCP tool metadata.
+
+### Patch Changes
+
+- 2459068: Refresh generated API types and wallet-auth scope metadata from the production OpenAPI specification.
+
 ## 0.7.0
 
 ### Minor Changes

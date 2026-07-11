@@ -2,12 +2,12 @@
 /**
  * Generate `src/auth-scopes-generated.ts` from the `AuthScope` schema in
  * `opensea-api.json`. The schema carries per-scope metadata via the
- * `x-enum-descriptions` / `x-enum-display-names` extension arrays (emitted by
- * os2-core from its canonical `auth/scopes.json`), aligned by index with the
- * enum values. Runs as part of `pnpm --filter @opensea/api-types run generate`.
+ * aligned `x-enum-*` extension arrays (emitted by os2-core from its canonical
+ * `auth/scopes.json`), including descriptions, groups, endpoint paths, and MCP
+ * tool names. Runs as part of `pnpm --filter @opensea/api-types run generate`.
  *
- * This makes scope names AND descriptions spec-derived at codegen time, so
- * downstream consumers (SDK, CLI) never maintain a manual scope list.
+ * This makes the full scope registry spec-derived at codegen time, so downstream
+ * consumers (SDK, CLI) never maintain a manual scope list.
  */
 
 import { readFileSync, writeFileSync } from "node:fs"
@@ -31,10 +31,16 @@ if (!schema || !Array.isArray(schema.enum)) {
 const names = schema.enum
 const descriptions = schema["x-enum-descriptions"]
 const displayNames = schema["x-enum-display-names"]
+const groups = schema["x-enum-groups"]
+const endpoints = schema["x-enum-endpoints"]
+const mcpTools = schema["x-enum-mcp-tools"]
 
 for (const [key, value] of Object.entries({
   "x-enum-descriptions": descriptions,
   "x-enum-display-names": displayNames,
+  "x-enum-groups": groups,
+  "x-enum-endpoints": endpoints,
+  "x-enum-mcp-tools": mcpTools,
 })) {
   if (!Array.isArray(value) || value.length !== names.length) {
     console.error(
@@ -51,6 +57,9 @@ const entries = names
       `    name: ${JSON.stringify(name)},`,
       `    displayName: ${JSON.stringify(displayNames[i])},`,
       `    description: ${JSON.stringify(descriptions[i])},`,
+      `    group: ${JSON.stringify(groups[i])},`,
+      `    endpoints: ${JSON.stringify(endpoints[i])},`,
+      `    mcpTools: ${JSON.stringify(mcpTools[i])},`,
       "  },",
     ].join("\n"),
   )
@@ -61,7 +70,7 @@ const content = `/* eslint-disable */
 // Regenerate with: pnpm --filter @opensea/api-types run generate
 //
 // Runtime scope metadata derived from the OpenAPI spec's \`AuthScope\` schema
-// (\`enum\` + \`x-enum-descriptions\` + \`x-enum-display-names\`), which os2-core
+// (\`enum\` plus aligned \`x-enum-*\` metadata arrays), which os2-core
 // emits from its canonical \`auth/scopes.json\`.
 
 import type { AuthScope } from "./schemas-generated.js"
@@ -73,6 +82,9 @@ ${entries}
   name: AuthScope
   displayName: string
   description: string
+  group: string
+  endpoints: readonly string[]
+  mcpTools: readonly string[]
 }[]
 
 /** Metadata describing a single OpenSea API auth scope. */

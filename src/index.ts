@@ -34,7 +34,8 @@ export type Schemas = components["schemas"]
 export * from "./schemas-generated.js"
 
 // ── Auto-generated runtime values ───────────────────────────────────
-// Scope metadata (names + descriptions) derived from the spec's AuthScope
+// Scope metadata (names, descriptions, groups, endpoints, and MCP tools) derived
+// from the spec's AuthScope schema extensions.
 // schema. Regenerate via `pnpm run generate`.
 
 export { AUTH_SCOPES, type AuthScopeInfo } from "./auth-scopes-generated.js"
@@ -53,20 +54,26 @@ export type InternalError = Responses["InternalError"]
 // ── Operation helpers ───────────────────────────────────────────────
 // Use these to extract request/response types for specific operations.
 
-/** Extract the successful (200) response body type for a given operation */
-export type OperationResponse<T extends keyof operations> =
-  operations[T] extends {
-    responses: { 200: { content: { "application/json": infer R } } }
-  }
+type OperationContentBody<T> = T extends {
+  content: { "application/json": infer R }
+}
+  ? R
+  : T extends { content: { "*/*": infer R } }
     ? R
+    : T extends { content: { "multipart/form-data": infer R } }
+      ? R
+      : never
+
+/** Extract the successful (200) response body type for a given operation. */
+export type OperationResponse<T extends keyof operations> =
+  operations[T] extends { responses: { 200: infer R } }
+    ? OperationContentBody<R>
     : never
 
 /** Extract the request body type for a given operation */
 export type OperationRequestBody<T extends keyof operations> =
-  operations[T] extends {
-    requestBody: { content: { "application/json": infer R } }
-  }
-    ? R
+  operations[T] extends { requestBody: infer R }
+    ? OperationContentBody<R>
     : never
 
 /** Extract the path parameters type for a given operation */
@@ -74,5 +81,6 @@ export type OperationPathParams<T extends keyof operations> =
   operations[T] extends { parameters: { path: infer R } } ? R : never
 
 /** Extract the query parameters type for a given operation */
-export type OperationQueryParams<T extends keyof operations> =
-  operations[T] extends { parameters: { query?: infer R } } ? R : never
+export type OperationQueryParams<T extends keyof operations> = NonNullable<
+  operations[T]["parameters"]["query"]
+>

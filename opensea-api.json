@@ -84,6 +84,280 @@
     }
   ],
   "paths": {
+    "/api/v2/drops/{slug}/items/{token_id}": {
+      "put": {
+        "tags": ["Drops Endpoints"],
+        "summary": "Build transaction data for updating a SelfMint drop item",
+        "description": "Returns ready-to-sign onchain transaction data for updating a SelfMint drop item. The caller is responsible for signing and broadcasting the transaction.",
+        "operationId": "update_self_mint_drop_item",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Collection slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cool-cats"
+          },
+          {
+            "name": "token_id",
+            "in": "path",
+            "description": "Drop item token id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": 123
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSelfMintDropItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Ready-to-sign transaction data",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelfMintDropItemResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1ErrorWrapper"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelfMintDropItemResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1ErrorWrapper"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:drops"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:drops"]
+      },
+      "patch": {
+        "tags": ["Drops Endpoints"],
+        "summary": "Update drop item",
+        "description": "Update drop item metadata.",
+        "operationId": "update_drop_item",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Collection slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cool-cats"
+          },
+          {
+            "name": "token_id",
+            "in": "path",
+            "description": "Drop item token id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": 123
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDropItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Drop item updated successfully",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DropItemResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DropItemResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:drops"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:drops"]
+      }
+    },
+    "/api/v2/watchlist": {
+      "post": {
+        "tags": ["Account Endpoints"],
+        "summary": "Add a watchlist entry",
+        "description": "Add an NFT, token, collection, or perpetual to the authenticated account's watchlist.",
+        "operationId": "add_watchlist_entry",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchlistRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Watchlist entry added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FavoriteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:favorites"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:favorites"]
+      },
+      "delete": {
+        "tags": ["Account Endpoints"],
+        "summary": "Remove a watchlist entry",
+        "description": "Remove an NFT, token, collection, or perpetual from the authenticated account's watchlist.",
+        "operationId": "remove_watchlist_entry",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchlistRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Watchlist entry removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FavoriteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:favorites"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:favorites"]
+      }
+    },
     "/api/v2/transactions/receipt": {
       "post": {
         "tags": ["Transaction Endpoints"],
@@ -124,7 +398,7 @@
       "post": {
         "tags": ["Tool Endpoints [Beta]"],
         "summary": "[Beta] Report tool usage (metrics only)",
-        "description": "[Beta] Report verified tool usage for metrics and analytics purposes only. Supports verification_type: eip3009_authorization (free tools, identity proof) or x402_settlement (paid tools, onchain USDC payment verification). Identify the tool by providing tool_chain_id + tool_registry_address + tool_onchain_id, or alternatively just tool_endpoint (the tool's canonical URL). This endpoint does NOT trigger any onchain transactions. This endpoint is under active development and may change without notice.",
+        "description": "[Beta] Report verified tool usage for metrics and analytics purposes only. Supports verification_type: eip3009_authorization (free tools, identity proof) or x402_settlement (paid tools, onchain USDC payment verification). Identify the tool by providing tool_chain_id + tool_registry_address (an onchain EVM address, or x402_bazaar / x402_bankr for x402 tools) + tool_onchain_id, or alternatively just tool_endpoint (the tool's canonical URL). This endpoint does NOT trigger any onchain transactions. This endpoint is under active development and may change without notice.",
         "operationId": "report_tool_usage",
         "requestBody": {
           "content": {
@@ -228,6 +502,240 @@
         }
       }
     },
+    "/api/v2/profile/username": {
+      "post": {
+        "tags": ["profile-controller"],
+        "summary": "Claim a profile username",
+        "description": "Claim a username for the authenticated wallet.",
+        "operationId": "claim_profile_username",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimAccountUsernameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Username claimed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimAccountUsernameResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:profile"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:profile"]
+      }
+    },
+    "/api/v2/profile/shelves": {
+      "get": {
+        "tags": ["profile-shelf-controller"],
+        "summary": "Get profile shelves",
+        "description": "Get the shelves for a public wallet address.",
+        "operationId": "get_profile_shelves",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "description": "Wallet address to retrieve shelves for",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0x8ba1f109551bd432803012645ac136c94c19d6e"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shelves retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProfileShelfResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": ["profile-shelf-controller"],
+        "summary": "Create a profile shelf",
+        "description": "Create a shelf for the authenticated wallet.",
+        "operationId": "create_profile_shelf",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProfileShelfRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Shelf created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileShelfResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:profile"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:profile"]
+      },
+      "patch": {
+        "tags": ["profile-shelf-controller"],
+        "summary": "Reorder profile shelves",
+        "description": "Reorder the authenticated wallet's shelves.",
+        "operationId": "reorder_profile_shelves",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderProfileShelvesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Shelves reordered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileShelfActionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:profile"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:profile"]
+      }
+    },
+    "/api/v2/profile/images": {
+      "post": {
+        "tags": ["profile-controller"],
+        "summary": "Upload a profile image",
+        "description": "Set contentType in the context request to the exact MIME type of the image bytes. This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds. Pass the token as the matching profile image field in PATCH /api/v2/profile.",
+        "operationId": "upload_profile_image",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadProfileImageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Upload context returned successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadContext"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:profile"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:profile"]
+      }
+    },
     "/api/v2/orders/{chain}/{protocol}/offers": {
       "post": {
         "tags": ["Offer Endpoints"],
@@ -238,10 +746,12 @@
           {
             "name": "chain",
             "in": "path",
+            "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
-            }
+              "$ref": "#/components/schemas/ChainIdentifier"
+            },
+            "example": "ethereum"
           },
           {
             "name": "protocol",
@@ -292,10 +802,12 @@
           {
             "name": "chain",
             "in": "path",
+            "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
-            }
+              "$ref": "#/components/schemas/ChainIdentifier"
+            },
+            "example": "ethereum"
           },
           {
             "name": "protocol",
@@ -346,10 +858,12 @@
           {
             "name": "chain",
             "in": "path",
+            "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
-            }
+              "$ref": "#/components/schemas/ChainIdentifier"
+            },
+            "example": "ethereum"
           },
           {
             "name": "protocol_address",
@@ -402,7 +916,18 @@
           "500": {
             "$ref": "#/components/responses/InternalError"
           }
-        }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:orders"]
+          }
+        ],
+        "x-opensea-auth-required": false,
+        "x-opensea-auth-scopes": ["write:orders"]
       }
     },
     "/api/v2/offers": {
@@ -728,6 +1253,189 @@
         }
       }
     },
+    "/api/v2/drops/{slug}": {
+      "get": {
+        "tags": ["Drops Endpoints"],
+        "summary": "Get drop by collection slug",
+        "description": "Get detailed drop information for a collection, including stages and supply.",
+        "operationId": "get_drop_by_slug",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Collection slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cool-cats"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detailed drop information",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DropDetailedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Drops Endpoints"],
+        "summary": "Update Creator Studio drop edits",
+        "description": "Update an existing ERC-721 SeaDrop V1 drop and its stages.",
+        "operationId": "save_drop_edits",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "The collection slug identifying the drop to update",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cool-cats"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveDropEditsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Drop edits saved successfully",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveDropResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveDropResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:drops"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:drops"]
+      }
+    },
+    "/api/v2/drops/{slug}/prereveal-item": {
+      "post": {
+        "tags": ["Drops Endpoints"],
+        "summary": "Save prereveal drop item",
+        "description": "Save prereveal drop item metadata.",
+        "operationId": "save_prereveal_drop_item",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Collection slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cool-cats"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavePrerevealDropItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Prereveal drop item saved successfully",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrerevealDropItemResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrerevealDropItemResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:drops"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:drops"]
+      }
+    },
     "/api/v2/drops/{slug}/mint": {
       "post": {
         "tags": ["Drops Endpoints"],
@@ -813,6 +1521,376 @@
         }
       }
     },
+    "/api/v2/drops/{slug}/items": {
+      "post": {
+        "tags": ["Drops Endpoints"],
+        "summary": "Build transaction data for creating a SelfMint drop item",
+        "description": "Returns ready-to-sign onchain transaction data for creating a SelfMint drop item. The caller is responsible for signing and broadcasting the transaction.",
+        "operationId": "save_self_mint_drop_item",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Collection slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cool-cats"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveSelfMintDropItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Ready-to-sign transaction data",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelfMintDropItemResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1ErrorWrapper"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelfMintDropItemResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1ErrorWrapper"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:drops"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:drops"]
+      }
+    },
+    "/api/v2/drops/{slug}/items/media": {
+      "post": {
+        "tags": ["Drops Endpoints"],
+        "summary": "Upload drop item media",
+        "description": "This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds. Pass each token as media_token to POST /api/v2/drops/{slug}/items or POST /api/v2/drops/{slug}/prereveal-item, as media_tokens to POST /api/v2/drops/{slug}/items/media/save, or as media_token to PUT /api/v2/drops/{slug}/items/{token_id}.",
+        "operationId": "upload_drop_item_media",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Collection slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cool-cats"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadDropItemMediaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Upload contexts generated successfully",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UploadContext"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UploadContext"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:drops"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:drops"]
+      }
+    },
+    "/api/v2/drops/{slug}/items/media/save": {
+      "post": {
+        "tags": ["Drops Endpoints"],
+        "summary": "Save drop item media",
+        "description": "Persist drop item media references.",
+        "operationId": "save_drop_item_media",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Collection slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cool-cats"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveDropItemMediaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Drop item media saved successfully",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveDropItemMediaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveDropItemMediaResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:drops"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:drops"]
+      }
+    },
+    "/api/v2/drops/{slug}/allowlist": {
+      "post": {
+        "tags": ["Drops Endpoints"],
+        "summary": "Upload drop allowlist",
+        "description": "This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds. Pass the token as allowlist_file_token to POST /api/v2/drops/{slug}/allowlist/validate.",
+        "operationId": "upload_drop_allowlist",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Collection slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cool-cats"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upload context generated successfully",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadContext"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadContext"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:drops"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:drops"]
+      }
+    },
+    "/api/v2/drops/{slug}/allowlist/validate": {
+      "post": {
+        "tags": ["Drops Endpoints"],
+        "summary": "Validate drop allowlist",
+        "description": "Validate an uploaded drop allowlist file token.",
+        "operationId": "validate_drop_allowlist",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Collection slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cool-cats"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateDropAllowlistRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Validated file token",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateDropAllowlistResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateDropAllowlistResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:drops"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:drops"]
+      }
+    },
     "/api/v2/drops/deploy": {
       "post": {
         "tags": ["Drops Endpoints"],
@@ -854,6 +1932,88 @@
             "$ref": "#/components/responses/InternalError"
           }
         }
+      }
+    },
+    "/api/v2/collections/{slug}/images/{image_type}": {
+      "post": {
+        "tags": ["Collection Endpoints"],
+        "summary": "Upload collection image",
+        "description": "Set the content_type query parameter to the exact MIME type of the image bytes. This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds. Pass the token as the matching image field in PATCH /api/v2/collections/{slug}.",
+        "operationId": "upload_collection_image",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Collection slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "boredapeyachtclub"
+          },
+          {
+            "name": "image_type",
+            "in": "path",
+            "description": "Image type",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "profile_picture"
+          },
+          {
+            "name": "content_type",
+            "in": "query",
+            "description": "Exact MIME type of the image bytes",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "image/png"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upload context generated successfully",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadContext"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadContext"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:collections"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:collections"]
       }
     },
     "/api/v2/collections/batch": {
@@ -902,10 +2062,10 @@
           {
             "name": "chain",
             "in": "path",
-            "description": "The blockchain on which the NFT exists",
+            "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/ChainIdentifier"
             },
             "example": "ethereum"
           },
@@ -982,11 +2142,12 @@
           {
             "name": "chain",
             "in": "path",
-            "description": "Blockchain chain identifier",
+            "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
-            }
+              "$ref": "#/components/schemas/ChainIdentifier"
+            },
+            "example": "ethereum"
           },
           {
             "name": "identifier",
@@ -1168,7 +2329,412 @@
           "500": {
             "$ref": "#/components/responses/InternalError"
           }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:wallets"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:wallets"]
+      }
+    },
+    "/api/v2/profile": {
+      "patch": {
+        "tags": ["profile-controller"],
+        "summary": "Update profile settings",
+        "description": "Update the authenticated wallet's profile settings.",
+        "operationId": "update_profile_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Profile settings updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateProfileSettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:profile"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:profile"]
+      }
+    },
+    "/api/v2/profile/shelves/{shelf_id}": {
+      "delete": {
+        "tags": ["profile-shelf-controller"],
+        "summary": "Delete a profile shelf",
+        "description": "Delete the authenticated wallet's shelf.",
+        "operationId": "delete_profile_shelf",
+        "parameters": [
+          {
+            "name": "shelf_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shelf deleted successfully",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileShelfActionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:profile"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:profile"]
+      },
+      "patch": {
+        "tags": ["profile-shelf-controller"],
+        "summary": "Update a profile shelf",
+        "description": "Update shelf fields and optionally item descriptions. Shelf field updates are applied first; if a later item description update fails, earlier changes are not rolled back.",
+        "operationId": "update_profile_shelf",
+        "parameters": [
+          {
+            "name": "shelf_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileShelfRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Shelf updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileShelfResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:profile"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:profile"]
+      }
+    },
+    "/api/v2/collections/{slug}": {
+      "get": {
+        "tags": ["Collection Endpoints"],
+        "summary": "Get a single collection",
+        "description": "Get a single collection including details such as fees, traits, and links.",
+        "operationId": "get_collection",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Unique identifier for the specific collection",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "doodles-official"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionDetailedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
         }
+      },
+      "patch": {
+        "tags": ["Collection Endpoints"],
+        "summary": "Modify collection metadata",
+        "description": "Update an existing collection's metadata.",
+        "operationId": "modify_collection",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Collection slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "boredapeyachtclub"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModifyCollectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Collection metadata updated successfully",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModifyCollectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModifyCollectionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:collections"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:collections"]
+      }
+    },
+    "/api/v2/collections/{slug}/visibility": {
+      "patch": {
+        "tags": ["Collection Endpoints"],
+        "summary": "Set collection visibility",
+        "description": "Hide or unhide a collection.",
+        "operationId": "set_collection_visibility",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Collection slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "boredapeyachtclub"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetCollectionVisibilityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Visibility updated successfully",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetCollectionVisibilityResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:collections"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:collections"]
+      }
+    },
+    "/api/v2/collections/{slug}/metadata": {
+      "patch": {
+        "tags": ["Collection Endpoints"],
+        "summary": "Update collection metadata",
+        "description": "Update collection about, hero, overview, and logo image metadata.",
+        "operationId": "update_collection_metadata",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Collection slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "boredapeyachtclub"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCollectionMetadataRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Collection metadata updated successfully",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateCollectionMetadataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateCollectionMetadataResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:collections"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:collections"]
       }
     },
     "/api/v2/traits/{slug}": {
@@ -2005,11 +3571,12 @@
           {
             "name": "chain",
             "in": "path",
-            "description": "Blockchain chain identifier",
+            "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
-            }
+              "$ref": "#/components/schemas/ChainIdentifier"
+            },
+            "example": "ethereum"
           },
           {
             "name": "protocol_address",
@@ -2465,7 +4032,7 @@
             "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/ChainIdentifier"
             },
             "example": "ethereum"
           },
@@ -2964,7 +4531,7 @@
             "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/ChainIdentifier"
             },
             "example": "ethereum"
           },
@@ -3140,8 +4707,9 @@
             "description": "Filter by blockchain",
             "required": false,
             "schema": {
-              "type": "string"
-            }
+              "$ref": "#/components/schemas/ChainIdentifier"
+            },
+            "example": "ethereum"
           },
           {
             "name": "limit",
@@ -3260,12 +4828,12 @@
         }
       }
     },
-    "/api/v2/drops/{slug}": {
+    "/api/v2/drops/{slug}/eligibility": {
       "get": {
         "tags": ["Drops Endpoints"],
-        "summary": "Get drop by collection slug",
-        "description": "Get detailed drop information for a collection, including stages and supply.",
-        "operationId": "get_drop_by_slug",
+        "summary": "Get drop eligibility for the authenticated wallet",
+        "description": "Returns per-stage eligibility for the authenticated wallet, including pricing and mint limits.",
+        "operationId": "get_drop_eligibility",
         "parameters": [
           {
             "name": "slug",
@@ -3280,11 +4848,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Detailed drop information",
+            "description": "Eligibility results per drop stage",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/DropDetailedResponse"
+                  "$ref": "#/components/schemas/DropEligibilityResponse"
                 }
               }
             }
@@ -3292,13 +4860,34 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DropEligibilityResponse"
+                }
+              }
+            }
+          },
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
           }
-        }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["read:eligibility"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["read:eligibility"]
       }
     },
     "/api/v2/drops/deploy/{chain}/{tx_hash}/receipt": {
@@ -3311,10 +4900,10 @@
           {
             "name": "chain",
             "in": "path",
-            "description": "Chain slug (e.g. ethereum, base)",
+            "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/ChainIdentifier"
             },
             "example": "ethereum"
           },
@@ -3385,8 +4974,9 @@
             "description": "Blockchain to filter by",
             "required": false,
             "schema": {
-              "type": "string"
-            }
+              "$ref": "#/components/schemas/ChainIdentifier"
+            },
+            "example": "ethereum"
           },
           {
             "name": "creator_username",
@@ -3424,47 +5014,6 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/CollectionPaginatedResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          }
-        }
-      }
-    },
-    "/api/v2/collections/{slug}": {
-      "get": {
-        "tags": ["Collection Endpoints"],
-        "summary": "Get a single collection",
-        "description": "Get a single collection including details such as fees, traits, and links.",
-        "operationId": "get_collection",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "description": "Unique identifier for the specific collection",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "example": "doodles-official"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/CollectionDetailedResponse"
                 }
               }
             }
@@ -4019,10 +5568,10 @@
           {
             "name": "chain",
             "in": "path",
-            "description": "The blockchain on which the token exists",
+            "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/ChainIdentifier"
             },
             "example": "ethereum"
           },
@@ -4070,10 +5619,10 @@
           {
             "name": "chain",
             "in": "path",
-            "description": "The blockchain on which the token exists",
+            "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/ChainIdentifier"
             },
             "example": "ethereum"
           },
@@ -4150,10 +5699,10 @@
           {
             "name": "chain",
             "in": "path",
-            "description": "The blockchain on which the token exists",
+            "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/ChainIdentifier"
             },
             "example": "ethereum"
           },
@@ -4241,10 +5790,10 @@
           {
             "name": "chain",
             "in": "path",
-            "description": "The blockchain on which the token exists",
+            "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/ChainIdentifier"
             },
             "example": "ethereum"
           },
@@ -4301,10 +5850,10 @@
           {
             "name": "chain",
             "in": "path",
-            "description": "The blockchain on which the token exists",
+            "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/ChainIdentifier"
             },
             "example": "ethereum"
           },
@@ -4370,10 +5919,10 @@
           {
             "name": "chain",
             "in": "path",
-            "description": "The blockchain on which the token exists",
+            "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/ChainIdentifier"
             },
             "example": "ethereum"
           },
@@ -4451,8 +6000,9 @@
             "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
-            }
+              "$ref": "#/components/schemas/ChainIdentifier"
+            },
+            "example": "ethereum"
           }
         ],
         "responses": {
@@ -4500,8 +6050,9 @@
             "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
-            }
+              "$ref": "#/components/schemas/ChainIdentifier"
+            },
+            "example": "ethereum"
           }
         ],
         "responses": {
@@ -4546,11 +6097,12 @@
           {
             "name": "chain",
             "in": "path",
-            "description": "Blockchain chain identifier",
+            "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
-            }
+              "$ref": "#/components/schemas/ChainIdentifier"
+            },
+            "example": "ethereum"
           },
           {
             "name": "limit",
@@ -4609,7 +6161,7 @@
             "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/ChainIdentifier"
             },
             "example": "ethereum"
           },
@@ -4670,7 +6222,7 @@
             "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/ChainIdentifier"
             },
             "example": "ethereum"
           },
@@ -4752,7 +6304,7 @@
             "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/ChainIdentifier"
             },
             "example": "ethereum"
           },
@@ -4813,7 +6365,7 @@
             "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/ChainIdentifier"
             },
             "example": "ethereum"
           },
@@ -4880,11 +6432,12 @@
           {
             "name": "chain",
             "in": "path",
-            "description": "Blockchain chain identifier",
+            "description": "The blockchain on which to filter the results",
             "required": true,
             "schema": {
-              "type": "string"
-            }
+              "$ref": "#/components/schemas/ChainIdentifier"
+            },
+            "example": "ethereum"
           },
           {
             "name": "collection",
@@ -5137,6 +6690,68 @@
         }
       }
     },
+    "/api/v2/account/{address}/token_watchlist": {
+      "get": {
+        "tags": ["Account Endpoints"],
+        "summary": "Get tokens watched by an account",
+        "description": "Get the tokens watched by a wallet address. Requires wallet identity authentication; the requested address must belong to the authenticated account.",
+        "operationId": "get_account_token_watchlist",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "The wallet address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Watched tokens",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPaginatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPaginatedResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["read:favorites"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["read:favorites"]
+      }
+    },
     "/api/v2/account/{address}/portfolio": {
       "get": {
         "tags": ["Account Endpoints"],
@@ -5311,7 +6926,7 @@
             "description": "The chain the currency is on",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/ChainIdentifier"
             },
             "example": "ethereum"
           },
@@ -5421,6 +7036,68 @@
             "$ref": "#/components/responses/InternalError"
           }
         }
+      }
+    },
+    "/api/v2/account/{address}/perpetual_watchlist": {
+      "get": {
+        "tags": ["Account Endpoints"],
+        "summary": "Get perpetuals watched by an account",
+        "description": "Get the perpetual futures watched by a wallet address. Requires wallet identity authentication; the requested address must belong to the authenticated account.",
+        "operationId": "get_account_perpetual_watchlist",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "The wallet address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Watched perpetuals",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerpetualFuturePaginatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerpetualFuturePaginatedResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["read:favorites"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["read:favorites"]
       }
     },
     "/api/v2/account/{address}/offers_received": {
@@ -5847,7 +7524,15 @@
           "500": {
             "$ref": "#/components/responses/InternalError"
           }
-        }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["read:favorites"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["read:favorites"]
       }
     },
     "/api/v2/account/{address}/collections": {
@@ -5919,6 +7604,67 @@
           }
         }
       }
+    },
+    "/api/v2/accounts/wallets/{wallet}": {
+      "delete": {
+        "tags": ["Account Endpoints"],
+        "summary": "Unlink a wallet from the authenticated account",
+        "description": "Unlink a wallet from the authenticated account using a scoped wallet token.",
+        "operationId": "unlink_wallet",
+        "parameters": [
+          {
+            "name": "wallet",
+            "in": "path",
+            "description": "The linked wallet address to remove",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet unlinked successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletUnlinkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletUnlinkResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:wallets"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:wallets"]
+      }
     }
   },
   "components": {
@@ -5958,6 +7704,141 @@
           "robinhood"
         ],
         "example": "ethereum"
+      },
+      "SelfMintDropItemResponse": {
+        "type": "object",
+        "description": "Ready-to-sign SelfMint drop item transaction data",
+        "properties": {
+          "to": {
+            "type": "string",
+            "description": "Transaction target contract address"
+          },
+          "data": {
+            "type": "string",
+            "description": "Encoded transaction data (hex)"
+          },
+          "value": {
+            "type": "string",
+            "description": "Transaction value in wei (hex)"
+          },
+          "chain": {
+            "type": "string",
+            "description": "Chain identifier"
+          }
+        },
+        "required": ["chain", "data", "to", "value"]
+      },
+      "V1ErrorWrapper": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["errors"]
+      },
+      "SelfMintDropItemTraitRequest": {
+        "type": "object",
+        "description": "Trait identifier for a SelfMint drop item",
+        "properties": {
+          "trait_type": {
+            "type": "string",
+            "description": "Trait type",
+            "minLength": 1
+          },
+          "value": {
+            "type": "string",
+            "description": "Trait value",
+            "minLength": 1
+          }
+        },
+        "required": ["trait_type", "value"]
+      },
+      "UpdateSelfMintDropItemRequest": {
+        "type": "object",
+        "description": "Request to update a SelfMint drop item",
+        "properties": {
+          "media_token": {
+            "type": "string",
+            "description": "Media token reference",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "description": "Item name",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "description": {
+            "type": "string",
+            "description": "Item description",
+            "maxLength": 2000,
+            "minLength": 0
+          },
+          "external_url": {
+            "type": "string",
+            "description": "External URL",
+            "maxLength": 1000,
+            "minLength": 0
+          },
+          "traits": {
+            "type": "array",
+            "description": "Item traits",
+            "items": {
+              "$ref": "#/components/schemas/SelfMintDropItemTraitRequest"
+            },
+            "maxItems": 40,
+            "minItems": 0
+          }
+        },
+        "required": ["media_token", "name"]
+      },
+      "WatchlistRequest": {
+        "type": "object",
+        "description": "Request body for managing a watchlist entry",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Watchlist entity type",
+            "enum": ["ITEM", "TOKEN", "COLLECTION", "PERPETUAL"]
+          },
+          "chain": {
+            "type": "string",
+            "description": "Blockchain chain slug",
+            "example": "ethereum"
+          },
+          "contract_address": {
+            "type": "string",
+            "description": "Contract address"
+          },
+          "token_id": {
+            "type": "string",
+            "description": "Token ID"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Collection slug"
+          },
+          "id": {
+            "type": "string",
+            "description": "Perpetual ID"
+          }
+        },
+        "required": ["type"]
+      },
+      "FavoriteResponse": {
+        "type": "object",
+        "description": "Response for a favorites write operation",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the operation succeeded"
+          }
+        },
+        "required": ["success"]
       },
       "AssetQuantityInput": {
         "type": "object",
@@ -6120,7 +8001,7 @@
           "usd": {
             "type": "string",
             "description": "USD equivalent",
-            "example": 19250
+            "example": 19250.0
           }
         },
         "required": ["amount", "usd"]
@@ -6347,7 +8228,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1
+            "example": 1.0
           },
           "decimals": {
             "type": "integer",
@@ -6413,7 +8294,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1
+            "example": 1.0
           },
           "decimals": {
             "type": "integer",
@@ -6666,7 +8547,7 @@
             "type": "number",
             "format": "double",
             "description": "Total cost of tokens sent in USD",
-            "example": 1869
+            "example": 1869.0
           },
           "slippage_tolerance": {
             "type": "number",
@@ -6699,7 +8580,7 @@
             "type": "number",
             "format": "double",
             "description": "Recommended slippage tolerance based on volatility analysis (null if unavailable)",
-            "example": 2
+            "example": 2.0
           },
           "costs": {
             "type": "array",
@@ -6765,6 +8646,216 @@
           }
         },
         "required": ["chain", "data"]
+      },
+      "ClaimAccountUsernameRequest": {
+        "type": "object",
+        "description": "Request body for claiming a profile username",
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "Username to claim",
+            "maxLength": 50,
+            "minLength": 1
+          }
+        },
+        "required": ["username"]
+      },
+      "ClaimAccountUsernameResponse": {
+        "type": "object",
+        "description": "Response for claiming a profile username",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the username claim succeeded"
+          }
+        },
+        "required": ["success"]
+      },
+      "ProfileShelfItemIdentifierResponse": {
+        "type": "object",
+        "description": "Identifier for a shelf item",
+        "properties": {
+          "chain": {
+            "type": "string"
+          },
+          "contract_address": {
+            "type": "string"
+          },
+          "token_id": {
+            "type": "string"
+          }
+        },
+        "required": ["chain", "contract_address", "token_id"]
+      },
+      "ProfileShelfItemMetadataResponse": {
+        "type": "object",
+        "description": "Metadata for a shelf item",
+        "properties": {
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "ProfileShelfResponse": {
+        "type": "object",
+        "description": "Profile shelf",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "account_address": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "display_order": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileShelfItemIdentifierResponse"
+            }
+          },
+          "icon": {
+            "type": "string"
+          },
+          "view": {
+            "type": "string"
+          },
+          "single_item_shelf_side": {
+            "type": "string"
+          },
+          "shelf_item_metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ProfileShelfItemMetadataResponse"
+            }
+          }
+        },
+        "required": [
+          "display_order",
+          "id",
+          "items",
+          "shelf_item_metadata",
+          "title"
+        ]
+      },
+      "CreateProfileShelfRequest": {
+        "type": "object",
+        "description": "Request body for creating a profile shelf",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Shelf title",
+            "maxLength": 100,
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "description": "Shelf description",
+            "maxLength": 500,
+            "minLength": 0
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileShelfItemRequest"
+            },
+            "maxItems": 50,
+            "minItems": 1
+          },
+          "icon": {
+            "type": "string",
+            "description": "Shelf icon"
+          },
+          "view": {
+            "type": "string",
+            "description": "Shelf view"
+          },
+          "single_item_shelf_side": {
+            "type": "string",
+            "description": "Single-item shelf side"
+          }
+        },
+        "required": ["items", "title"]
+      },
+      "ProfileShelfItemRequest": {
+        "type": "object",
+        "description": "A shelf item identifier",
+        "properties": {
+          "token_id": {
+            "type": "string",
+            "description": "Item token ID",
+            "maxLength": 200,
+            "minLength": 0
+          },
+          "chain": {
+            "type": "string",
+            "description": "Blockchain chain slug"
+          },
+          "contract_address": {
+            "type": "string",
+            "description": "Contract address"
+          }
+        },
+        "required": ["chain", "contract_address", "token_id"]
+      },
+      "UploadContext": {
+        "type": "object",
+        "description": "This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds.",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Short-lived storage URL. Use it exactly as returned and treat it as sensitive.",
+            "example": "https://uploads.example.com/"
+          },
+          "method": {
+            "type": "string",
+            "description": "HTTP method to use at url. Current upload contexts use POST.",
+            "enum": ["POST", "PUT"],
+            "example": "POST"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Short-lived sensitive multipart text fields for POST. Submit every entry unchanged before the file part. Content-Type contains the exact MIME type required by the signed policy. This map is empty for PUT.",
+            "example": {
+              "key": "uploads/example.png",
+              "Content-Type": "image/png"
+            }
+          },
+          "token": {
+            "type": "string",
+            "description": "Reference for the next OpenSea API call. Use it only after storage returns 2xx.",
+            "example": "upload-token-example"
+          }
+        },
+        "required": ["fields", "method", "token", "url"]
+      },
+      "UploadProfileImageRequest": {
+        "type": "object",
+        "description": "Request body for uploading a profile image",
+        "properties": {
+          "imageType": {
+            "type": "string",
+            "description": "Image type to upload"
+          },
+          "contentType": {
+            "type": "string",
+            "description": "Exact MIME type of the image bytes",
+            "example": "image/png",
+            "minLength": 1
+          }
+        },
+        "required": ["contentType", "imageType"]
       },
       "ConsiderationItem": {
         "type": "object",
@@ -8598,7 +10689,7 @@
           "max_price_per_item": {
             "type": "string",
             "description": "Maximum price per item in the payment token's units",
-            "example": 10
+            "example": 10.0
           },
           "buyer": {
             "type": "string",
@@ -8809,7 +10900,7 @@
           "amount": {
             "type": "string",
             "description": "Price amount in the currency's unit (e.g. '5.0' for 5 ETH)",
-            "example": 5
+            "example": 5.0
           },
           "currency": {
             "type": "string",
@@ -8832,6 +10923,168 @@
           }
         },
         "required": ["steps"]
+      },
+      "SaveDropResponse": {
+        "type": "object",
+        "description": "Response for saving Creator Studio drop edits",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the drop edits were saved successfully"
+          }
+        },
+        "required": ["success"]
+      },
+      "SaveDropEditsPriceRequest": {
+        "type": "object",
+        "description": "Native token price for a Creator Studio drop stage",
+        "properties": {
+          "unit": {
+            "type": "string",
+            "description": "Price unit as a decimal string"
+          },
+          "contract_address": {
+            "type": "string",
+            "description": "Contract address for the price token"
+          }
+        },
+        "required": ["contract_address", "unit"]
+      },
+      "SaveDropEditsRequest": {
+        "type": "object",
+        "description": "Request to save Creator Studio drop edits",
+        "properties": {
+          "stages": {
+            "type": "array",
+            "description": "Drop stages to save",
+            "items": {
+              "$ref": "#/components/schemas/SaveDropEditsStageRequest"
+            },
+            "maxItems": 2147483647,
+            "minItems": 1
+          },
+          "max_supply": {
+            "type": "string",
+            "description": "Maximum supply for the drop as a decimal string"
+          },
+          "creator_payout_address": {
+            "type": "string",
+            "description": "Creator payout address"
+          }
+        },
+        "required": ["stages"]
+      },
+      "SaveDropEditsStageRequest": {
+        "type": "object",
+        "description": "A drop stage for Creator Studio edits",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Stage UUID"
+          },
+          "stage_type": {
+            "type": "string",
+            "description": "Stage type",
+            "example": "public_sale"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Stage start time",
+            "example": "2024-01-01T00:00:00Z"
+          },
+          "end_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Stage end time",
+            "example": "2024-01-01T01:00:00Z"
+          },
+          "price": {
+            "$ref": "#/components/schemas/SaveDropEditsPriceRequest",
+            "description": "Stage price"
+          },
+          "max_total_mintable_by_wallet": {
+            "type": "string",
+            "description": "Maximum tokens mintable per wallet as a decimal string"
+          },
+          "max_token_supply_for_stage": {
+            "type": "string",
+            "description": "Maximum token supply for this stage as a decimal string"
+          },
+          "label": {
+            "type": "string",
+            "description": "Stage label"
+          },
+          "description": {
+            "type": "string",
+            "description": "Stage description"
+          },
+          "allowlist_file_token": {
+            "type": "string",
+            "description": "Allowlist file token"
+          }
+        },
+        "required": [
+          "end_time",
+          "max_total_mintable_by_wallet",
+          "price",
+          "stage_type",
+          "start_time",
+          "uuid"
+        ]
+      },
+      "PrerevealDropItemResponse": {
+        "type": "object",
+        "description": "Response body for saving a prereveal drop item",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Item name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Item description"
+          },
+          "image_url": {
+            "type": "string",
+            "description": "Item image URL"
+          },
+          "media_token": {
+            "type": "string",
+            "description": "Image media token"
+          },
+          "media_type": {
+            "type": "string",
+            "description": "Item media type"
+          }
+        },
+        "required": ["image_url", "media_token", "name"]
+      },
+      "SavePrerevealDropItemRequest": {
+        "type": "object",
+        "description": "Request body for saving a prereveal drop item",
+        "properties": {
+          "media_token": {
+            "type": "string",
+            "description": "Media token reference",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "description": "Item name",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "description": {
+            "type": "string",
+            "description": "Item description"
+          },
+          "media_type": {
+            "type": "string",
+            "description": "Media type"
+          }
+        },
+        "required": ["media_token", "name"]
       },
       "DropMintResponse": {
         "type": "object",
@@ -8856,18 +11109,6 @@
         },
         "required": ["chain", "data", "to", "value"]
       },
-      "V1ErrorWrapper": {
-        "type": "object",
-        "properties": {
-          "errors": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": ["errors"]
-      },
       "DropMintRequest": {
         "type": "object",
         "description": "Mint request parameters",
@@ -8888,6 +11129,116 @@
           }
         },
         "required": ["minter", "quantity"]
+      },
+      "SaveSelfMintDropItemRequest": {
+        "type": "object",
+        "description": "Request to create a SelfMint drop item",
+        "properties": {
+          "media_token": {
+            "type": "string",
+            "description": "Media token reference",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "description": "Item name",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "supply": {
+            "type": "string",
+            "description": "Item supply as a decimal string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "description": "Item description",
+            "maxLength": 2000,
+            "minLength": 0
+          },
+          "external_url": {
+            "type": "string",
+            "description": "External URL",
+            "maxLength": 1000,
+            "minLength": 0
+          },
+          "traits": {
+            "type": "array",
+            "description": "Item traits",
+            "items": {
+              "$ref": "#/components/schemas/SelfMintDropItemTraitRequest"
+            },
+            "maxItems": 40,
+            "minItems": 0
+          }
+        },
+        "required": ["media_token", "name", "supply"]
+      },
+      "UploadDropItemMediaRequest": {
+        "type": "object",
+        "description": "Request body for uploading drop item media",
+        "properties": {
+          "filenames": {
+            "type": "array",
+            "description": "Filenames to upload",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          }
+        },
+        "required": ["filenames"]
+      },
+      "SaveDropItemMediaResponse": {
+        "type": "object",
+        "description": "Response body for saving drop item media",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the save succeeded"
+          }
+        },
+        "required": ["success"]
+      },
+      "SaveDropItemMediaRequest": {
+        "type": "object",
+        "description": "Request body for saving drop item media",
+        "properties": {
+          "media_tokens": {
+            "type": "array",
+            "description": "Media tokens to save",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          }
+        },
+        "required": ["media_tokens"]
+      },
+      "ValidateDropAllowlistResponse": {
+        "type": "object",
+        "description": "Response body for validating a drop allowlist",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Token for the validated allowlist file"
+          }
+        },
+        "required": ["token"]
+      },
+      "ValidateDropAllowlistRequest": {
+        "type": "object",
+        "description": "Request body for validating a drop allowlist",
+        "properties": {
+          "allowlist_file_token": {
+            "type": "string",
+            "description": "Token for the uploaded allowlist file",
+            "minLength": 1
+          }
+        },
+        "required": ["allowlist_file_token"]
       },
       "DropDeployResponse": {
         "type": "object",
@@ -9330,6 +11681,901 @@
           }
         },
         "required": ["linkedWalletAddress"]
+      },
+      "UpdateProfileSettingsRequest": {
+        "type": "object",
+        "description": "Request body for updating profile settings",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "description": "Profile display name",
+            "maxLength": 50,
+            "minLength": 0
+          },
+          "bio": {
+            "type": "string",
+            "description": "Profile bio",
+            "maxLength": 500,
+            "minLength": 0
+          },
+          "externalUrl": {
+            "type": "string",
+            "description": "Profile external URL",
+            "maxLength": 2048,
+            "minLength": 0
+          },
+          "profileImageToken": {
+            "type": "string",
+            "description": "Profile image upload token"
+          },
+          "bannerImageToken": {
+            "type": "string",
+            "description": "Banner image upload token"
+          }
+        }
+      },
+      "UpdateProfileSettingsResponse": {
+        "type": "object",
+        "description": "Response for updating profile settings",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "description": "Display name"
+          },
+          "bio": {
+            "type": "string",
+            "description": "Profile bio"
+          },
+          "externalUrl": {
+            "type": "string",
+            "description": "Profile external URL"
+          }
+        }
+      },
+      "ProfileShelfActionResponse": {
+        "type": "object",
+        "description": "Response body for a profile shelf action",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": ["success"]
+      },
+      "ReorderProfileShelvesRequest": {
+        "type": "object",
+        "description": "Request body for reordering profile shelves",
+        "properties": {
+          "shelf_ids": {
+            "type": "array",
+            "description": "Ordered shelf IDs",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 2147483647,
+            "minItems": 1
+          }
+        },
+        "required": ["shelf_ids"]
+      },
+      "ProfileShelfItemUpdateRequest": {
+        "type": "object",
+        "description": "A shelf item entry that can include an optional description",
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/ProfileShelfItemRequest"
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional item description",
+            "maxLength": 500,
+            "minLength": 0
+          }
+        },
+        "required": ["item"]
+      },
+      "UpdateProfileShelfRequest": {
+        "type": "object",
+        "description": "Request body for updating a profile shelf",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Shelf title",
+            "maxLength": 100,
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "description": "Shelf description",
+            "maxLength": 500,
+            "minLength": 0
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileShelfItemUpdateRequest"
+            },
+            "maxItems": 50,
+            "minItems": 1
+          },
+          "icon": {
+            "type": "string",
+            "description": "Shelf icon"
+          },
+          "view": {
+            "type": "string",
+            "description": "Shelf view"
+          },
+          "single_item_shelf_side": {
+            "type": "string",
+            "description": "Single-item shelf side"
+          }
+        }
+      },
+      "DropItemAttributeResponse": {
+        "type": "object",
+        "description": "Response body for a drop item attribute",
+        "properties": {
+          "traitType": {
+            "type": "string",
+            "description": "Trait type"
+          },
+          "value": {
+            "type": "string",
+            "description": "Trait value"
+          }
+        },
+        "required": ["traitType", "value"]
+      },
+      "DropItemResponse": {
+        "type": "object",
+        "description": "Response body for a drop item",
+        "properties": {
+          "token_id": {
+            "type": "string",
+            "description": "Token ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Item name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Item description"
+          },
+          "image_url": {
+            "type": "string",
+            "description": "Item image URL"
+          },
+          "attributes": {
+            "type": "array",
+            "description": "Item attributes",
+            "items": {
+              "$ref": "#/components/schemas/DropItemAttributeResponse"
+            }
+          },
+          "media_token": {
+            "type": "string",
+            "description": "Image media token"
+          },
+          "contract_standard": {
+            "type": "string",
+            "description": "Contract standard"
+          },
+          "external_url": {
+            "type": "string",
+            "description": "External URL"
+          },
+          "chain": {
+            "type": "string",
+            "description": "Chain identifier"
+          },
+          "contract_address": {
+            "type": "string",
+            "description": "Contract address"
+          }
+        },
+        "required": [
+          "attributes",
+          "chain",
+          "contract_address",
+          "contract_standard",
+          "image_url",
+          "media_token",
+          "token_id"
+        ]
+      },
+      "UpdateDropItemRequest": {
+        "type": "object",
+        "description": "Request body for updating a drop item",
+        "properties": {
+          "media_token": {
+            "type": "string",
+            "description": "Media token reference",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "description": "Item name",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "external_url": {
+            "type": "string",
+            "description": "External URL"
+          },
+          "description": {
+            "type": "string",
+            "description": "Item description"
+          },
+          "traits": {
+            "type": "array",
+            "description": "Traits to apply",
+            "items": {
+              "$ref": "#/components/schemas/SelfMintDropItemTraitRequest"
+            }
+          }
+        },
+        "required": ["media_token", "name"]
+      },
+      "ModifyCollectionResponse": {
+        "type": "object",
+        "description": "Response for modifying collection metadata",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the collection metadata was modified successfully"
+          }
+        },
+        "required": ["success"]
+      },
+      "ModifyCollectionCreatorFeeRequest": {
+        "type": "object",
+        "description": "A creator fee entry for collection edits",
+        "properties": {
+          "basis_points": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Creator fee basis points",
+            "maximum": 1000,
+            "minimum": 0
+          },
+          "address": {
+            "type": "string",
+            "description": "Creator fee recipient address"
+          }
+        },
+        "required": ["address", "basis_points"]
+      },
+      "ModifyCollectionRequest": {
+        "type": "object",
+        "description": "Request body for modifying collection metadata",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Collection name",
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[\\x20-\\x7E]+$"
+          },
+          "description": {
+            "type": "string",
+            "description": "Collection description",
+            "maxLength": 1000,
+            "minLength": 0
+          },
+          "logo_image_token": {
+            "type": "string",
+            "description": "Logo image token"
+          },
+          "banner_image_token": {
+            "type": "string",
+            "description": "Banner image token"
+          },
+          "category": {
+            "type": "string",
+            "description": "Collection category"
+          },
+          "slug": {
+            "type": "string",
+            "description": "New collection slug",
+            "maxLength": 50,
+            "minLength": 1,
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "is_nsfw": {
+            "type": "boolean",
+            "description": "Whether the collection is NSFW"
+          },
+          "is_trait_offers_enabled": {
+            "type": "boolean",
+            "description": "Whether trait offers are enabled"
+          },
+          "is_rarity_disabled": {
+            "type": "boolean",
+            "description": "Whether rarity is disabled"
+          },
+          "authorized_editors": {
+            "type": "array",
+            "description": "Authorized editors",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "minItems": 0
+          },
+          "external_url": {
+            "type": "string",
+            "description": "Collection external URL",
+            "pattern": "^$|^(https?)://.+$"
+          },
+          "telegram_url": {
+            "type": "string",
+            "description": "Collection Telegram URL",
+            "pattern": "^$|^(https?)://.+$"
+          },
+          "medium_username": {
+            "type": "string",
+            "description": "Medium username",
+            "maxLength": 50,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "creator_fees": {
+            "type": "array",
+            "description": "Creator fees",
+            "items": {
+              "$ref": "#/components/schemas/ModifyCollectionCreatorFeeRequest"
+            },
+            "maxItems": 5,
+            "minItems": 0
+          },
+          "buyer_side_creator_fee_enabled": {
+            "type": "boolean",
+            "description": "Whether buyer-side creator fees are enabled"
+          },
+          "buyer_side_creator_fee_basis_points": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Buyer-side creator fee basis points",
+            "maximum": 1000,
+            "minimum": 0
+          },
+          "buyer_side_creator_fee_recipient": {
+            "type": "string",
+            "description": "Buyer-side creator fee recipient"
+          }
+        }
+      },
+      "SetCollectionVisibilityResponse": {
+        "type": "object",
+        "description": "Response body for setting collection visibility",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the visibility update succeeded"
+          }
+        },
+        "required": ["success"]
+      },
+      "SetCollectionVisibilityRequest": {
+        "type": "object",
+        "description": "Request body for setting collection visibility",
+        "properties": {
+          "hidden": {
+            "type": "boolean",
+            "description": "Whether the collection should be hidden"
+          }
+        },
+        "required": ["hidden"]
+      },
+      "UpdateCollectionMetadataResponse": {
+        "type": "object",
+        "description": "Response for updating collection metadata",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the metadata update succeeded"
+          }
+        },
+        "required": ["success"]
+      },
+      "AboutMetadataRequest": {
+        "type": "object",
+        "description": "Collection about content",
+        "properties": {
+          "preview_media": {
+            "type": "array",
+            "description": "Preview media",
+            "items": {
+              "$ref": "#/components/schemas/MediaInputRequest"
+            },
+            "maxItems": 10,
+            "minItems": 0
+          },
+          "sections": {
+            "type": "array",
+            "description": "About sections",
+            "items": {
+              "$ref": "#/components/schemas/AboutSectionRequest"
+            },
+            "maxItems": 10,
+            "minItems": 0
+          }
+        }
+      },
+      "AboutSectionRequest": {
+        "type": "object",
+        "description": "A section within collection about content",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Section ID"
+          },
+          "title": {
+            "type": "string",
+            "description": "Section title",
+            "maxLength": 100,
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "description": "Section description",
+            "maxLength": 1000,
+            "minLength": 1
+          },
+          "media": {
+            "type": "array",
+            "description": "Section media",
+            "items": {
+              "$ref": "#/components/schemas/MediaInputRequest"
+            }
+          }
+        },
+        "required": ["description", "title"]
+      },
+      "ContentBlockModuleRequest": {
+        "type": "object",
+        "description": "A content block overview module",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Module index"
+          },
+          "id": {
+            "type": "string",
+            "description": "Module ID"
+          },
+          "title": {
+            "type": "string",
+            "description": "Module title",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "description": {
+            "type": "string",
+            "description": "Module description",
+            "maxLength": 1000,
+            "minLength": 0
+          },
+          "sections": {
+            "type": "array",
+            "description": "Module sections",
+            "items": {
+              "$ref": "#/components/schemas/ContentBlockSectionRequest"
+            }
+          }
+        },
+        "required": ["index"]
+      },
+      "ContentBlockSectionRequest": {
+        "type": "object",
+        "description": "A content block section",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Section ID"
+          },
+          "title": {
+            "type": "string",
+            "description": "Section title",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "description": {
+            "type": "string",
+            "description": "Section description",
+            "maxLength": 1000,
+            "minLength": 0
+          },
+          "external_link": {
+            "$ref": "#/components/schemas/LinkRequest",
+            "description": "Section external link"
+          },
+          "media": {
+            "$ref": "#/components/schemas/MediaInputRequest",
+            "description": "Section media"
+          },
+          "module_type": {
+            "type": "string",
+            "description": "Section module type",
+            "minLength": 1
+          },
+          "date": {
+            "type": "string",
+            "description": "Section date"
+          },
+          "collection_slug": {
+            "type": "string",
+            "description": "Collection slug"
+          },
+          "token_id": {
+            "type": "string",
+            "description": "Token ID"
+          }
+        },
+        "required": ["module_type"]
+      },
+      "FaqBlockModuleRequest": {
+        "type": "object",
+        "description": "A FAQ overview module",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Module index"
+          },
+          "hidden": {
+            "type": "boolean",
+            "description": "Whether the module is hidden"
+          },
+          "title": {
+            "type": "string",
+            "description": "Module title",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "description": {
+            "type": "string",
+            "description": "Module description",
+            "maxLength": 1000,
+            "minLength": 0
+          },
+          "sections": {
+            "type": "array",
+            "description": "Module sections",
+            "items": {
+              "$ref": "#/components/schemas/FaqSectionRequest"
+            }
+          }
+        },
+        "required": ["index"]
+      },
+      "FaqSectionRequest": {
+        "type": "object",
+        "description": "A FAQ section",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Section ID"
+          },
+          "question": {
+            "type": "string",
+            "description": "Question",
+            "maxLength": 200,
+            "minLength": 0
+          },
+          "answer": {
+            "type": "string",
+            "description": "Answer",
+            "maxLength": 2000,
+            "minLength": 0
+          }
+        },
+        "required": ["answer", "question"]
+      },
+      "HeroMetadataRequest": {
+        "type": "object",
+        "description": "Collection hero content",
+        "properties": {
+          "desktop_hero_media": {
+            "$ref": "#/components/schemas/MediaInputRequest",
+            "description": "Desktop hero media"
+          },
+          "mobile_hero_media": {
+            "$ref": "#/components/schemas/MediaInputRequest",
+            "description": "Mobile hero media"
+          }
+        }
+      },
+      "ImageMediaRequest": {
+        "type": "object",
+        "description": "An image media input",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Image token",
+            "minLength": 1
+          }
+        },
+        "required": ["token"]
+      },
+      "LinkRequest": {
+        "type": "object",
+        "description": "A link input",
+        "properties": {
+          "href": {
+            "type": "string",
+            "description": "Link URL",
+            "minLength": 1,
+            "pattern": "^(https?)://.+$"
+          },
+          "label": {
+            "type": "string",
+            "description": "Link label",
+            "maxLength": 100,
+            "minLength": 0
+          }
+        },
+        "required": ["href", "label"]
+      },
+      "MediaInputRequest": {
+        "type": "object",
+        "description": "A generic media input",
+        "properties": {
+          "image": {
+            "$ref": "#/components/schemas/ImageMediaRequest",
+            "description": "Image media"
+          },
+          "video": {
+            "$ref": "#/components/schemas/VideoMediaRequest",
+            "description": "Video media"
+          }
+        }
+      },
+      "NarrativeModuleRequest": {
+        "type": "object",
+        "description": "A narrative overview module",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Module ID"
+          },
+          "index": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Module index"
+          },
+          "title": {
+            "type": "string",
+            "description": "Module title",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "description": {
+            "type": "string",
+            "description": "Module description",
+            "maxLength": 1000,
+            "minLength": 0
+          },
+          "media": {
+            "type": "array",
+            "description": "Module media",
+            "items": {
+              "$ref": "#/components/schemas/MediaInputRequest"
+            }
+          },
+          "horizontal_text_position": {
+            "type": "string",
+            "description": "Horizontal text position",
+            "pattern": "(?i)^(left|center|right)$"
+          },
+          "vertical_text_position": {
+            "type": "string",
+            "description": "Vertical text position",
+            "pattern": "(?i)^(top|center|bottom)$"
+          },
+          "desktop_background_media": {
+            "$ref": "#/components/schemas/MediaInputRequest",
+            "description": "Desktop background media"
+          },
+          "mobile_background_media": {
+            "$ref": "#/components/schemas/MediaInputRequest",
+            "description": "Mobile background media"
+          },
+          "variant": {
+            "type": "string",
+            "description": "Module variant",
+            "pattern": "(?i)^(text|background|text_and_background|text_and_media)$"
+          },
+          "background_image": {
+            "$ref": "#/components/schemas/ImageMediaRequest",
+            "description": "Background image"
+          },
+          "background_media": {
+            "$ref": "#/components/schemas/MediaInputRequest",
+            "description": "Background media"
+          }
+        },
+        "required": ["description", "index", "title"]
+      },
+      "OverviewMetadataRequest": {
+        "type": "object",
+        "description": "Collection overview content",
+        "properties": {
+          "modules": {
+            "$ref": "#/components/schemas/OverviewModuleRequest",
+            "description": "Overview modules"
+          }
+        },
+        "required": ["modules"]
+      },
+      "OverviewModuleRequest": {
+        "type": "object",
+        "description": "Overview modules",
+        "properties": {
+          "narrative": {
+            "type": "array",
+            "description": "Narrative modules",
+            "items": {
+              "$ref": "#/components/schemas/NarrativeModuleRequest"
+            },
+            "maxItems": 50,
+            "minItems": 0
+          },
+          "content_block": {
+            "type": "array",
+            "description": "Content block modules",
+            "items": {
+              "$ref": "#/components/schemas/ContentBlockModuleRequest"
+            },
+            "maxItems": 10,
+            "minItems": 0
+          },
+          "team": {
+            "type": "array",
+            "description": "Team modules",
+            "items": {
+              "$ref": "#/components/schemas/TeamBlockModuleRequest"
+            },
+            "maxItems": 5,
+            "minItems": 0
+          },
+          "faq": {
+            "type": "array",
+            "description": "FAQ modules",
+            "items": {
+              "$ref": "#/components/schemas/FaqBlockModuleRequest"
+            },
+            "maxItems": 5,
+            "minItems": 0
+          }
+        }
+      },
+      "TeamBlockModuleRequest": {
+        "type": "object",
+        "description": "A team overview module",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Module index"
+          },
+          "hidden": {
+            "type": "boolean",
+            "description": "Whether the module is hidden"
+          },
+          "title": {
+            "type": "string",
+            "description": "Module title",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "description": {
+            "type": "string",
+            "description": "Module description",
+            "maxLength": 1000,
+            "minLength": 0
+          },
+          "sections": {
+            "type": "array",
+            "description": "Module sections",
+            "items": {
+              "$ref": "#/components/schemas/TeamSectionRequest"
+            }
+          }
+        },
+        "required": ["index"]
+      },
+      "TeamSectionRequest": {
+        "type": "object",
+        "description": "A team section",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Section ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Section name",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "title": {
+            "type": "string",
+            "description": "Section title",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "bio": {
+            "type": "string",
+            "description": "Section bio",
+            "maxLength": 500,
+            "minLength": 0
+          },
+          "website_url": {
+            "type": "string",
+            "description": "Website URL",
+            "pattern": "^$|^(https?)://.+$"
+          },
+          "twitter_url": {
+            "type": "string",
+            "description": "Twitter URL",
+            "pattern": "^$|^(https?)://.+$"
+          },
+          "instagram_url": {
+            "type": "string",
+            "description": "Instagram URL",
+            "pattern": "^$|^(https?)://.+$"
+          },
+          "media": {
+            "type": "array",
+            "description": "Section media",
+            "items": {
+              "$ref": "#/components/schemas/MediaInputRequest"
+            }
+          }
+        },
+        "required": ["bio", "name", "title"]
+      },
+      "UpdateCollectionMetadataRequest": {
+        "type": "object",
+        "description": "Request body for updating collection metadata",
+        "properties": {
+          "about": {
+            "$ref": "#/components/schemas/AboutMetadataRequest",
+            "description": "Collection about content"
+          },
+          "hero": {
+            "$ref": "#/components/schemas/HeroMetadataRequest",
+            "description": "Collection hero media"
+          },
+          "overview": {
+            "$ref": "#/components/schemas/OverviewMetadataRequest",
+            "description": "Collection overview content"
+          },
+          "logo_image_token": {
+            "type": "string",
+            "description": "Collection logo image token"
+          }
+        }
+      },
+      "VideoMediaRequest": {
+        "type": "object",
+        "description": "A video media input",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Video token",
+            "minLength": 1
+          },
+          "enable_static_video": {
+            "type": "boolean",
+            "description": "Enable static video"
+          }
+        },
+        "required": ["token"]
       },
       "ToolListItemResponse": {
         "type": "object",
@@ -9870,7 +13116,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1
+            "example": 1.0
           },
           "decimals": {
             "type": "integer",
@@ -10330,7 +13576,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1
+            "example": 1.0
           },
           "decimals": {
             "type": "integer",
@@ -10888,6 +14134,48 @@
           "opensea_url",
           "stages"
         ]
+      },
+      "DropEligibilityResponse": {
+        "type": "object",
+        "description": "Drop eligibility results for the authenticated wallet",
+        "properties": {
+          "stages": {
+            "type": "array",
+            "description": "Per-stage eligibility results",
+            "items": {
+              "$ref": "#/components/schemas/DropStageEligibilityResponse"
+            }
+          }
+        },
+        "required": ["stages"]
+      },
+      "DropStageEligibilityResponse": {
+        "type": "object",
+        "description": "Drop stage eligibility result for the authenticated wallet",
+        "properties": {
+          "stage_uuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Drop stage UUID"
+          },
+          "is_eligible": {
+            "type": "boolean",
+            "description": "Whether the wallet is eligible for this stage"
+          },
+          "price": {
+            "type": "string",
+            "description": "Mint price per token in wei (decimal string)"
+          },
+          "max_total_mintable_by_wallet": {
+            "type": "string",
+            "description": "Max tokens the wallet can mint in this stage across all tokens"
+          },
+          "max_total_mintable_by_wallet_per_token": {
+            "type": "string",
+            "description": "Max tokens the wallet can mint per token in this stage (ERC-1155)"
+          }
+        },
+        "required": ["is_eligible", "stage_uuid"]
       },
       "DropDeployReceiptResponse": {
         "type": "object",
@@ -11457,7 +14745,7 @@
           "usd_price": {
             "type": "string",
             "description": "Price in USD",
-            "example": 1
+            "example": 1.0
           }
         },
         "required": ["time", "usd_price"]
@@ -12002,7 +15290,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1
+            "example": 1.0
           },
           "decimals": {
             "type": "integer",
@@ -12065,7 +15353,7 @@
           "nft_value_usd": {
             "type": "string",
             "description": "NFT portfolio value in USD",
-            "example": 98200
+            "example": 98200.0
           },
           "token_value_usd": {
             "type": "string",
@@ -12108,17 +15396,17 @@
           "value_usd": {
             "type": "string",
             "description": "Total portfolio value in USD",
-            "example": 124180
+            "example": 124180.0
           },
           "token_value_usd": {
             "type": "string",
             "description": "Token value in USD",
-            "example": 26000
+            "example": 26000.0
           },
           "nft_value_usd": {
             "type": "string",
             "description": "NFT value in USD",
-            "example": 98180
+            "example": 98180.0
           }
         },
         "required": [
@@ -12169,7 +15457,7 @@
           "net_invested_usd": {
             "type": "string",
             "description": "Net amount invested in USD",
-            "example": 12500
+            "example": 12500.0
           },
           "current_value_usd": {
             "type": "string",
@@ -12279,7 +15567,7 @@
           "total_proceeds_usd": {
             "type": "string",
             "description": "Total USD proceeds from the sells that closed this position.",
-            "example": 5200
+            "example": 5200.0
           },
           "total_cost_basis_usd": {
             "type": "string",
@@ -12340,6 +15628,225 @@
           }
         },
         "required": ["closed_positions", "total_count"]
+      },
+      "PerpetualFutureBaseResponse": {
+        "type": "object",
+        "description": "Common perpetual future identity fields shared across perpetual responses",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The perpetual future ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "The display name of the perpetual future"
+          },
+          "symbol": {
+            "type": "string",
+            "description": "The perpetual future symbol"
+          },
+          "image_url": {
+            "type": "string",
+            "description": "URL of the perpetual future image"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the perpetual future"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Created timestamp"
+          },
+          "chain": {
+            "type": "string",
+            "description": "Chain identifier"
+          },
+          "contract_address": {
+            "type": "string",
+            "description": "Contract address"
+          },
+          "max_leverage": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Maximum leverage"
+          },
+          "decimals": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Decimal places"
+          },
+          "asset_id": {
+            "type": "string",
+            "description": "Asset ID"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Version"
+          },
+          "categories": {
+            "type": "array",
+            "description": "Categories",
+            "items": {
+              "type": "string"
+            }
+          },
+          "market": {
+            "type": "string",
+            "description": "Market"
+          }
+        },
+        "required": [
+          "asset_id",
+          "categories",
+          "chain",
+          "contract_address",
+          "decimals",
+          "id",
+          "max_leverage",
+          "name",
+          "symbol",
+          "version"
+        ]
+      },
+      "PerpetualFuturePaginatedResponse": {
+        "type": "object",
+        "description": "Paginated list of perpetual futures",
+        "properties": {
+          "perpetuals": {
+            "type": "array",
+            "description": "List of perpetual futures",
+            "items": {
+              "$ref": "#/components/schemas/PerpetualFutureResponse"
+            }
+          },
+          "next": {
+            "type": "string",
+            "description": "Cursor for the next page of results"
+          }
+        },
+        "required": ["perpetuals"]
+      },
+      "PerpetualFutureResponse": {
+        "type": "object",
+        "description": "A perpetual future",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The perpetual future ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "The display name of the perpetual future"
+          },
+          "symbol": {
+            "type": "string",
+            "description": "The perpetual future symbol"
+          },
+          "image_url": {
+            "type": "string",
+            "description": "URL of the perpetual future image"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the perpetual future"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Created timestamp"
+          },
+          "chain": {
+            "type": "string",
+            "description": "Chain identifier"
+          },
+          "contract_address": {
+            "type": "string",
+            "description": "Contract address"
+          },
+          "max_leverage": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Maximum leverage"
+          },
+          "decimals": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Decimal places"
+          },
+          "asset_id": {
+            "type": "string",
+            "description": "Asset ID"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Version"
+          },
+          "categories": {
+            "type": "array",
+            "description": "Categories",
+            "items": {
+              "type": "string"
+            }
+          },
+          "market": {
+            "type": "string",
+            "description": "Market"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/PerpetualFutureStatsResponse",
+            "description": "Market statistics"
+          }
+        },
+        "required": [
+          "asset_id",
+          "categories",
+          "chain",
+          "contract_address",
+          "decimals",
+          "id",
+          "max_leverage",
+          "name",
+          "symbol",
+          "version"
+        ]
+      },
+      "PerpetualFutureStatsResponse": {
+        "type": "object",
+        "description": "Market statistics for a perpetual future",
+        "properties": {
+          "price_usd": {
+            "type": "number",
+            "description": "Price in USD"
+          },
+          "price_change_24h": {
+            "type": "number",
+            "format": "float",
+            "description": "24-hour price change percentage"
+          },
+          "volume_24h": {
+            "type": "number",
+            "description": "24-hour volume in USD"
+          },
+          "mark_price": {
+            "type": "number",
+            "description": "Mark price"
+          },
+          "oracle_price": {
+            "type": "number",
+            "description": "Oracle price"
+          },
+          "funding_rate": {
+            "type": "number",
+            "description": "Funding rate"
+          },
+          "open_interest": {
+            "type": "number",
+            "description": "Open interest"
+          }
+        }
       },
       "ProfileCollectionResponse": {
         "type": "object",
@@ -12449,33 +15956,104 @@
         },
         "required": ["collections"]
       },
+      "WalletUnlinkResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": ["success"]
+      },
       "AuthScope": {
         "type": "string",
         "description": "OAuth-style scope recognized by the OpenSea API for wallet-authenticated requests",
         "enum": [
           "read:eligibility",
           "read:favorites",
-          "read:rewards",
+          "write:favorites",
           "write:orders",
           "write:drops",
+          "write:collections",
+          "write:profile",
           "write:wallets"
         ],
         "example": "read:favorites",
         "x-enum-descriptions": [
           "Check drop eligibility for authenticated wallet",
           "View favorites and watchlist for authenticated account",
-          "View rewards, voyages, and treasure chests for authenticated account",
+          "Add and remove favorites and watchlist entries for authenticated account",
           "Cancel orders on behalf of authenticated account",
           "Manage Creator Studio drops for authenticated account",
-          "Link a wallet to the authenticated account"
+          "Modify collection metadata for authenticated account",
+          "Modify profile settings for authenticated account",
+          "Link and unlink wallets for the authenticated account"
         ],
         "x-enum-display-names": [
           "Check drop eligibility",
           "View favorites and watchlist",
-          "View rewards, voyages, treasure chests",
+          "Manage favorites and watchlist",
           "Cancel orders",
           "Creator Studio drop management",
-          "Link wallets"
+          "Collection metadata editing",
+          "Profile editing",
+          "Manage linked wallets"
+        ],
+        "x-enum-groups": [
+          "read",
+          "read",
+          "write",
+          "write",
+          "write",
+          "write",
+          "write",
+          "write"
+        ],
+        "x-enum-endpoints": [
+          ["/api/v2/drops/{slug}/eligibility"],
+          [
+            "/api/v2/account/{address}/favorites",
+            "/api/v2/account/{address}/token_watchlist",
+            "/api/v2/account/{address}/perpetual_watchlist"
+          ],
+          ["/api/v2/watchlist"],
+          [
+            "/api/v2/orders/chain/{chain}/protocol/{protocol_address}/{order_hash}/cancel"
+          ],
+          [
+            "/api/v2/drops/{slug}",
+            "/api/v2/drops/{slug}/allowlist",
+            "/api/v2/drops/{slug}/allowlist/validate",
+            "/api/v2/drops/{slug}/prereveal-item",
+            "/api/v2/drops/{slug}/items",
+            "/api/v2/drops/{slug}/items/media",
+            "/api/v2/drops/{slug}/items/media/save",
+            "/api/v2/drops/{slug}/items/{token_id}"
+          ],
+          [
+            "/api/v2/collections/{slug}",
+            "/api/v2/collections/{slug}/metadata",
+            "/api/v2/collections/{slug}/visibility",
+            "/api/v2/collections/{slug}/images/{image_type}"
+          ],
+          [
+            "/api/v2/profile",
+            "/api/v2/profile/username",
+            "/api/v2/profile/images",
+            "/api/v2/profile/shelves",
+            "/api/v2/profile/shelves/{shelf_id}"
+          ],
+          ["/api/v2/accounts/wallets/siwx", "/api/v2/accounts/wallets/{wallet}"]
+        ],
+        "x-enum-mcp-tools": [
+          ["check_drop_eligibility"],
+          ["get_favorites"],
+          ["manage_watchlist"],
+          ["cancel_orders"],
+          ["manage_drops"],
+          ["manage_collections"],
+          ["manage_profile"],
+          ["manage_wallets"]
         ]
       }
     },
@@ -12486,8 +16064,14 @@
       "Unauthorized": {
         "description": "Invalid or missing API key"
       },
+      "Forbidden": {
+        "description": "Wallet token lacks permission for this request"
+      },
       "NotFound": {
         "description": "Resource not found"
+      },
+      "Conflict": {
+        "description": "Resource conflict"
       },
       "RateLimit": {
         "description": "Rate limit exceeded"
@@ -12525,6 +16109,11 @@
         "description": "API key required for authentication",
         "name": "x-api-key",
         "in": "header"
+      },
+      "WalletAuth": {
+        "type": "openIdConnect",
+        "description": "OpenSea wallet authorization. Run `opensea login` or use the OAuth 2.1 authorization-code flow with PKCE, then send the access token as `Authorization: Bearer <token>`.",
+        "openIdConnectUrl": "https://auth.opensea.io/.well-known/openid-configuration"
       }
     }
   },
