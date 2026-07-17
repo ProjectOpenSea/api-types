@@ -98,7 +98,9 @@ describe("@opensea/api-types smoke tests", () => {
     expect(AUTH_SCOPES.map(scope => scope.name)).toEqual([
       "read:eligibility",
       "read:favorites",
+      "read:social",
       "write:favorites",
+      "write:social",
       "write:orders",
       "write:drops",
       "write:collections",

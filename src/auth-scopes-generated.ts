@@ -27,12 +27,28 @@ export const AUTH_SCOPES = [
     mcpTools: ["get_favorites"],
   },
   {
+    name: "read:social",
+    displayName: "View social relationships",
+    description: "View follows, watches, followers, and following for the authenticated account",
+    group: "read",
+    endpoints: ["/api/v2/accounts/{address_or_username}/relationship","/api/v2/accounts/{address_or_username}/followers","/api/v2/accounts/{address_or_username}/following"],
+    mcpTools: ["view_social_graph"],
+  },
+  {
     name: "write:favorites",
     displayName: "Manage favorites and watchlist",
     description: "Add and remove favorites and watchlist entries for authenticated account",
     group: "write",
     endpoints: ["/api/v2/watchlist"],
     mcpTools: ["manage_watchlist"],
+  },
+  {
+    name: "write:social",
+    displayName: "Manage social relationships",
+    description: "Follow, unfollow, watch, and unwatch profiles for the authenticated account",
+    group: "write",
+    endpoints: ["/api/v2/accounts/{address_or_username}/follow","/api/v2/accounts/{address_or_username}/watch"],
+    mcpTools: ["manage_social_graph"],
   },
   {
     name: "write:orders",

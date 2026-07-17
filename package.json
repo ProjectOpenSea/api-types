@@ -1,6 +1,6 @@
 {
   "name": "@opensea/api-types",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Auto-generated TypeScript types from the OpenSea API OpenAPI spec",
   "license": "MIT",
   "author": "OpenSea Developers",
@@ -44,7 +44,7 @@
     "tsup": "^8.3.0",
     "typescript": "^6.0.2",
     "vitest": "^3.2.4",
-    "@biomejs/biome": "^2.5.2"
+    "@biomejs/biome": "2.5.2"
   },
   "engines": {
     "node": ">=18.0.0"

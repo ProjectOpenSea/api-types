@@ -8,7 +8,8 @@ Auto-generated TypeScript types from the OpenSea API v2 OpenAPI spec. Source of 
 cd packages/api-types
 pnpm run update-spec   # Fetch latest OpenAPI spec from api.opensea.io
 pnpm run build         # Regenerate types from spec + bundle with tsup
-pnpm run lint          # Type-check with tsc --noEmit
+pnpm run lint          # Lint with Biome
+pnpm run type-check    # Type-check with tsc --noEmit
 pnpm run test          # Run smoke tests with Vitest
 ```
 

@@ -1,5 +1,14 @@
 # @opensea/api-types
 
+## 0.8.1
+
+### Patch Changes
+
+- 66396b6: Sync OpenAPI spec to include new auth scopes (`read:social`, `write:social`) from the canonical registry.
+- fa2a24e: Add the canonical `read:social` and `write:social` wallet-auth scopes.
+- 333104e: Sync OpenAPI spec from api.opensea.io. Upstream normalized several `example` values in schema descriptions from floats to integers (e.g. `19250.0` to `19250`). No endpoints, schemas, or generated types changed; the regenerated `src/generated.ts` is byte-identical.
+- d7a44df: Sync OpenAPI spec from api.opensea.io. Adds `isVerified`, `followerCount`, and `followingCount` to `AccountResponse` and updates generated types accordingly.
+
 ## 0.8.0
 
 ### Minor Changes

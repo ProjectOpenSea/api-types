@@ -504,7 +504,7 @@
     },
     "/api/v2/profile/username": {
       "post": {
-        "tags": ["profile-controller"],
+        "tags": ["Account Endpoints"],
         "summary": "Claim a profile username",
         "description": "Claim a username for the authenticated wallet.",
         "operationId": "claim_profile_username",
@@ -554,7 +554,7 @@
     },
     "/api/v2/profile/shelves": {
       "get": {
-        "tags": ["profile-shelf-controller"],
+        "tags": ["Account Endpoints"],
         "summary": "Get profile shelves",
         "description": "Get the shelves for a public wallet address.",
         "operationId": "get_profile_shelves",
@@ -593,7 +593,7 @@
         }
       },
       "post": {
-        "tags": ["profile-shelf-controller"],
+        "tags": ["Account Endpoints"],
         "summary": "Create a profile shelf",
         "description": "Create a shelf for the authenticated wallet.",
         "operationId": "create_profile_shelf",
@@ -641,7 +641,7 @@
         "x-opensea-auth-scopes": ["write:profile"]
       },
       "patch": {
-        "tags": ["profile-shelf-controller"],
+        "tags": ["Account Endpoints"],
         "summary": "Reorder profile shelves",
         "description": "Reorder the authenticated wallet's shelves.",
         "operationId": "reorder_profile_shelves",
@@ -691,7 +691,7 @@
     },
     "/api/v2/profile/images": {
       "post": {
-        "tags": ["profile-controller"],
+        "tags": ["Account Endpoints"],
         "summary": "Upload a profile image",
         "description": "Set contentType in the context request to the exact MIME type of the image bytes. This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds. Pass the token as the matching profile image field in PATCH /api/v2/profile.",
         "operationId": "upload_profile_image",
@@ -2283,6 +2283,158 @@
         }
       }
     },
+    "/api/v2/accounts/{address_or_username}/watch": {
+      "post": {
+        "tags": ["Account Endpoints"],
+        "summary": "Watch a followed profile",
+        "operationId": "watch_account",
+        "parameters": [
+          {
+            "name": "address_or_username",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 256,
+              "minLength": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileSocialMutationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:social"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:social"]
+      },
+      "delete": {
+        "tags": ["Account Endpoints"],
+        "summary": "Stop watching a profile",
+        "operationId": "unwatch_account",
+        "parameters": [
+          {
+            "name": "address_or_username",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 256,
+              "minLength": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileSocialMutationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:social"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:social"]
+      }
+    },
+    "/api/v2/accounts/{address_or_username}/follow": {
+      "post": {
+        "tags": ["Account Endpoints"],
+        "summary": "Follow a profile",
+        "operationId": "follow_account",
+        "parameters": [
+          {
+            "name": "address_or_username",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 256,
+              "minLength": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileSocialMutationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:social"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:social"]
+      },
+      "delete": {
+        "tags": ["Account Endpoints"],
+        "summary": "Unfollow a profile",
+        "operationId": "unfollow_account",
+        "parameters": [
+          {
+            "name": "address_or_username",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 256,
+              "minLength": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileSocialMutationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:social"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:social"]
+      }
+    },
     "/api/v2/accounts/wallets/siwx": {
       "post": {
         "tags": ["Account Endpoints"],
@@ -2342,7 +2494,7 @@
     },
     "/api/v2/profile": {
       "patch": {
-        "tags": ["profile-controller"],
+        "tags": ["Account Endpoints"],
         "summary": "Update profile settings",
         "description": "Update the authenticated wallet's profile settings.",
         "operationId": "update_profile_settings",
@@ -2389,7 +2541,7 @@
     },
     "/api/v2/profile/shelves/{shelf_id}": {
       "delete": {
-        "tags": ["profile-shelf-controller"],
+        "tags": ["Account Endpoints"],
         "summary": "Delete a profile shelf",
         "description": "Delete the authenticated wallet's shelf.",
         "operationId": "delete_profile_shelf",
@@ -2437,7 +2589,7 @@
         "x-opensea-auth-scopes": ["write:profile"]
       },
       "patch": {
-        "tags": ["profile-shelf-controller"],
+        "tags": ["Account Endpoints"],
         "summary": "Update a profile shelf",
         "description": "Update shelf fields and optionally item descriptions. Shelf field updates are applied first; if a later item description update fails, earlier changes are not rolled back.",
         "operationId": "update_profile_shelf",
@@ -2851,7 +3003,7 @@
             "example": 20
           },
           {
-            "name": "cursor.value",
+            "name": "cursor",
             "in": "query",
             "required": false,
             "schema": {
@@ -3136,7 +3288,7 @@
             "example": 20
           },
           {
-            "name": "cursor.value",
+            "name": "cursor",
             "in": "query",
             "required": false,
             "schema": {
@@ -3649,7 +3801,7 @@
             "example": 20
           },
           {
-            "name": "next.value",
+            "name": "next",
             "in": "query",
             "required": false,
             "schema": {
@@ -3795,7 +3947,7 @@
             "example": 20
           },
           {
-            "name": "next.value",
+            "name": "next",
             "in": "query",
             "required": false,
             "schema": {
@@ -3867,7 +4019,7 @@
             "example": 20
           },
           {
-            "name": "next.value",
+            "name": "next",
             "in": "query",
             "required": false,
             "schema": {
@@ -3988,7 +4140,7 @@
             "example": 20
           },
           {
-            "name": "next.value",
+            "name": "next",
             "in": "query",
             "required": false,
             "schema": {
@@ -4194,7 +4346,7 @@
             "example": 20
           },
           {
-            "name": "next.value",
+            "name": "next",
             "in": "query",
             "required": false,
             "schema": {
@@ -4275,7 +4427,7 @@
             "example": 20
           },
           {
-            "name": "next.value",
+            "name": "next",
             "in": "query",
             "required": false,
             "schema": {
@@ -4370,7 +4522,7 @@
             "example": 20
           },
           {
-            "name": "next.value",
+            "name": "next",
             "in": "query",
             "required": false,
             "schema": {
@@ -4487,7 +4639,7 @@
             "example": 20
           },
           {
-            "name": "next.value",
+            "name": "next",
             "in": "query",
             "required": false,
             "schema": {
@@ -4612,7 +4764,7 @@
             "example": 20
           },
           {
-            "name": "next.value",
+            "name": "next",
             "in": "query",
             "required": false,
             "schema": {
@@ -4727,7 +4879,7 @@
             "example": 20
           },
           {
-            "name": "next.value",
+            "name": "next",
             "in": "query",
             "required": false,
             "schema": {
@@ -4953,15 +5105,16 @@
             "schema": {
               "type": "integer",
               "format": "int32",
+              "default": 50,
               "description": "Number of items to return per page",
               "example": 20,
-              "maximum": 200,
+              "maximum": 100,
               "minimum": 1
             },
             "example": 20
           },
           {
-            "name": "next.value",
+            "name": "next",
             "in": "query",
             "required": false,
             "schema": {
@@ -5501,7 +5654,7 @@
             "example": 20
           },
           {
-            "name": "next.value",
+            "name": "next",
             "in": "query",
             "required": false,
             "schema": {
@@ -6120,7 +6273,7 @@
             "example": 20
           },
           {
-            "name": "next.value",
+            "name": "next",
             "in": "query",
             "required": false,
             "schema": {
@@ -6463,7 +6616,7 @@
             "example": 20
           },
           {
-            "name": "next.value",
+            "name": "next",
             "in": "query",
             "required": false,
             "schema": {
@@ -6504,12 +6657,14 @@
           {
             "name": "address_or_username",
             "in": "path",
-            "description": "The blockchain address or username of the account to retrieve",
+            "description": "The blockchain address or username of the account to retrieve.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 256,
+              "minLength": 0
             },
-            "example": "0x8ba1f109551bD432803012645Hac136c94C19D6e"
+            "example": "0x8ba1f109551bD432803012645fAc136c94C19D6e"
           }
         ],
         "responses": {
@@ -6533,6 +6688,172 @@
             "$ref": "#/components/responses/InternalError"
           }
         }
+      }
+    },
+    "/api/v2/accounts/{address_or_username}/relationship": {
+      "get": {
+        "tags": ["Account Endpoints"],
+        "summary": "Get the authenticated account's relationship with a profile",
+        "operationId": "get_account_relationship",
+        "parameters": [
+          {
+            "name": "address_or_username",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 256,
+              "minLength": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileRelationshipResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["read:social"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["read:social"]
+      }
+    },
+    "/api/v2/accounts/{address_or_username}/following": {
+      "get": {
+        "tags": ["Account Endpoints"],
+        "summary": "Get profiles followed",
+        "description": "Returns account targets followed by a username profile. Wallet targets return an empty page because wallet following graphs are not exposed.",
+        "operationId": "get_account_following",
+        "parameters": [
+          {
+            "name": "address_or_username",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 256,
+              "minLength": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items to return per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50,
+              "description": "Number of items to return per page",
+              "example": 20,
+              "maximum": 100,
+              "minimum": 1
+            },
+            "example": 20
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocialProfilePageResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["read:social"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["read:social"]
+      }
+    },
+    "/api/v2/accounts/{address_or_username}/followers": {
+      "get": {
+        "tags": ["Account Endpoints"],
+        "summary": "Get profile followers",
+        "operationId": "get_account_followers",
+        "parameters": [
+          {
+            "name": "address_or_username",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 256,
+              "minLength": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items to return per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50,
+              "description": "Number of items to return per page",
+              "example": 20,
+              "maximum": 100,
+              "minimum": 1
+            },
+            "example": 20
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocialProfilePageResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["read:social"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["read:social"]
       }
     },
     "/api/v2/accounts/resolve/{identifier}": {
@@ -6750,6 +7071,116 @@
         ],
         "x-opensea-auth-required": true,
         "x-opensea-auth-scopes": ["read:favorites"]
+      }
+    },
+    "/api/v2/account/{address}/token-activity": {
+      "get": {
+        "tags": ["Token Endpoints"],
+        "summary": "Get account token activity",
+        "description": "Get paginated fungible token activity (transfers, swaps, wraps, and unwraps) for an account across all chains. Optionally filter by chain, token, and/or activity type.",
+        "operationId": "get_account_token_activity",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "The account address to query token activity for",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0x0000000000000000000000000000000000000000"
+          },
+          {
+            "name": "chains",
+            "in": "query",
+            "description": "Chain(s) to filter by (e.g. ethereum). Repeat for multiple chains. Omit to query all chains.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ChainIdentifier"
+              }
+            },
+            "example": "ethereum"
+          },
+          {
+            "name": "tokens",
+            "in": "query",
+            "description": "Token contract address(es) to filter by. Repeat for multiple tokens. Omit to include all tokens.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BitcoinAddress"
+                  },
+                  {
+                    "$ref": "#/components/schemas/EvmAddress"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SolanaAddress"
+                  }
+                ]
+              }
+            },
+            "example": "0x0000000000000000000000000000000000000000"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Activity types to include (send, receive, swap, wrap, unwrap). Repeat for multiple types. Omit to include all. Note: swap also includes wrap and unwrap activities.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items to return per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20,
+              "description": "Number of items to return per page",
+              "example": 20,
+              "maximum": 50,
+              "minimum": 1
+            },
+            "example": 20
+          },
+          {
+            "name": "next",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenAccountActivityPaginatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
       }
     },
     "/api/v2/account/{address}/portfolio": {
@@ -8001,7 +8432,7 @@
           "usd": {
             "type": "string",
             "description": "USD equivalent",
-            "example": 19250.0
+            "example": 19250
           }
         },
         "required": ["amount", "usd"]
@@ -8228,7 +8659,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1.0
+            "example": 1
           },
           "decimals": {
             "type": "integer",
@@ -8294,7 +8725,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1.0
+            "example": 1
           },
           "decimals": {
             "type": "integer",
@@ -8547,7 +8978,7 @@
             "type": "number",
             "format": "double",
             "description": "Total cost of tokens sent in USD",
-            "example": 1869.0
+            "example": 1869
           },
           "slippage_tolerance": {
             "type": "number",
@@ -8580,7 +9011,7 @@
             "type": "number",
             "format": "double",
             "description": "Recommended slippage tolerance based on volatility analysis (null if unavailable)",
-            "example": 2.0
+            "example": 2
           },
           "costs": {
             "type": "array",
@@ -10622,8 +11053,9 @@
         "type": "object",
         "properties": {
           "expires_at": {
-            "type": "string",
-            "format": "date-time"
+            "type": "number",
+            "format": "double",
+            "description": "Unix timestamp in seconds, including fractional seconds"
           },
           "is_renewable": {
             "type": "boolean"
@@ -10689,7 +11121,7 @@
           "max_price_per_item": {
             "type": "string",
             "description": "Maximum price per item in the payment token's units",
-            "example": 10.0
+            "example": 10
           },
           "buyer": {
             "type": "string",
@@ -10900,7 +11332,7 @@
           "amount": {
             "type": "string",
             "description": "Price amount in the currency's unit (e.g. '5.0' for 5 ETH)",
-            "example": 5.0
+            "example": 5
           },
           "currency": {
             "type": "string",
@@ -11654,6 +12086,15 @@
           }
         },
         "required": ["steps"]
+      },
+      "ProfileSocialMutationResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": ["status"]
       },
       "LinkWalletSiwxRequest": {
         "type": "object",
@@ -13116,7 +13557,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1.0
+            "example": 1
           },
           "decimals": {
             "type": "integer",
@@ -13576,7 +14017,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1.0
+            "example": 1
           },
           "decimals": {
             "type": "integer",
@@ -14310,7 +14751,7 @@
           },
           "created_date": {
             "type": "string",
-            "format": "date-time"
+            "format": "date"
           },
           "pricing_currencies": {
             "$ref": "#/components/schemas/PricingCurrencies"
@@ -14637,8 +15078,8 @@
         "description": "A floor price data point",
         "properties": {
           "time": {
-            "type": "string",
-            "format": "date-time",
+            "type": "number",
+            "format": "double",
             "description": "Timestamp of the data point"
           },
           "usd_price": {
@@ -14738,14 +15179,14 @@
         "description": "A price history data point",
         "properties": {
           "time": {
-            "type": "string",
-            "format": "date-time",
+            "type": "number",
+            "format": "double",
             "description": "Timestamp of the price point"
           },
           "usd_price": {
             "type": "string",
             "description": "Price in USD",
-            "example": 1.0
+            "example": 1
           }
         },
         "required": ["time", "usd_price"]
@@ -14769,8 +15210,8 @@
         "description": "An OHLCV candle data point",
         "properties": {
           "time": {
-            "type": "string",
-            "format": "date-time",
+            "type": "number",
+            "format": "double",
             "description": "Candle timestamp"
           },
           "open": {
@@ -15030,8 +15471,8 @@
             "description": "Unique identifier for the swap event"
           },
           "timestamp": {
-            "type": "string",
-            "format": "date-time",
+            "type": "number",
+            "format": "double",
             "description": "Timestamp of the swap"
           },
           "sender_address": {
@@ -15150,8 +15591,8 @@
         "description": "A sale data point for an NFT",
         "properties": {
           "time": {
-            "type": "string",
-            "format": "date-time",
+            "type": "number",
+            "format": "double",
             "description": "Timestamp of the sale"
           },
           "usd_price": {
@@ -15183,6 +15624,26 @@
           "username": {
             "type": "string"
           },
+          "display_name": {
+            "type": "string"
+          },
+          "ens_name": {
+            "type": "string"
+          },
+          "is_verified": {
+            "type": "boolean"
+          },
+          "follower_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "following_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "nft_pfp": {
+            "$ref": "#/components/schemas/NftPfpResponse"
+          },
           "profile_image_url": {
             "type": "string"
           },
@@ -15203,10 +15664,48 @@
           },
           "joined_date": {
             "type": "string",
-            "format": "date-time"
+            "format": "date"
           }
         },
-        "required": ["address", "bio", "joined_date", "social_media_accounts"]
+        "required": [
+          "address",
+          "bio",
+          "follower_count",
+          "following_count",
+          "is_verified",
+          "joined_date",
+          "social_media_accounts"
+        ]
+      },
+      "NftPfpResponse": {
+        "type": "object",
+        "properties": {
+          "contract_address": {
+            "type": "string"
+          },
+          "token_id": {
+            "type": "string"
+          },
+          "chain": {
+            "type": "string"
+          },
+          "collection_slug": {
+            "type": "string"
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "is_verified": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "chain",
+          "contract_address",
+          "image_url",
+          "is_verified",
+          "token_id"
+        ]
       },
       "SocialMediaAccount": {
         "type": "object",
@@ -15219,6 +15718,73 @@
           }
         },
         "required": ["platform", "username"]
+      },
+      "ProfileRelationshipResponse": {
+        "type": "object",
+        "properties": {
+          "is_following": {
+            "type": "boolean"
+          },
+          "is_watching": {
+            "type": "boolean"
+          }
+        },
+        "required": ["is_following", "is_watching"]
+      },
+      "SocialProfilePageResponse": {
+        "type": "object",
+        "properties": {
+          "profiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SocialProfileSummaryResponse"
+            }
+          },
+          "next": {
+            "type": "string"
+          }
+        },
+        "required": ["profiles"]
+      },
+      "SocialProfileSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "profile_image_url": {
+            "type": "string"
+          },
+          "is_verified": {
+            "type": "boolean"
+          },
+          "follower_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "nft_pfp": {
+            "$ref": "#/components/schemas/NftPfpResponse"
+          },
+          "is_following": {
+            "type": "boolean"
+          },
+          "is_watching": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "address",
+          "follower_count",
+          "is_following",
+          "is_verified",
+          "is_watching"
+        ]
       },
       "AccountResolveResponse": {
         "type": "object",
@@ -15290,7 +15856,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1.0
+            "example": 1
           },
           "decimals": {
             "type": "integer",
@@ -15341,6 +15907,147 @@
           "usd_value"
         ]
       },
+      "BitcoinAddress": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BlockchainAddress"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "validate": {
+                "type": "boolean",
+                "writeOnly": true
+              }
+            }
+          }
+        ],
+        "required": ["value"]
+      },
+      "BlockchainAddress": {
+        "type": "object",
+        "discriminator": {
+          "propertyName": "@type"
+        },
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "@type": {
+            "type": "string"
+          }
+        },
+        "required": ["@type", "value"]
+      },
+      "EvmAddress": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BlockchainAddress"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "validate": {
+                "type": "boolean",
+                "writeOnly": true
+              },
+              "skipLowercase": {
+                "type": "boolean",
+                "writeOnly": true
+              }
+            }
+          }
+        ],
+        "required": ["value"]
+      },
+      "SolanaAddress": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BlockchainAddress"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "validate": {
+                "type": "boolean",
+                "writeOnly": true
+              }
+            }
+          }
+        ],
+        "required": ["value"]
+      },
+      "TokenAccountActivityPaginatedResponse": {
+        "type": "object",
+        "description": "Paginated list of account token activity events",
+        "properties": {
+          "activities": {
+            "type": "array",
+            "description": "List of token activity events",
+            "items": {
+              "$ref": "#/components/schemas/TokenAccountActivityResponse"
+            }
+          },
+          "next": {
+            "type": "string",
+            "description": "Cursor for the next page of results"
+          }
+        },
+        "required": ["activities"]
+      },
+      "TokenAccountActivityResponse": {
+        "type": "object",
+        "description": "A fungible token activity event for an account",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Type of activity",
+            "enum": ["send", "receive", "swap", "wrap", "unwrap"]
+          },
+          "chain": {
+            "type": "string",
+            "description": "Blockchain the activity occurred on"
+          },
+          "from": {
+            "type": "string",
+            "description": "Address that initiated the activity"
+          },
+          "to": {
+            "type": "string",
+            "description": "Recipient address for transfers"
+          },
+          "token": {
+            "$ref": "#/components/schemas/TokenAmountResponse",
+            "description": "Token amount for transfers"
+          },
+          "from_token": {
+            "$ref": "#/components/schemas/TokenAmountResponse",
+            "description": "Token sold/swapped from"
+          },
+          "to_token": {
+            "$ref": "#/components/schemas/TokenAmountResponse",
+            "description": "Token received/swapped to"
+          },
+          "swap_protocol": {
+            "type": "string",
+            "description": "Swap protocol used"
+          },
+          "transaction_hash": {
+            "type": "string",
+            "description": "Transaction hash"
+          },
+          "user_op_hash": {
+            "type": "string",
+            "description": "User operation hash (for account abstraction)"
+          },
+          "timestamp": {
+            "type": "number",
+            "format": "double",
+            "description": "Timestamp of the activity"
+          }
+        },
+        "required": ["chain", "from", "timestamp", "transaction_hash", "type"]
+      },
       "PortfolioStatsResponse": {
         "type": "object",
         "description": "Portfolio stats including total value, P&L, and asset breakdown",
@@ -15353,7 +16060,7 @@
           "nft_value_usd": {
             "type": "string",
             "description": "NFT portfolio value in USD",
-            "example": 98200.0
+            "example": 98200
           },
           "token_value_usd": {
             "type": "string",
@@ -15388,25 +16095,25 @@
         "description": "A single net worth data point",
         "properties": {
           "timestamp": {
-            "type": "string",
-            "format": "date-time",
+            "type": "number",
+            "format": "double",
             "description": "Timestamp of the data point",
-            "example": "2026-04-28T00:00:00Z"
+            "example": 1777334400
           },
           "value_usd": {
             "type": "string",
             "description": "Total portfolio value in USD",
-            "example": 124180.0
+            "example": 124180
           },
           "token_value_usd": {
             "type": "string",
             "description": "Token value in USD",
-            "example": 26000.0
+            "example": 26000
           },
           "nft_value_usd": {
             "type": "string",
             "description": "NFT value in USD",
-            "example": 98180.0
+            "example": 98180
           }
         },
         "required": [
@@ -15457,7 +16164,7 @@
           "net_invested_usd": {
             "type": "string",
             "description": "Net amount invested in USD",
-            "example": 12500.0
+            "example": 12500
           },
           "current_value_usd": {
             "type": "string",
@@ -15509,10 +16216,10 @@
             "example": "0xabc123"
           },
           "block_time": {
-            "type": "string",
-            "format": "date-time",
+            "type": "number",
+            "format": "double",
             "description": "Block time of the transfer, or null if unknown.",
-            "example": "2026-04-28T00:00:00Z"
+            "example": 1777334400
           },
           "transfer_type": {
             "type": "string",
@@ -15567,7 +16274,7 @@
           "total_proceeds_usd": {
             "type": "string",
             "description": "Total USD proceeds from the sells that closed this position.",
-            "example": 5200.0
+            "example": 5200
           },
           "total_cost_basis_usd": {
             "type": "string",
@@ -15580,20 +16287,20 @@
             "example": 0.0425
           },
           "closed_at": {
-            "type": "string",
-            "format": "date-time",
+            "type": "number",
+            "format": "double",
             "description": "When the position was closed (last sell). Null if unknown.",
-            "example": "2026-04-28T00:00:00Z"
+            "example": 1777334400
           },
           "is_opensea_trade": {
             "type": "boolean",
             "description": "Whether this was a round-trip OpenSea trade (bought and sold on OpenSea)."
           },
           "first_acquired_at": {
-            "type": "string",
-            "format": "date-time",
+            "type": "number",
+            "format": "double",
             "description": "When the tokens in this position were first acquired. Null if unknown.",
-            "example": "2026-01-15T00:00:00Z"
+            "example": 1768435200
           }
         },
         "required": [
@@ -15654,8 +16361,8 @@
             "description": "Description of the perpetual future"
           },
           "created_at": {
-            "type": "string",
-            "format": "date-time",
+            "type": "number",
+            "format": "double",
             "description": "Created timestamp"
           },
           "chain": {
@@ -15753,8 +16460,8 @@
             "description": "Description of the perpetual future"
           },
           "created_at": {
-            "type": "string",
-            "format": "date-time",
+            "type": "number",
+            "format": "double",
             "description": "Created timestamp"
           },
           "chain": {
@@ -15971,7 +16678,9 @@
         "enum": [
           "read:eligibility",
           "read:favorites",
+          "read:social",
           "write:favorites",
+          "write:social",
           "write:orders",
           "write:drops",
           "write:collections",
@@ -15982,7 +16691,9 @@
         "x-enum-descriptions": [
           "Check drop eligibility for authenticated wallet",
           "View favorites and watchlist for authenticated account",
+          "View follows, watches, followers, and following for the authenticated account",
           "Add and remove favorites and watchlist entries for authenticated account",
+          "Follow, unfollow, watch, and unwatch profiles for the authenticated account",
           "Cancel orders on behalf of authenticated account",
           "Manage Creator Studio drops for authenticated account",
           "Modify collection metadata for authenticated account",
@@ -15992,7 +16703,9 @@
         "x-enum-display-names": [
           "Check drop eligibility",
           "View favorites and watchlist",
+          "View social relationships",
           "Manage favorites and watchlist",
+          "Manage social relationships",
           "Cancel orders",
           "Creator Studio drop management",
           "Collection metadata editing",
@@ -16002,6 +16715,8 @@
         "x-enum-groups": [
           "read",
           "read",
+          "read",
+          "write",
           "write",
           "write",
           "write",
@@ -16016,7 +16731,16 @@
             "/api/v2/account/{address}/token_watchlist",
             "/api/v2/account/{address}/perpetual_watchlist"
           ],
+          [
+            "/api/v2/accounts/{address_or_username}/relationship",
+            "/api/v2/accounts/{address_or_username}/followers",
+            "/api/v2/accounts/{address_or_username}/following"
+          ],
           ["/api/v2/watchlist"],
+          [
+            "/api/v2/accounts/{address_or_username}/follow",
+            "/api/v2/accounts/{address_or_username}/watch"
+          ],
           [
             "/api/v2/orders/chain/{chain}/protocol/{protocol_address}/{order_hash}/cancel"
           ],
@@ -16048,7 +16772,9 @@
         "x-enum-mcp-tools": [
           ["check_drop_eligibility"],
           ["get_favorites"],
+          ["view_social_graph"],
           ["manage_watchlist"],
+          ["manage_social_graph"],
           ["cancel_orders"],
           ["manage_drops"],
           ["manage_collections"],

@@ -724,6 +724,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/accounts/{address_or_username}/watch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Watch a followed profile */
+        post: operations["watch_account"];
+        /** Stop watching a profile */
+        delete: operations["unwatch_account"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/accounts/{address_or_username}/follow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Follow a profile */
+        post: operations["follow_account"];
+        /** Unfollow a profile */
+        delete: operations["unfollow_account"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/accounts/wallets/siwx": {
         parameters: {
             query?: never;
@@ -1900,6 +1936,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/accounts/{address_or_username}/relationship": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the authenticated account's relationship with a profile */
+        get: operations["get_account_relationship"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/accounts/{address_or_username}/following": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get profiles followed
+         * @description Returns account targets followed by a username profile. Wallet targets return an empty page because wallet following graphs are not exposed.
+         */
+        get: operations["get_account_following"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/accounts/{address_or_username}/followers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get profile followers */
+        get: operations["get_account_followers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/accounts/resolve/{identifier}": {
         parameters: {
             query?: never;
@@ -1952,6 +2042,26 @@ export interface paths {
          * @description Get the tokens watched by a wallet address. Requires wallet identity authentication; the requested address must belong to the authenticated account.
          */
         get: operations["get_account_token_watchlist"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/account/{address}/token-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get account token activity
+         * @description Get paginated fungible token activity (transfers, swaps, wraps, and unwraps) for an account across all chains. Optionally filter by chain, token, and/or activity type.
+         */
+        get: operations["get_account_token_activity"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3387,8 +3497,11 @@ export interface components {
             rank?: number;
         };
         SubscriptionInfoResponse: {
-            /** Format: date-time */
-            expires_at?: string;
+            /**
+             * Format: double
+             * @description Unix timestamp in seconds, including fractional seconds
+             */
+            expires_at?: number;
             is_renewable: boolean;
             is_expired: boolean;
         };
@@ -3894,6 +4007,9 @@ export interface components {
         TransferResponse: {
             /** @description Ordered list of blockchain actions to execute. Each action is a JSON object with a single field indicating the type (e.g. transferAction, approvalAction) and its associated data. Serialized using proto3 JSON format — fields with default values (empty string, 0, false) may be omitted. */
             steps: components["schemas"]["JsonNode"][];
+        };
+        ProfileSocialMutationResponse: {
+            status: string;
         };
         LinkWalletSiwxRequest: {
             message: components["schemas"]["JsonNode"];
@@ -5003,7 +5119,7 @@ export interface components {
             total_supply: number;
             /** Format: int64 */
             unique_item_count: number;
-            /** Format: date-time */
+            /** Format: date */
             created_date: string;
             pricing_currencies: components["schemas"]["PricingCurrencies"];
         };
@@ -5134,10 +5250,10 @@ export interface components {
         /** @description A floor price data point */
         FloorPricePointResponse: {
             /**
-             * Format: date-time
+             * Format: double
              * @description Timestamp of the data point
              */
-            time: string;
+            time: number;
             /** @description Floor price in USD */
             usd_price?: string;
             /**
@@ -5192,10 +5308,10 @@ export interface components {
         /** @description A price history data point */
         PriceHistoryPointResponse: {
             /**
-             * Format: date-time
+             * Format: double
              * @description Timestamp of the price point
              */
-            time: string;
+            time: number;
             /**
              * @description Price in USD
              * @example 1
@@ -5210,10 +5326,10 @@ export interface components {
         /** @description An OHLCV candle data point */
         OhlcvCandleResponse: {
             /**
-             * Format: date-time
+             * Format: double
              * @description Candle timestamp
              */
-            time: string;
+            time: number;
             /** @description Opening price in USD */
             open: number;
             /** @description Highest price in USD */
@@ -5347,10 +5463,10 @@ export interface components {
             /** @description Unique identifier for the swap event */
             id: string;
             /**
-             * Format: date-time
+             * Format: double
              * @description Timestamp of the swap
              */
-            timestamp: string;
+            timestamp: number;
             /** @description Address of the sender */
             sender_address: string;
             /** @description Token sold in the swap */
@@ -5390,10 +5506,10 @@ export interface components {
         /** @description A sale data point for an NFT */
         NftSalePointResponse: {
             /**
-             * Format: date-time
+             * Format: double
              * @description Timestamp of the sale
              */
-            time: string;
+            time: number;
             /** @description Sale price in USD */
             usd_price: string;
             /**
@@ -5409,17 +5525,53 @@ export interface components {
         AccountResponse: {
             address: string;
             username?: string;
+            display_name?: string;
+            ens_name?: string;
+            is_verified: boolean;
+            /** Format: int64 */
+            follower_count: number;
+            /** Format: int64 */
+            following_count: number;
+            nft_pfp?: components["schemas"]["NftPfpResponse"];
             profile_image_url?: string;
             banner_image_url?: string;
             website?: string;
             social_media_accounts: components["schemas"]["SocialMediaAccount"][];
             bio: string;
-            /** Format: date-time */
+            /** Format: date */
             joined_date: string;
+        };
+        NftPfpResponse: {
+            contract_address: string;
+            token_id: string;
+            chain: string;
+            collection_slug?: string;
+            image_url: string;
+            is_verified: boolean;
         };
         SocialMediaAccount: {
             platform: string;
             username: string;
+        };
+        ProfileRelationshipResponse: {
+            is_following: boolean;
+            is_watching: boolean;
+        };
+        SocialProfilePageResponse: {
+            profiles: components["schemas"]["SocialProfileSummaryResponse"][];
+            next?: string;
+        };
+        SocialProfileSummaryResponse: {
+            address: string;
+            username?: string;
+            display_name?: string;
+            profile_image_url?: string;
+            is_verified: boolean;
+            /** Format: int64 */
+            follower_count: number;
+            nft_pfp?: components["schemas"]["NftPfpResponse"];
+            is_following: boolean;
+            is_watching: boolean;
         };
         /** @description Resolved account info */
         AccountResolveResponse: {
@@ -5507,6 +5659,64 @@ export interface components {
              */
             quote_token_liquidity_usd?: string;
         };
+        BitcoinAddress: {
+            "@type": "BitcoinAddress";
+        } & (Omit<WithRequired<components["schemas"]["BlockchainAddress"], "value">, "@type"> & {
+            validate?: boolean;
+        });
+        BlockchainAddress: {
+            value: string;
+            "@type": string;
+        };
+        EvmAddress: {
+            "@type": "EvmAddress";
+        } & (Omit<WithRequired<components["schemas"]["BlockchainAddress"], "value">, "@type"> & {
+            validate?: boolean;
+            skipLowercase?: boolean;
+        });
+        SolanaAddress: {
+            "@type": "SolanaAddress";
+        } & (Omit<WithRequired<components["schemas"]["BlockchainAddress"], "value">, "@type"> & {
+            validate?: boolean;
+        });
+        /** @description Paginated list of account token activity events */
+        TokenAccountActivityPaginatedResponse: {
+            /** @description List of token activity events */
+            activities: components["schemas"]["TokenAccountActivityResponse"][];
+            /** @description Cursor for the next page of results */
+            next?: string;
+        };
+        /** @description A fungible token activity event for an account */
+        TokenAccountActivityResponse: {
+            /**
+             * @description Type of activity
+             * @enum {string}
+             */
+            type: "send" | "receive" | "swap" | "wrap" | "unwrap";
+            /** @description Blockchain the activity occurred on */
+            chain: string;
+            /** @description Address that initiated the activity */
+            from: string;
+            /** @description Recipient address for transfers */
+            to?: string;
+            /** @description Token amount for transfers */
+            token?: components["schemas"]["TokenAmountResponse"];
+            /** @description Token sold/swapped from */
+            from_token?: components["schemas"]["TokenAmountResponse"];
+            /** @description Token received/swapped to */
+            to_token?: components["schemas"]["TokenAmountResponse"];
+            /** @description Swap protocol used */
+            swap_protocol?: string;
+            /** @description Transaction hash */
+            transaction_hash: string;
+            /** @description User operation hash (for account abstraction) */
+            user_op_hash?: string;
+            /**
+             * Format: double
+             * @description Timestamp of the activity
+             */
+            timestamp: number;
+        };
         /** @description Portfolio stats including total value, P&L, and asset breakdown */
         PortfolioStatsResponse: {
             /**
@@ -5543,11 +5753,11 @@ export interface components {
         /** @description A single net worth data point */
         PortfolioHistoryDataPoint: {
             /**
-             * Format: date-time
+             * Format: double
              * @description Timestamp of the data point
-             * @example 2026-04-28T00:00:00Z
+             * @example 1777334400
              */
-            timestamp: string;
+            timestamp: number;
             /**
              * @description Total portfolio value in USD
              * @example 124180
@@ -5635,11 +5845,11 @@ export interface components {
              */
             tx_signature: string;
             /**
-             * Format: date-time
+             * Format: double
              * @description Block time of the transfer, or null if unknown.
-             * @example 2026-04-28T00:00:00Z
+             * @example 1777334400
              */
-            block_time?: string;
+            block_time?: number;
             /**
              * @description Type of transfer, used to distinguish zero-cost acquisitions (e.g. AIRDROP, CEX_TRANSFER) from buys/sells (e.g. SWAP_BUY, SWAP_SELL). Null if unclassified.
              * @example SWAP_BUY
@@ -5689,19 +5899,19 @@ export interface components {
              */
             avg_cost_per_token_usd: string;
             /**
-             * Format: date-time
+             * Format: double
              * @description When the position was closed (last sell). Null if unknown.
-             * @example 2026-04-28T00:00:00Z
+             * @example 1777334400
              */
-            closed_at?: string;
+            closed_at?: number;
             /** @description Whether this was a round-trip OpenSea trade (bought and sold on OpenSea). */
             is_opensea_trade: boolean;
             /**
-             * Format: date-time
+             * Format: double
              * @description When the tokens in this position were first acquired. Null if unknown.
-             * @example 2026-01-15T00:00:00Z
+             * @example 1768435200
              */
-            first_acquired_at?: string;
+            first_acquired_at?: number;
         };
         /** @description A page of a wallet's closed (realized) trading positions */
         ClosedPositionsResponse: {
@@ -5729,10 +5939,10 @@ export interface components {
             /** @description Description of the perpetual future */
             description?: string;
             /**
-             * Format: date-time
+             * Format: double
              * @description Created timestamp
              */
-            created_at?: string;
+            created_at?: number;
             /** @description Chain identifier */
             chain: string;
             /** @description Contract address */
@@ -5779,10 +5989,10 @@ export interface components {
             /** @description Description of the perpetual future */
             description?: string;
             /**
-             * Format: date-time
+             * Format: double
              * @description Created timestamp
              */
-            created_at?: string;
+            created_at?: number;
             /** @description Chain identifier */
             chain: string;
             /** @description Contract address */
@@ -5871,7 +6081,7 @@ export interface components {
          * @example read:favorites
          * @enum {string}
          */
-        AuthScope: "read:eligibility" | "read:favorites" | "write:favorites" | "write:orders" | "write:drops" | "write:collections" | "write:profile" | "write:wallets";
+        AuthScope: "read:eligibility" | "read:favorites" | "read:social" | "write:favorites" | "write:social" | "write:orders" | "write:drops" | "write:collections" | "write:profile" | "write:wallets";
     };
     responses: {
         /** @description For error reasons, review the response data. */
@@ -7391,6 +7601,94 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    watch_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                address_or_username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ProfileSocialMutationResponse"];
+                };
+            };
+        };
+    };
+    unwatch_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                address_or_username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ProfileSocialMutationResponse"];
+                };
+            };
+        };
+    };
+    follow_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                address_or_username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ProfileSocialMutationResponse"];
+                };
+            };
+        };
+    };
+    unfollow_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                address_or_username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ProfileSocialMutationResponse"];
+                };
+            };
+        };
+    };
     link_wallet_with_siwx: {
         parameters: {
             query?: never;
@@ -7701,7 +7999,7 @@ export interface operations {
                  * @example 20
                  */
                 limit?: number;
-                "cursor.value"?: string;
+                cursor?: string;
             };
             header?: never;
             path?: never;
@@ -7815,7 +8113,7 @@ export interface operations {
                  * @example 20
                  */
                 limit?: number;
-                "cursor.value"?: string;
+                cursor?: string;
             };
             header?: never;
             path?: never;
@@ -8102,7 +8400,7 @@ export interface operations {
                  * @example 20
                  */
                 limit?: number;
-                "next.value"?: string;
+                next?: string;
             };
             header?: never;
             path: {
@@ -8159,7 +8457,7 @@ export interface operations {
                  * @example 20
                  */
                 limit?: number;
-                "next.value"?: string;
+                next?: string;
             };
             header?: never;
             path: {
@@ -8192,7 +8490,7 @@ export interface operations {
                  * @example 20
                  */
                 limit?: number;
-                "next.value"?: string;
+                next?: string;
             };
             header?: never;
             path: {
@@ -8257,7 +8555,7 @@ export interface operations {
                  * @example 20
                  */
                 limit?: number;
-                "next.value"?: string;
+                next?: string;
             };
             header?: never;
             path: {
@@ -8372,7 +8670,7 @@ export interface operations {
                  * @example 20
                  */
                 limit?: number;
-                "next.value"?: string;
+                next?: string;
             };
             header?: never;
             path: {
@@ -8409,7 +8707,7 @@ export interface operations {
                  * @example 20
                  */
                 limit?: number;
-                "next.value"?: string;
+                next?: string;
             };
             header?: never;
             path: {
@@ -8448,7 +8746,7 @@ export interface operations {
                  * @example 20
                  */
                 limit?: number;
-                "next.value"?: string;
+                next?: string;
             };
             header?: never;
             path?: never;
@@ -8493,7 +8791,7 @@ export interface operations {
                  * @example 20
                  */
                 limit?: number;
-                "next.value"?: string;
+                next?: string;
             };
             header?: never;
             path: {
@@ -8535,7 +8833,7 @@ export interface operations {
                  * @example 20
                  */
                 limit?: number;
-                "next.value"?: string;
+                next?: string;
             };
             header?: never;
             path: {
@@ -8592,7 +8890,7 @@ export interface operations {
                  * @example 20
                  */
                 limit?: number;
-                "next.value"?: string;
+                next?: string;
             };
             header?: never;
             path: {
@@ -8739,7 +9037,7 @@ export interface operations {
                  * @example 20
                  */
                 limit?: number;
-                "next.value"?: string;
+                next?: string;
                 /**
                  * @description Blockchain to filter by
                  * @example ethereum
@@ -9034,7 +9332,7 @@ export interface operations {
                  * @example 20
                  */
                 limit?: number;
-                "next.value"?: string;
+                next?: string;
             };
             header?: never;
             path: {
@@ -9409,7 +9707,7 @@ export interface operations {
                  * @example 20
                  */
                 limit?: number;
-                "next.value"?: string;
+                next?: string;
             };
             header?: never;
             path: {
@@ -9611,7 +9909,7 @@ export interface operations {
                  * @example 20
                  */
                 limit?: number;
-                "next.value"?: string;
+                next?: string;
             };
             header?: never;
             path: {
@@ -9647,8 +9945,8 @@ export interface operations {
             header?: never;
             path: {
                 /**
-                 * @description The blockchain address or username of the account to retrieve
-                 * @example 0x8ba1f109551bD432803012645Hac136c94C19D6e
+                 * @description The blockchain address or username of the account to retrieve.
+                 * @example 0x8ba1f109551bD432803012645fAc136c94C19D6e
                  */
                 address_or_username: string;
             };
@@ -9668,6 +9966,86 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
+        };
+    };
+    get_account_relationship: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                address_or_username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ProfileRelationshipResponse"];
+                };
+            };
+        };
+    };
+    get_account_following: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Number of items to return per page
+                 * @example 20
+                 */
+                limit?: number;
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                address_or_username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SocialProfilePageResponse"];
+                };
+            };
+        };
+    };
+    get_account_followers: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Number of items to return per page
+                 * @example 20
+                 */
+                limit?: number;
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                address_or_username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SocialProfilePageResponse"];
+                };
+            };
         };
     };
     resolve_account: {
@@ -9791,6 +10169,53 @@ export interface operations {
                 };
             };
             404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_account_token_activity: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Chain(s) to filter by (e.g. ethereum). Repeat for multiple chains. Omit to query all chains.
+                 * @example ethereum
+                 */
+                chains?: components["schemas"]["ChainIdentifier"][];
+                /**
+                 * @description Token contract address(es) to filter by. Repeat for multiple tokens. Omit to include all tokens.
+                 * @example 0x0000000000000000000000000000000000000000
+                 */
+                tokens?: (components["schemas"]["BitcoinAddress"] | components["schemas"]["EvmAddress"] | components["schemas"]["SolanaAddress"])[];
+                /** @description Activity types to include (send, receive, swap, wrap, unwrap). Repeat for multiple types. Omit to include all. Note: swap also includes wrap and unwrap activities. */
+                type?: string[];
+                /**
+                 * @description Number of items to return per page
+                 * @example 20
+                 */
+                limit?: number;
+                next?: string;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The account address to query token activity for
+                 * @example 0x0000000000000000000000000000000000000000
+                 */
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TokenAccountActivityPaginatedResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -10247,3 +10672,6 @@ export interface operations {
         };
     };
 }
+type WithRequired<T, K extends keyof T> = T & {
+    [P in K]-?: T[P];
+};
