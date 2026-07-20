@@ -132,6 +132,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/saved-tools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * [Beta] List saved tools
+         * @description List tools saved by the authenticated account.
+         */
+        get: operations["list_saved_tools"];
+        put?: never;
+        /**
+         * [Beta] Save a tool
+         * @description Save a registered tool for the authenticated account.
+         */
+        post: operations["save_tool"];
+        /**
+         * [Beta] Remove a saved tool
+         * @description Idempotently remove a registered tool from the authenticated account's saved tools. Removed is false when the tool was already absent.
+         */
+        delete: operations["unsave_tool"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/profile/username": {
         parameters: {
             query?: never;
@@ -2647,10 +2675,39 @@ export interface components {
             opensea_url: string;
             /** @description A description of the token */
             description?: string;
+            /**
+             * @description Source of the description. `TOKEN_METADATA` is supplied by token metadata; `AI_GENERATED` is OpenSea's generated token-page description.
+             * @enum {string}
+             */
+            description_source?: "TOKEN_METADATA" | "AI_GENERATED";
+            /**
+             * Format: double
+             * @description When an AI-generated description was generated
+             */
+            description_generated_at?: number;
+            /** @description Sources used for an AI-generated description */
+            description_sources?: string[];
             /** @description Market statistics for the token */
             stats?: components["schemas"]["TokenStatsResponse"];
             /** @description Social media links for the token */
             socials?: components["schemas"]["TokenSocialsResponse"];
+            /**
+             * Format: int64
+             * @description Number of token holders
+             */
+            holders_count?: number;
+            /** @description Whether OpenSea has verified the token */
+            is_verified: boolean;
+            /**
+             * Format: double
+             * @description When OpenSea first recorded the token
+             */
+            created_at?: number;
+            /**
+             * Format: double
+             * @description Earliest known onchain activity for the token
+             */
+            genesis_date?: number;
             /**
              * @description Token safety status based on OpenSea's spam-classification rules. `OK` for tokens that pass all safety checks (the normal case). Categories are intentionally broad and may evolve. Possible values, in decreasing severity: `WARNING` (flagged as risky/suspicious — caution advised), `SPAM` (flagged as spam), `LOW_LIQUIDITY` (insufficient liquidity pool reserves), `OK` (passes all checks).
              * @default OK
@@ -2662,6 +2719,8 @@ export interface components {
         TokenSocialsResponse: {
             /** @description The token's website URL */
             website?: string;
+            /** @description The token's subreddit identifier */
+            subreddit_identifier?: string;
             /** @description The token's Twitter/X handle */
             twitter_handle?: string;
             /** @description The token's Telegram identifier */
@@ -2870,6 +2929,40 @@ export interface components {
             value?: string;
             /** @description The native token value to send with the transaction (hex, 0x-prefixed) */
             value_hex?: string;
+        };
+        /** @description A registered tool to save or remove from saved tools */
+        SavedToolRequest: {
+            /**
+             * @description Numeric registered tool ID
+             * @example 42
+             */
+            tool_id: string;
+            /**
+             * @description Numeric registry chain ID
+             * @example 8453
+             */
+            registry_chain: string;
+            /**
+             * @description Registry contract address or supported x402 registry identifier
+             * @example 0x0000000000000000000000000000000000000000
+             */
+            registry_addr: string;
+            /**
+             * @description Saved-tools toolkit name
+             * @example All
+             */
+            toolkit_name?: string;
+        };
+        /** @description A tool saved by the authenticated account */
+        SavedToolResponse: {
+            /** @description Saved-tool record ID */
+            id: string;
+            /** @description Numeric registered tool ID */
+            tool_id: string;
+            /** @description Numeric registry chain ID */
+            registry_chain: string;
+            /** @description Registry contract address or x402 registry identifier */
+            registry_addr: string;
         };
         /** @description Request body for claiming a profile username */
         ClaimAccountUsernameRequest: {
@@ -4588,6 +4681,23 @@ export interface components {
              * @description Price change percentage over the last 24 hours
              */
             price_change_24h?: number;
+            /**
+             * Format: int64
+             * @description Number of token holders
+             */
+            holders_count?: number;
+            /** @description Whether OpenSea has verified the token */
+            is_verified: boolean;
+            /**
+             * Format: double
+             * @description When OpenSea first recorded the token
+             */
+            created_at?: number;
+            /**
+             * Format: double
+             * @description Earliest known onchain activity for the token
+             */
+            genesis_date?: number;
         };
         /** @description A currency within a token group */
         TokenGroupCurrencyResponse: {
@@ -4848,6 +4958,12 @@ export interface components {
             decimals: number;
             /** @description URL to the token page on OpenSea */
             opensea_url: string;
+        };
+        /** @description A page of tools saved by the authenticated account */
+        SavedToolsPaginatedResponse: {
+            tools: components["schemas"]["SavedToolResponse"][];
+            /** @description Cursor for the next page, or null when this is the last page */
+            next?: string;
         };
         GetOrderResponse: {
             order: components["schemas"]["Listing"] | components["schemas"]["Offer"];
@@ -6073,6 +6189,11 @@ export interface components {
             collections: components["schemas"]["ProfileCollectionResponse"][];
             next?: string;
         };
+        /** @description Result of removing a saved tool */
+        SavedToolActionResponse: {
+            /** @description Whether a saved tool existed and was removed */
+            removed: boolean;
+        };
         WalletUnlinkResponse: {
             success: boolean;
         };
@@ -6081,7 +6202,7 @@ export interface components {
          * @example read:favorites
          * @enum {string}
          */
-        AuthScope: "read:eligibility" | "read:favorites" | "read:social" | "write:favorites" | "write:social" | "write:orders" | "write:drops" | "write:collections" | "write:profile" | "write:wallets";
+        AuthScope: "read:eligibility" | "read:favorites" | "read:social" | "read:tools" | "write:favorites" | "write:social" | "write:tools" | "write:orders" | "write:drops" | "write:collections" | "write:profile" | "write:wallets";
     };
     responses: {
         /** @description For error reasons, review the response data. */
@@ -6417,6 +6538,95 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    list_saved_tools: {
+        parameters: {
+            query?: {
+                toolkit_name?: string;
+                /**
+                 * @description Number of items to return per page
+                 * @example 20
+                 */
+                limit?: number;
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Saved tools returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedToolsPaginatedResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    save_tool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavedToolRequest"];
+            };
+        };
+        responses: {
+            /** @description Tool saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedToolResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    unsave_tool: {
+        parameters: {
+            query: {
+                tool_id: string;
+                registry_chain: string;
+                registry_addr: string;
+                toolkit_name?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Saved-tool removal result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedToolActionResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             500: components["responses"]["InternalError"];
         };
     };

@@ -502,6 +502,208 @@
         }
       }
     },
+    "/api/v2/saved-tools": {
+      "get": {
+        "tags": ["Tool Endpoints [Beta]"],
+        "summary": "[Beta] List saved tools",
+        "description": "List tools saved by the authenticated account.",
+        "operationId": "list_saved_tools",
+        "parameters": [
+          {
+            "name": "toolkit_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255,
+              "minLength": 0,
+              "pattern": "(?s).*\\S.*"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items to return per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "Number of items to return per page",
+              "example": 20,
+              "maximum": 200,
+              "minimum": 1
+            },
+            "example": 20
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saved tools returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedToolsPaginatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["read:tools"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["read:tools"]
+      },
+      "post": {
+        "tags": ["Tool Endpoints [Beta]"],
+        "summary": "[Beta] Save a tool",
+        "description": "Save a registered tool for the authenticated account.",
+        "operationId": "save_tool",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedToolRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Tool saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedToolResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:tools"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:tools"]
+      },
+      "delete": {
+        "tags": ["Tool Endpoints [Beta]"],
+        "summary": "[Beta] Remove a saved tool",
+        "description": "Idempotently remove a registered tool from the authenticated account's saved tools. Removed is false when the tool was already absent.",
+        "operationId": "unsave_tool",
+        "parameters": [
+          {
+            "name": "tool_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "registry_chain",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "registry_addr",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "toolkit_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255,
+              "minLength": 0,
+              "pattern": "(?s).*\\S.*"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saved-tool removal result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedToolActionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:tools"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:tools"]
+      }
+    },
     "/api/v2/profile/username": {
       "post": {
         "tags": ["Account Endpoints"],
@@ -8741,6 +8943,23 @@
             "type": "string",
             "description": "A description of the token"
           },
+          "description_source": {
+            "type": "string",
+            "description": "Source of the description. `TOKEN_METADATA` is supplied by token metadata; `AI_GENERATED` is OpenSea's generated token-page description.",
+            "enum": ["TOKEN_METADATA", "AI_GENERATED"]
+          },
+          "description_generated_at": {
+            "type": "number",
+            "format": "double",
+            "description": "When an AI-generated description was generated"
+          },
+          "description_sources": {
+            "type": "array",
+            "description": "Sources used for an AI-generated description",
+            "items": {
+              "type": "string"
+            }
+          },
           "stats": {
             "$ref": "#/components/schemas/TokenStatsResponse",
             "description": "Market statistics for the token"
@@ -8748,6 +8967,25 @@
           "socials": {
             "$ref": "#/components/schemas/TokenSocialsResponse",
             "description": "Social media links for the token"
+          },
+          "holders_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of token holders"
+          },
+          "is_verified": {
+            "type": "boolean",
+            "description": "Whether OpenSea has verified the token"
+          },
+          "created_at": {
+            "type": "number",
+            "format": "double",
+            "description": "When OpenSea first recorded the token"
+          },
+          "genesis_date": {
+            "type": "number",
+            "format": "double",
+            "description": "Earliest known onchain activity for the token"
           },
           "status": {
             "type": "string",
@@ -8760,6 +8998,7 @@
           "address",
           "chain",
           "decimals",
+          "is_verified",
           "name",
           "opensea_url",
           "symbol",
@@ -8773,6 +9012,10 @@
           "website": {
             "type": "string",
             "description": "The token's website URL"
+          },
+          "subreddit_identifier": {
+            "type": "string",
+            "description": "The token's subreddit identifier"
           },
           "twitter_handle": {
             "type": "string",
@@ -9077,6 +9320,62 @@
           }
         },
         "required": ["chain", "data"]
+      },
+      "SavedToolRequest": {
+        "type": "object",
+        "description": "A registered tool to save or remove from saved tools",
+        "properties": {
+          "tool_id": {
+            "type": "string",
+            "description": "Numeric registered tool ID",
+            "example": 42,
+            "minLength": 1
+          },
+          "registry_chain": {
+            "type": "string",
+            "description": "Numeric registry chain ID",
+            "example": 8453,
+            "minLength": 1
+          },
+          "registry_addr": {
+            "type": "string",
+            "description": "Registry contract address or supported x402 registry identifier",
+            "example": "0x0000000000000000000000000000000000000000",
+            "minLength": 1
+          },
+          "toolkit_name": {
+            "type": "string",
+            "description": "Saved-tools toolkit name",
+            "example": "All",
+            "maxLength": 255,
+            "minLength": 0,
+            "pattern": "(?s).*\\S.*"
+          }
+        },
+        "required": ["registry_addr", "registry_chain", "tool_id"]
+      },
+      "SavedToolResponse": {
+        "type": "object",
+        "description": "A tool saved by the authenticated account",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Saved-tool record ID"
+          },
+          "tool_id": {
+            "type": "string",
+            "description": "Numeric registered tool ID"
+          },
+          "registry_chain": {
+            "type": "string",
+            "description": "Numeric registry chain ID"
+          },
+          "registry_addr": {
+            "type": "string",
+            "description": "Registry contract address or x402 registry identifier"
+          }
+        },
+        "required": ["id", "registry_addr", "registry_chain", "tool_id"]
       },
       "ClaimAccountUsernameRequest": {
         "type": "object",
@@ -13583,12 +13882,32 @@
             "type": "number",
             "format": "double",
             "description": "Price change percentage over the last 24 hours"
+          },
+          "holders_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of token holders"
+          },
+          "is_verified": {
+            "type": "boolean",
+            "description": "Whether OpenSea has verified the token"
+          },
+          "created_at": {
+            "type": "number",
+            "format": "double",
+            "description": "When OpenSea first recorded the token"
+          },
+          "genesis_date": {
+            "type": "number",
+            "format": "double",
+            "description": "Earliest known onchain activity for the token"
           }
         },
         "required": [
           "address",
           "chain",
           "decimals",
+          "is_verified",
           "name",
           "opensea_url",
           "symbol",
@@ -14039,6 +14358,23 @@
           "symbol",
           "usd_price"
         ]
+      },
+      "SavedToolsPaginatedResponse": {
+        "type": "object",
+        "description": "A page of tools saved by the authenticated account",
+        "properties": {
+          "tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SavedToolResponse"
+            }
+          },
+          "next": {
+            "type": "string",
+            "description": "Cursor for the next page, or null when this is the last page"
+          }
+        },
+        "required": ["tools"]
       },
       "GetOrderResponse": {
         "type": "object",
@@ -16663,6 +16999,17 @@
         },
         "required": ["collections"]
       },
+      "SavedToolActionResponse": {
+        "type": "object",
+        "description": "Result of removing a saved tool",
+        "properties": {
+          "removed": {
+            "type": "boolean",
+            "description": "Whether a saved tool existed and was removed"
+          }
+        },
+        "required": ["removed"]
+      },
       "WalletUnlinkResponse": {
         "type": "object",
         "properties": {
@@ -16679,8 +17026,10 @@
           "read:eligibility",
           "read:favorites",
           "read:social",
+          "read:tools",
           "write:favorites",
           "write:social",
+          "write:tools",
           "write:orders",
           "write:drops",
           "write:collections",
@@ -16692,8 +17041,10 @@
           "Check drop eligibility for authenticated wallet",
           "View favorites and watchlist for authenticated account",
           "View follows, watches, followers, and following for the authenticated account",
+          "View saved tools and toolkits for the authenticated account",
           "Add and remove favorites and watchlist entries for authenticated account",
           "Follow, unfollow, watch, and unwatch profiles for the authenticated account",
+          "Save and remove tools and manage toolkits for the authenticated account",
           "Cancel orders on behalf of authenticated account",
           "Manage Creator Studio drops for authenticated account",
           "Modify collection metadata for authenticated account",
@@ -16704,8 +17055,10 @@
           "Check drop eligibility",
           "View favorites and watchlist",
           "View social relationships",
+          "View saved tools and toolkits",
           "Manage favorites and watchlist",
           "Manage social relationships",
+          "Manage saved tools and toolkits",
           "Cancel orders",
           "Creator Studio drop management",
           "Collection metadata editing",
@@ -16716,6 +17069,8 @@
           "read",
           "read",
           "read",
+          "read",
+          "write",
           "write",
           "write",
           "write",
@@ -16736,10 +17091,20 @@
             "/api/v2/accounts/{address_or_username}/followers",
             "/api/v2/accounts/{address_or_username}/following"
           ],
+          [
+            "/api/v2/saved-tools",
+            "/api/v2/toolkits",
+            "/api/v2/toolkits/{toolkit_slug}"
+          ],
           ["/api/v2/watchlist"],
           [
             "/api/v2/accounts/{address_or_username}/follow",
             "/api/v2/accounts/{address_or_username}/watch"
+          ],
+          [
+            "/api/v2/saved-tools",
+            "/api/v2/toolkits",
+            "/api/v2/toolkits/{toolkit_id}/save"
           ],
           [
             "/api/v2/orders/chain/{chain}/protocol/{protocol_address}/{order_hash}/cancel"
@@ -16773,8 +17138,16 @@
           ["check_drop_eligibility"],
           ["get_favorites"],
           ["view_social_graph"],
+          ["list_saved_tools", "list_toolkits", "get_toolkit"],
           ["manage_watchlist"],
           ["manage_social_graph"],
+          [
+            "save_tool",
+            "unsave_tool",
+            "create_toolkit",
+            "save_toolkit",
+            "unsave_toolkit"
+          ],
           ["cancel_orders"],
           ["manage_drops"],
           ["manage_collections"],

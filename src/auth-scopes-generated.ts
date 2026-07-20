@@ -35,6 +35,14 @@ export const AUTH_SCOPES = [
     mcpTools: ["view_social_graph"],
   },
   {
+    name: "read:tools",
+    displayName: "View saved tools and toolkits",
+    description: "View saved tools and toolkits for the authenticated account",
+    group: "read",
+    endpoints: ["/api/v2/saved-tools","/api/v2/toolkits","/api/v2/toolkits/{toolkit_slug}"],
+    mcpTools: ["list_saved_tools","list_toolkits","get_toolkit"],
+  },
+  {
     name: "write:favorites",
     displayName: "Manage favorites and watchlist",
     description: "Add and remove favorites and watchlist entries for authenticated account",
@@ -49,6 +57,14 @@ export const AUTH_SCOPES = [
     group: "write",
     endpoints: ["/api/v2/accounts/{address_or_username}/follow","/api/v2/accounts/{address_or_username}/watch"],
     mcpTools: ["manage_social_graph"],
+  },
+  {
+    name: "write:tools",
+    displayName: "Manage saved tools and toolkits",
+    description: "Save and remove tools and manage toolkits for the authenticated account",
+    group: "write",
+    endpoints: ["/api/v2/saved-tools","/api/v2/toolkits","/api/v2/toolkits/{toolkit_id}/save"],
+    mcpTools: ["save_tool","unsave_tool","create_toolkit","save_toolkit","unsave_toolkit"],
   },
   {
     name: "write:orders",
