@@ -95,7 +95,7 @@ export const AUTH_SCOPES = [
     displayName: "Profile editing",
     description: "Modify profile settings for authenticated account",
     group: "write",
-    endpoints: ["/api/v2/profile","/api/v2/profile/username","/api/v2/profile/images","/api/v2/profile/shelves","/api/v2/profile/shelves/{shelf_id}"],
+    endpoints: ["/api/v2/profile","/api/v2/profile/username","/api/v2/profile/images","/api/v2/profile/nft-pfp","/api/v2/profile/shelves","/api/v2/profile/shelves/{shelf_id}"],
     mcpTools: ["manage_profile"],
   },
   {

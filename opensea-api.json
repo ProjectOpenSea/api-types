@@ -891,6 +891,85 @@
         "x-opensea-auth-scopes": ["write:profile"]
       }
     },
+    "/api/v2/profile/nft-pfp": {
+      "post": {
+        "tags": ["Account Endpoints"],
+        "summary": "Set NFT profile picture",
+        "description": "Set an onchain NFT owned by the authenticated wallet as its verified profile picture. The NFT must be from a verified collection and owned by one of the account's wallets.",
+        "operationId": "set_profile_nft_pfp",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetNftPfpRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "NFT profile picture set successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NftPfpResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:profile"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:profile"]
+      },
+      "delete": {
+        "tags": ["Account Endpoints"],
+        "summary": "Clear NFT profile picture",
+        "description": "Clear the authenticated wallet's NFT profile picture. This operation is idempotent: it returns 200 with `success=false` when no NFT profile picture was set, and `success=true` when one was cleared.",
+        "operationId": "clear_profile_nft_pfp",
+        "responses": {
+          "200": {
+            "description": "NFT profile picture cleared",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClearNftPfpResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:profile"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:profile"]
+      }
+    },
     "/api/v2/profile/images": {
       "post": {
         "tags": ["Account Endpoints"],
@@ -9536,6 +9615,70 @@
         },
         "required": ["chain", "contract_address", "token_id"]
       },
+      "NftPfpResponse": {
+        "type": "object",
+        "properties": {
+          "contract_address": {
+            "type": "string"
+          },
+          "token_id": {
+            "type": "string"
+          },
+          "chain": {
+            "type": "string"
+          },
+          "collection_slug": {
+            "type": "string"
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "is_verified": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "chain",
+          "contract_address",
+          "image_url",
+          "is_verified",
+          "token_id"
+        ]
+      },
+      "SetNftPfpRequest": {
+        "type": "object",
+        "description": "Request body for setting an NFT as the profile picture",
+        "properties": {
+          "contractAddress": {
+            "type": "string",
+            "description": "Contract address of the NFT",
+            "example": "0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d",
+            "maxLength": 200,
+            "minLength": 0
+          },
+          "tokenId": {
+            "type": "string",
+            "description": "Token ID of the NFT",
+            "example": 1,
+            "maxLength": 200,
+            "minLength": 0
+          },
+          "chain": {
+            "type": "string",
+            "description": "Chain the NFT is on",
+            "example": "ethereum",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "collectionSlug": {
+            "type": "string",
+            "description": "Collection slug of the NFT",
+            "maxLength": 200,
+            "minLength": 0
+          }
+        },
+        "required": ["chain", "contractAddress", "tokenId"]
+      },
       "UploadContext": {
         "type": "object",
         "description": "This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds.",
@@ -16013,36 +16156,6 @@
           "social_media_accounts"
         ]
       },
-      "NftPfpResponse": {
-        "type": "object",
-        "properties": {
-          "contract_address": {
-            "type": "string"
-          },
-          "token_id": {
-            "type": "string"
-          },
-          "chain": {
-            "type": "string"
-          },
-          "collection_slug": {
-            "type": "string"
-          },
-          "image_url": {
-            "type": "string"
-          },
-          "is_verified": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "chain",
-          "contract_address",
-          "image_url",
-          "is_verified",
-          "token_id"
-        ]
-      },
       "SocialMediaAccount": {
         "type": "object",
         "properties": {
@@ -17010,6 +17123,17 @@
         },
         "required": ["removed"]
       },
+      "ClearNftPfpResponse": {
+        "type": "object",
+        "description": "Response for clearing the NFT profile picture",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the NFT profile picture was cleared"
+          }
+        },
+        "required": ["success"]
+      },
       "WalletUnlinkResponse": {
         "type": "object",
         "properties": {
@@ -17129,6 +17253,7 @@
             "/api/v2/profile",
             "/api/v2/profile/username",
             "/api/v2/profile/images",
+            "/api/v2/profile/nft-pfp",
             "/api/v2/profile/shelves",
             "/api/v2/profile/shelves/{shelf_id}"
           ],

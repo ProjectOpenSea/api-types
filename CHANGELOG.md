@@ -1,5 +1,11 @@
 # @opensea/api-types
 
+## 0.8.3
+
+### Patch Changes
+
+- 7f5c1e7: Sync OpenAPI spec: add NFT profile picture endpoints (`POST`/`DELETE /api/v2/profile/nft-pfp`) with `SetNftPfpRequest` and `ClearNftPfpResponse` schemas, and register `/api/v2/profile/nft-pfp` under the `write:profile` scope.
+
 ## 0.8.2
 
 ### Patch Changes

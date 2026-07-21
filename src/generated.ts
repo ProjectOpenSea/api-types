@@ -208,6 +208,30 @@ export interface paths {
         patch: operations["reorder_profile_shelves"];
         trace?: never;
     };
+    "/api/v2/profile/nft-pfp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set NFT profile picture
+         * @description Set an onchain NFT owned by the authenticated wallet as its verified profile picture. The NFT must be from a verified collection and owned by one of the account's wallets.
+         */
+        post: operations["set_profile_nft_pfp"];
+        /**
+         * Clear NFT profile picture
+         * @description Clear the authenticated wallet's NFT profile picture. This operation is idempotent: it returns 200 with `success=false` when no NFT profile picture was set, and `success=true` when one was cleared.
+         */
+        delete: operations["clear_profile_nft_pfp"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/profile/images": {
         parameters: {
             query?: never;
@@ -3023,6 +3047,34 @@ export interface components {
             /** @description Contract address */
             contract_address: string;
         };
+        NftPfpResponse: {
+            contract_address: string;
+            token_id: string;
+            chain: string;
+            collection_slug?: string;
+            image_url: string;
+            is_verified: boolean;
+        };
+        /** @description Request body for setting an NFT as the profile picture */
+        SetNftPfpRequest: {
+            /**
+             * @description Contract address of the NFT
+             * @example 0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d
+             */
+            contractAddress: string;
+            /**
+             * @description Token ID of the NFT
+             * @example 1
+             */
+            tokenId: string;
+            /**
+             * @description Chain the NFT is on
+             * @example ethereum
+             */
+            chain: string;
+            /** @description Collection slug of the NFT */
+            collectionSlug?: string;
+        };
         /** @description This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds. */
         UploadContext: {
             /**
@@ -5657,14 +5709,6 @@ export interface components {
             /** Format: date */
             joined_date: string;
         };
-        NftPfpResponse: {
-            contract_address: string;
-            token_id: string;
-            chain: string;
-            collection_slug?: string;
-            image_url: string;
-            is_verified: boolean;
-        };
         SocialMediaAccount: {
             platform: string;
             username: string;
@@ -6193,6 +6237,11 @@ export interface components {
         SavedToolActionResponse: {
             /** @description Whether a saved tool existed and was removed */
             removed: boolean;
+        };
+        /** @description Response for clearing the NFT profile picture */
+        ClearNftPfpResponse: {
+            /** @description Whether the NFT profile picture was cleared */
+            success: boolean;
         };
         WalletUnlinkResponse: {
             success: boolean;
@@ -6740,6 +6789,55 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    set_profile_nft_pfp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetNftPfpRequest"];
+            };
+        };
+        responses: {
+            /** @description NFT profile picture set successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NftPfpResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    clear_profile_nft_pfp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description NFT profile picture cleared */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClearNftPfpResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     upload_profile_image: {
