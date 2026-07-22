@@ -792,7 +792,18 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": []
+          }
+        ],
+        "x-opensea-auth-required": false,
+        "x-opensea-auth-scopes": []
       },
       "post": {
         "tags": ["Account Endpoints"],
@@ -1787,7 +1798,7 @@
             }
           },
           "422": {
-            "description": "Minting precondition failed: wallet not in allowlist, mint limit exceeded, or supply exhausted",
+            "description": "Minting precondition failed: insufficient native balance, wallet not in allowlist, mint limit exceeded, or supply exhausted",
             "content": {
               "*/*": {
                 "schema": {
@@ -2036,6 +2047,91 @@
         ],
         "x-opensea-auth-required": true,
         "x-opensea-auth-scopes": ["write:drops"]
+      }
+    },
+    "/api/v2/drops/{slug}/cross_chain_mint": {
+      "post": {
+        "tags": ["Drops Endpoints"],
+        "summary": "Build cross-chain mint transactions for a drop",
+        "description": "Returns an ordered list of transactions for minting a drop using a token on another chain. The payer signs each transaction in order, and the minter receives the NFT. After submission, pass receipt_request to POST /api/v2/transactions/receipt and poll until the status is terminal.",
+        "operationId": "build_cross_chain_drop_mint_transactions",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "The collection slug identifying the drop",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "boredapeyachtclub"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrossChainDropMintRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Ordered transactions required to complete the mint",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrossChainDropMintResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid address, payment chain, payment token, quantity, or request body",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1ErrorWrapper"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Drop or collection not found for the given slug",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1ErrorWrapper"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Drop is not currently active for minting",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1ErrorWrapper"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Minting precondition failed, including an ineligible wallet, exhausted supply, insufficient balance, or a payer that is not allowed for the active presale",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1ErrorWrapper"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
       }
     },
     "/api/v2/drops/{slug}/allowlist": {
@@ -11332,6 +11428,10 @@
           "estimated_value_usd": {
             "type": "number",
             "format": "double"
+          },
+          "decimals": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "required": [
@@ -11418,6 +11518,10 @@
           "estimated_value_usd": {
             "type": "number",
             "format": "double"
+          },
+          "decimals": {
+            "type": "integer",
+            "format": "int32"
           },
           "animation_url": {
             "type": "string"
@@ -11526,7 +11630,7 @@
       },
       "CrossChainPaymentToken": {
         "type": "object",
-        "description": "Payment token to use for cross-chain fulfillment",
+        "description": "Payment token to use for a cross-chain transaction",
         "properties": {
           "chain": {
             "type": "string",
@@ -12090,6 +12194,55 @@
           }
         },
         "required": ["media_tokens"]
+      },
+      "CrossChainDropMintResponse": {
+        "type": "object",
+        "description": "Ordered transactions required to complete a cross-chain mint",
+        "properties": {
+          "transactions": {
+            "type": "array",
+            "description": "Ordered list of transactions to sign and submit",
+            "items": {
+              "$ref": "#/components/schemas/SwapTransactionResponse"
+            }
+          },
+          "receipt_request": {
+            "$ref": "#/components/schemas/TransactionReceiptRequest",
+            "description": "Pass this object to POST /api/v2/transactions/receipt after submitting the transactions, and poll until the returned status is terminal"
+          }
+        },
+        "required": ["receipt_request", "transactions"]
+      },
+      "CrossChainDropMintRequest": {
+        "type": "object",
+        "description": "Cross-chain mint request parameters",
+        "properties": {
+          "payer": {
+            "type": "string",
+            "description": "Wallet address that will sign and pay for the transactions",
+            "example": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+            "minLength": 1
+          },
+          "minter": {
+            "type": "string",
+            "description": "Wallet address that will receive the minted tokens",
+            "example": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+            "minLength": 1
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of tokens to mint",
+            "example": 1,
+            "maximum": 100,
+            "minimum": 1
+          },
+          "payment": {
+            "$ref": "#/components/schemas/CrossChainPaymentToken",
+            "description": "Token used to pay for the mint"
+          }
+        },
+        "required": ["minter", "payer", "payment", "quantity"]
       },
       "ValidateDropAllowlistResponse": {
         "type": "object",
@@ -14574,6 +14727,10 @@
             "items": {
               "$ref": "#/components/schemas/Trait"
             }
+          },
+          "decimals": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "required": ["traits"]

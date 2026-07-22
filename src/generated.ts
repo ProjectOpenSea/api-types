@@ -596,6 +596,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/drops/{slug}/cross_chain_mint": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Build cross-chain mint transactions for a drop
+         * @description Returns an ordered list of transactions for minting a drop using a token on another chain. The payer signs each transaction in order, and the minter receives the NFT. After submission, pass receipt_request to POST /api/v2/transactions/receipt and poll until the status is terminal.
+         */
+        post: operations["build_cross_chain_drop_mint_transactions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/drops/{slug}/allowlist": {
         parameters: {
             query?: never;
@@ -3597,6 +3617,8 @@ export interface components {
             traits: components["schemas"]["Trait"][];
             /** Format: double */
             estimated_value_usd?: number;
+            /** Format: int32 */
+            decimals?: number;
         };
         NftBatchResponse: {
             nfts: components["schemas"]["NftDetailed"][];
@@ -3621,6 +3643,8 @@ export interface components {
             traits: components["schemas"]["Trait"][];
             /** Format: double */
             estimated_value_usd?: number;
+            /** Format: int32 */
+            decimals?: number;
             animation_url?: string;
             is_suspicious: boolean;
             creator: string;
@@ -3656,7 +3680,7 @@ export interface components {
             max_value?: string;
             value: unknown;
         };
-        /** @description Payment token to use for cross-chain fulfillment */
+        /** @description Payment token to use for a cross-chain transaction */
         CrossChainPaymentToken: {
             /**
              * @description Chain of the payment token (e.g. 'base', 'ethereum')
@@ -3947,6 +3971,34 @@ export interface components {
         SaveDropItemMediaRequest: {
             /** @description Media tokens to save */
             media_tokens: string[];
+        };
+        /** @description Ordered transactions required to complete a cross-chain mint */
+        CrossChainDropMintResponse: {
+            /** @description Ordered list of transactions to sign and submit */
+            transactions: components["schemas"]["SwapTransactionResponse"][];
+            /** @description Pass this object to POST /api/v2/transactions/receipt after submitting the transactions, and poll until the returned status is terminal */
+            receipt_request: components["schemas"]["TransactionReceiptRequest"];
+        };
+        /** @description Cross-chain mint request parameters */
+        CrossChainDropMintRequest: {
+            /**
+             * @description Wallet address that will sign and pay for the transactions
+             * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+             */
+            payer: string;
+            /**
+             * @description Wallet address that will receive the minted tokens
+             * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+             */
+            minter: string;
+            /**
+             * Format: int32
+             * @description Number of tokens to mint
+             * @example 1
+             */
+            quantity: number;
+            /** @description Token used to pay for the mint */
+            payment: components["schemas"]["CrossChainPaymentToken"];
         };
         /** @description Response body for validating a drop allowlist */
         ValidateDropAllowlistResponse: {
@@ -5032,6 +5084,8 @@ export interface components {
             external_link?: string;
             animation_url?: string;
             traits: components["schemas"]["Trait"][];
+            /** Format: int32 */
+            decimals?: number;
         };
         ListingsResponse: {
             listings: components["schemas"]["Listing"][];
@@ -7399,7 +7453,7 @@ export interface operations {
                     "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
-            /** @description Minting precondition failed: wallet not in allowlist, mint limit exceeded, or supply exhausted */
+            /** @description Minting precondition failed: insufficient native balance, wallet not in allowlist, mint limit exceeded, or supply exhausted */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -7553,6 +7607,73 @@ export interface operations {
                 };
             };
             404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    build_cross_chain_drop_mint_transactions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The collection slug identifying the drop
+                 * @example boredapeyachtclub
+                 */
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrossChainDropMintRequest"];
+            };
+        };
+        responses: {
+            /** @description Ordered transactions required to complete the mint */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CrossChainDropMintResponse"];
+                };
+            };
+            /** @description Invalid address, payment chain, payment token, quantity, or request body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Drop or collection not found for the given slug */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Drop is not currently active for minting */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Minting precondition failed, including an ineligible wallet, exhausted supply, insufficient balance, or a payer that is not allowed for the active presale */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
