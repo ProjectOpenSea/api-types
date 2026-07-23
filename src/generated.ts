@@ -1828,6 +1828,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/chain/{chain}/token/{address}/activity/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get token trading activity stats
+         * @description Get materialized trade count, USD volume, and average trade size for a token. Windows with no swaps are omitted; an omitted requested key means zero trades in that window. Each window ends at its own materialized snapshot; computed_at is the oldest snapshot among the returned windows and can precede request time because the response is cached.
+         */
+        get: operations["get_token_activity_stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/chain/{chain}/payment_token/{address}": {
         parameters: {
             query?: never;
@@ -5703,6 +5723,43 @@ export interface components {
             swap_protocol?: string;
             /** @description Blockchain the swap occurred on */
             chain: string;
+        };
+        /** @description Windowed trading activity for a token */
+        TokenActivityStatsResponse: {
+            /**
+             * @description Blockchain slug
+             * @example base
+             */
+            chain: string;
+            /** @description Token contract address */
+            address: string;
+            /**
+             * Format: date-time
+             * @description End time of the oldest returned aggregation window, or null when no window is returned
+             */
+            computed_at?: string;
+            /** @description Trading activity keyed by requested window. A requested key is omitted when the token has no swaps in that window; an omitted key means zero trades. */
+            windows: {
+                [key: string]: components["schemas"]["TokenActivityWindowStatsResponse"];
+            };
+        };
+        /** @description Trading activity within one time window */
+        TokenActivityWindowStatsResponse: {
+            /**
+             * Format: int64
+             * @description Swap transaction count
+             */
+            trades: number;
+            /**
+             * @description Total buy and sell volume in USD
+             * @example 710410.75
+             */
+            volume_usd: string;
+            /**
+             * @description Average USD volume per trade
+             * @example 232.92
+             */
+            average_trade_usd: string;
         };
         ContractResponse: {
             address: string;
@@ -10063,6 +10120,46 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_token_activity_stats: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Comma-separated windows. Defaults to 5m,1h,4h,24h.
+                 * @example 1h,24h
+                 */
+                windows?: string;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The blockchain on which to filter the results
+                 * @example ethereum
+                 */
+                chain: components["schemas"]["ChainIdentifier"];
+                /**
+                 * @description The token contract address
+                 * @example 0x0000000000000000000000000000000000000000
+                 */
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TokenActivityStatsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
         };
     };

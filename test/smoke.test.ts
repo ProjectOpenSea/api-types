@@ -24,6 +24,8 @@ import type {
   Order,
   paths,
   Schemas,
+  TokenActivityStatsResponse,
+  TokenActivityWindowStatsResponse,
 } from "../src/index.js"
 import { AUTH_SCOPES } from "../src/index.js"
 
@@ -45,6 +47,8 @@ describe("@opensea/api-types smoke tests", () => {
     type _events = paths["/api/v2/events"]
     type _account = paths["/api/v2/accounts/{address_or_username}"]
     type _traits = paths["/api/v2/traits/{slug}"]
+    type _tokenActivityStats =
+      paths["/api/v2/chain/{chain}/token/{address}/activity/stats"]["get"]
     expect(true).toBe(true) // if we get here, types compiled
   })
 
@@ -61,6 +65,8 @@ describe("@opensea/api-types smoke tests", () => {
     type _event = Event
     type _account = AccountResponse
     type _contract = Contract
+    type _tokenActivityStats = TokenActivityStatsResponse
+    type _tokenActivityWindowStats = TokenActivityWindowStatsResponse
     expect(true).toBe(true)
   })
 
@@ -69,7 +75,30 @@ describe("@opensea/api-types smoke tests", () => {
     type _postOffer = OperationRequestBody<"post_offer">
     type _getOffersByNftPath = OperationPathParams<"get_offers_nft">
     type _listCollectionsQuery = OperationQueryParams<"list_collections">
+    type _getTokenActivityStats = OperationResponse<"get_token_activity_stats">
+    type _getTokenActivityStatsPath =
+      OperationPathParams<"get_token_activity_stats">
+    type _getTokenActivityStatsQuery =
+      OperationQueryParams<"get_token_activity_stats">
     expect(true).toBe(true)
+  })
+
+  it("models token activity stats without losing decimal precision", () => {
+    const response: TokenActivityStatsResponse = {
+      chain: "base",
+      address: "0x4200000000000000000000000000000000000006",
+      computed_at: "2026-07-23T00:52:11.879132Z",
+      windows: {
+        "24h": {
+          trades: 5714,
+          volume_usd: "710410.75",
+          average_trade_usd: "124.33",
+        },
+      },
+    }
+
+    expect(response.computed_at).toBe("2026-07-23T00:52:11.879132Z")
+    expect(response.windows["24h"]?.volume_usd).toBe("710410.75")
   })
 
   it("Schemas indexer works for all schema names", () => {

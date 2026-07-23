@@ -1,5 +1,11 @@
 # @opensea/api-types
 
+## 0.8.5
+
+### Patch Changes
+
+- 5962e13: Add generated request and response types for the token activity stats REST endpoint.
+
 ## 0.8.4
 
 ### Patch Changes

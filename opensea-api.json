@@ -6508,6 +6508,70 @@
         }
       }
     },
+    "/api/v2/chain/{chain}/token/{address}/activity/stats": {
+      "get": {
+        "tags": ["Token Endpoints"],
+        "summary": "Get token trading activity stats",
+        "description": "Get materialized trade count, USD volume, and average trade size for a token. Windows with no swaps are omitted; an omitted requested key means zero trades in that window. Each window ends at its own materialized snapshot; computed_at is the oldest snapshot among the returned windows and can precede request time because the response is cached.",
+        "operationId": "get_token_activity_stats",
+        "parameters": [
+          {
+            "name": "chain",
+            "in": "path",
+            "description": "The blockchain on which to filter the results",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ChainIdentifier"
+            },
+            "example": "ethereum"
+          },
+          {
+            "name": "address",
+            "in": "path",
+            "description": "The token contract address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0x0000000000000000000000000000000000000000"
+          },
+          {
+            "name": "windows",
+            "in": "query",
+            "description": "Comma-separated windows. Defaults to 5m,1h,4h,24h.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 32,
+              "minLength": 0,
+              "pattern": "^(5m|1h|4h|24h)(,(5m|1h|4h|24h))*$"
+            },
+            "example": "1h,24h"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenActivityStatsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/api/v2/chain/{chain}/payment_token/{address}": {
       "get": {
         "tags": ["Contract Endpoints"],
@@ -16149,6 +16213,58 @@
           "to_token",
           "transaction_hash"
         ]
+      },
+      "TokenActivityStatsResponse": {
+        "type": "object",
+        "description": "Windowed trading activity for a token",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "description": "Blockchain slug",
+            "example": "base"
+          },
+          "address": {
+            "type": "string",
+            "description": "Token contract address"
+          },
+          "computed_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "End time of the oldest returned aggregation window, or null when no window is returned"
+          },
+          "windows": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TokenActivityWindowStatsResponse"
+            },
+            "description": "Trading activity keyed by requested window. A requested key is omitted when the token has no swaps in that window; an omitted key means zero trades."
+          }
+        },
+        "required": ["address", "chain", "windows"]
+      },
+      "TokenActivityWindowStatsResponse": {
+        "type": "object",
+        "description": "Trading activity within one time window",
+        "properties": {
+          "trades": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Swap transaction count"
+          },
+          "volume_usd": {
+            "type": "string",
+            "description": "Total buy and sell volume in USD",
+            "example": 710410.75,
+            "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+          },
+          "average_trade_usd": {
+            "type": "string",
+            "description": "Average USD volume per trade",
+            "example": 232.92,
+            "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+          }
+        },
+        "required": ["average_trade_usd", "trades", "volume_usd"]
       },
       "ContractResponse": {
         "type": "object",
