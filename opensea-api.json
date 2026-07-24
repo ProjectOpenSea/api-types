@@ -260,6 +260,78 @@
         "x-opensea-auth-scopes": ["write:drops"]
       }
     },
+    "/api/v2/accounts/wallets/{wallet}/agent": {
+      "put": {
+        "tags": ["Account Endpoints"],
+        "summary": "Mark a registered wallet as an agent wallet",
+        "operationId": "mark_wallet_as_agent",
+        "parameters": [
+          {
+            "name": "wallet",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletAgentStatusResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:wallets"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:wallets"]
+      },
+      "delete": {
+        "tags": ["Account Endpoints"],
+        "summary": "Remove a registered wallet's agent designation",
+        "operationId": "remove_wallet_agent_designation",
+        "parameters": [
+          {
+            "name": "wallet",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletAgentStatusResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:wallets"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:wallets"]
+      }
+    },
     "/api/v2/watchlist": {
       "post": {
         "tags": ["Account Endpoints"],
@@ -8668,6 +8740,18 @@
         },
         "required": ["media_token", "name"]
       },
+      "WalletAgentStatusResponse": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "is_agent": {
+            "type": "boolean"
+          }
+        },
+        "required": ["address", "is_agent"]
+      },
       "WatchlistRequest": {
         "type": "object",
         "description": "Request body for managing a watchlist entry",
@@ -16385,6 +16469,10 @@
           "is_verified": {
             "type": "boolean"
           },
+          "is_agent": {
+            "type": "boolean",
+            "description": "Whether the account owner has designated at least one registered wallet as an agent wallet. This is self-declared and is not OpenSea verification."
+          },
           "follower_count": {
             "type": "integer",
             "format": "int64"
@@ -16424,6 +16512,7 @@
           "bio",
           "follower_count",
           "following_count",
+          "is_agent",
           "is_verified",
           "joined_date",
           "social_media_accounts"
@@ -17530,7 +17619,11 @@
             "/api/v2/profile/shelves",
             "/api/v2/profile/shelves/{shelf_id}"
           ],
-          ["/api/v2/accounts/wallets/siwx", "/api/v2/accounts/wallets/{wallet}"]
+          [
+            "/api/v2/accounts/wallets/siwx",
+            "/api/v2/accounts/wallets/{wallet}",
+            "/api/v2/accounts/wallets/{wallet}/agent"
+          ]
         ],
         "x-enum-mcp-tools": [
           ["check_drop_eligibility"],

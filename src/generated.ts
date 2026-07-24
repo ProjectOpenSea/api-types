@@ -28,6 +28,24 @@ export interface paths {
         patch: operations["update_drop_item"];
         trace?: never;
     };
+    "/api/v2/accounts/wallets/{wallet}/agent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Mark a registered wallet as an agent wallet */
+        put: operations["mark_wallet_as_agent"];
+        post?: never;
+        /** Remove a registered wallet's agent designation */
+        delete: operations["remove_wallet_agent_designation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/watchlist": {
         parameters: {
             query?: never;
@@ -2446,6 +2464,10 @@ export interface components {
             external_url?: string;
             /** @description Item traits */
             traits?: components["schemas"]["SelfMintDropItemTraitRequest"][];
+        };
+        WalletAgentStatusResponse: {
+            address: string;
+            is_agent: boolean;
         };
         /** @description Request body for managing a watchlist entry */
         WatchlistRequest: {
@@ -5807,6 +5829,8 @@ export interface components {
             display_name?: string;
             ens_name?: string;
             is_verified: boolean;
+            /** @description Whether the account owner has designated at least one registered wallet as an agent wallet. This is self-declared and is not OpenSea verification. */
+            is_agent: boolean;
             /** Format: int64 */
             follower_count: number;
             /** Format: int64 */
@@ -6539,6 +6563,50 @@ export interface operations {
             };
             404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
+        };
+    };
+    mark_wallet_as_agent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wallet: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletAgentStatusResponse"];
+                };
+            };
+        };
+    };
+    remove_wallet_agent_designation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wallet: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletAgentStatusResponse"];
+                };
+            };
         };
     };
     add_watchlist_entry: {

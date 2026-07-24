@@ -1,5 +1,12 @@
 # @opensea/api-types
 
+## 0.8.6
+
+### Patch Changes
+
+- 954d547: Add typed account agent status fields and helpers to mark or clear registered
+  agent wallets from the SDK and CLI.
+
 ## 0.8.5
 
 ### Patch Changes
