@@ -1,5 +1,16 @@
 # @opensea/api-types
 
+## 0.8.7
+
+### Patch Changes
+
+- 7d2dbef: Sync OpenAPI spec: add `stablechain` to `ChainIdentifier`, add `Chain.StableChain` (chain id 988) to the SDK and generated chain maps
+- 8b7ddd2: Sync OpenAPI spec: add wallet visibility endpoints (`PUT`/`DELETE /api/v2/accounts/wallets/{wallet}/private`), the public `GET /api/v2/accounts/{address_or_username}/agent-relationships` endpoint, and the `WalletVisibilityResponse`, `AgentProfileRelationshipsResponse`, and `AgentProfileSummaryResponse` schemas
+- 0031eed: Sync OpenAPI spec: add SVM transaction detail schemas
+
+  - Adds `SvmInstructionAccountResponse`, `SvmInstructionResponse`, and `SvmTransactionDetailsResponse` schemas.
+  - Adds an optional `svm` field to `SwapTransactionResponse` for structured Solana transaction contents on SVM chains.
+
 ## 0.8.6
 
 ### Patch Changes

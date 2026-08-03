@@ -28,6 +28,30 @@ export interface paths {
         patch: operations["update_drop_item"];
         trace?: never;
     };
+    "/api/v2/accounts/wallets/{wallet}/private": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Make a registered wallet private
+         * @description Hides the wallet's public account linkage, including agent ownership relationships.
+         */
+        put: operations["make_wallet_private"];
+        post?: never;
+        /**
+         * Make a registered wallet public
+         * @description Allows the wallet's public account linkage, including eligible agent ownership relationships.
+         */
+        delete: operations["make_wallet_public"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/accounts/wallets/{wallet}/agent": {
         parameters: {
             query?: never;
@@ -2100,6 +2124,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/accounts/{address_or_username}/agent-relationships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get public agent ownership relationships for a profile
+         * @description Returns an agent wallet's public owner profile or an account profile's public agent wallets. Private wallet relationships are omitted. Standard API-key quotas and an additional 30-per-hour per-profile limit apply.
+         */
+        get: operations["get_agent_profile_relationships"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/accounts/resolve/{identifier}": {
         parameters: {
             query?: never;
@@ -2430,7 +2474,7 @@ export interface components {
          * @example ethereum
          * @enum {string}
          */
-        ChainIdentifier: "blast" | "base" | "ethereum" | "zora" | "arbitrum" | "sei" | "avalanche" | "polygon" | "optimism" | "ape_chain" | "flow" | "b3" | "soneium" | "ronin" | "bera_chain" | "solana" | "shape" | "unichain" | "gunzilla" | "abstract" | "animechain" | "hyperevm" | "somnia" | "monad" | "hyperliquid" | "megaeth" | "ink" | "robinhood";
+        ChainIdentifier: "blast" | "base" | "ethereum" | "zora" | "arbitrum" | "sei" | "avalanche" | "polygon" | "optimism" | "ape_chain" | "flow" | "b3" | "soneium" | "ronin" | "bera_chain" | "solana" | "shape" | "unichain" | "gunzilla" | "abstract" | "animechain" | "hyperevm" | "somnia" | "monad" | "hyperliquid" | "megaeth" | "ink" | "robinhood" | "stablechain";
         /** @description Ready-to-sign SelfMint drop item transaction data */
         SelfMintDropItemResponse: {
             /** @description Transaction target contract address */
@@ -2464,6 +2508,10 @@ export interface components {
             external_url?: string;
             /** @description Item traits */
             traits?: components["schemas"]["SelfMintDropItemTraitRequest"][];
+        };
+        WalletVisibilityResponse: {
+            address: string;
+            is_private: boolean;
         };
         WalletAgentStatusResponse: {
             address: string;
@@ -2908,6 +2956,42 @@ export interface components {
              */
             slippage_tolerance?: number;
         };
+        /** @description An account referenced by a Solana instruction */
+        SvmInstructionAccountResponse: {
+            /**
+             * @description Base58-encoded account address
+             * @example So11111111111111111111111111111111111111112
+             */
+            pubkey: string;
+            /** @description Whether the account must sign the transaction */
+            signer: boolean;
+            /** @description Whether the instruction writes to the account */
+            writable: boolean;
+        };
+        /** @description A Solana instruction to include in the transaction */
+        SvmInstructionResponse: {
+            /**
+             * @description Base58-encoded program address the instruction invokes
+             * @example JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4
+             */
+            program_id: string;
+            /** @description Accounts the instruction reads or writes, in order */
+            accounts: components["schemas"]["SvmInstructionAccountResponse"][];
+            /**
+             * @description Hex-encoded instruction payload, optionally 0x-prefixed
+             * @example 01020304
+             */
+            data?: string;
+        };
+        /** @description Everything needed to compile and sign a Solana v0 transaction. The client supplies a recent blockhash. */
+        SvmTransactionDetailsResponse: {
+            /** @description Base58-encoded address the transaction is built for */
+            from: string;
+            /** @description Instructions to include, in order */
+            instructions: components["schemas"]["SvmInstructionResponse"][];
+            /** @description Base58-encoded address lookup tables the compiled message must reference to stay under the transaction size limit */
+            address_lookup_tables: string[];
+        };
         /** @description A cost component of the swap */
         SwapCostResponse: {
             /**
@@ -3015,6 +3099,8 @@ export interface components {
             value?: string;
             /** @description The native token value to send with the transaction (hex, 0x-prefixed) */
             value_hex?: string;
+            /** @description Structured Solana transaction contents. Set for SVM chains only; `data` is a lossy summary of the same instructions. */
+            svm?: components["schemas"]["SvmTransactionDetailsResponse"];
         };
         /** @description A registered tool to save or remove from saved tools */
         SavedToolRequest: {
@@ -5488,10 +5574,7 @@ export interface components {
         CollectionHolderResponse: {
             /** @description Wallet address of the holder */
             address: string;
-            /**
-             * Format: int32
-             * @description Number of items held
-             */
+            /** @description Number of items held */
             quantity: number;
             /**
              * Format: float
@@ -5867,6 +5950,19 @@ export interface components {
             nft_pfp?: components["schemas"]["NftPfpResponse"];
             is_following: boolean;
             is_watching: boolean;
+        };
+        /** @description Public agent ownership relationships for a profile */
+        AgentProfileRelationshipsResponse: {
+            agent_owner_profile?: components["schemas"]["AgentProfileSummaryResponse"];
+            public_agent_wallets: components["schemas"]["AgentProfileSummaryResponse"][];
+        };
+        /** @description Compact public profile summary for an agent relationship */
+        AgentProfileSummaryResponse: {
+            address: string;
+            username?: string;
+            display_name?: string;
+            profile_image_url?: string;
+            is_verified: boolean;
         };
         /** @description Resolved account info */
         AccountResolveResponse: {
@@ -6563,6 +6659,50 @@ export interface operations {
             };
             404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
+        };
+    };
+    make_wallet_private: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wallet: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletVisibilityResponse"];
+                };
+            };
+        };
+    };
+    make_wallet_public: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wallet: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletVisibilityResponse"];
+                };
+            };
         };
     };
     mark_wallet_as_agent: {
@@ -10638,6 +10778,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["SocialProfilePageResponse"];
+                };
+            };
+        };
+    };
+    get_agent_profile_relationships: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The blockchain address or username of the profile to retrieve.
+                 * @example 0x8ba1f109551bD432803012645fAc136c94C19D6e
+                 */
+                address_or_username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AgentProfileRelationshipsResponse"];
                 };
             };
         };
