@@ -1,5 +1,11 @@
 # @opensea/api-types
 
+## 0.8.8
+
+### Patch Changes
+
+- d88963f: Sync OpenAPI spec: add optional `chains` query param to `get_portfolio_stats`, drop stale rate-limit prose from `create_instant_api_key`.
+
 ## 0.8.7
 
 ### Patch Changes

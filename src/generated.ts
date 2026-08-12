@@ -809,7 +809,7 @@ export interface paths {
         put?: never;
         /**
          * Create an instant API key
-         * @description Creates a free-tier API key instantly without authentication. The key can be used immediately for all API endpoints. Rate limited to 2 keys per hour per IP. Keys expire after 30 days.
+         * @description Creates a free-tier API key instantly without authentication. The key can be used immediately for all API endpoints. Keys expire after 7 days.
          */
         post: operations["create_instant_api_key"];
         delete?: never;
@@ -3220,7 +3220,10 @@ export interface components {
              * @example ethereum
              */
             chain: string;
-            /** @description Collection slug of the NFT */
+            /**
+             * @deprecated
+             * @description Deprecated: ignored by the server, which derives the collection slug from the resolved NFT. Accepted for backward compatibility only.
+             */
             collectionSlug?: string;
         };
         /** @description This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds. */
@@ -4276,12 +4279,12 @@ export interface components {
         RateLimitsResponse: {
             /**
              * @description Read rate limit
-             * @example 60/m
+             * @example 600/h
              */
             read: string;
             /**
              * @description Write rate limit
-             * @example 5/m
+             * @example 30/h
              */
             write: string;
             /**
@@ -10984,6 +10987,11 @@ export interface operations {
             query?: {
                 /** @description Timeframe for P&L calculation: HOUR, DAY, WEEK, MONTH */
                 timeframe?: "HOUR" | "DAY" | "WEEK" | "MONTH";
+                /**
+                 * @description Comma-separated chains to restrict the portfolio to (e.g. ethereum,base). When omitted, all supported chains are included. Returns 400 if all specified chains are unsupported.
+                 * @example ethereum,base
+                 */
+                chains?: components["schemas"]["ChainIdentifier"][];
             };
             header?: never;
             path: {

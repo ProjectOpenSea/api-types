@@ -2717,7 +2717,7 @@
       "post": {
         "tags": ["Auth Endpoints"],
         "summary": "Create an instant API key",
-        "description": "Creates a free-tier API key instantly without authentication. The key can be used immediately for all API endpoints. Rate limited to 2 keys per hour per IP. Keys expire after 30 days.",
+        "description": "Creates a free-tier API key instantly without authentication. The key can be used immediately for all API endpoints. Keys expire after 7 days.",
         "operationId": "create_instant_api_key",
         "responses": {
           "201": {
@@ -7832,6 +7832,19 @@
               "description": "Timeframe for portfolio analytics queries",
               "enum": ["HOUR", "DAY", "WEEK", "MONTH"]
             }
+          },
+          {
+            "name": "chains",
+            "in": "query",
+            "description": "Comma-separated chains to restrict the portfolio to (e.g. ethereum,base). When omitted, all supported chains are included. Returns 400 if all specified chains are unsupported.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ChainIdentifier"
+              }
+            },
+            "example": "ethereum,base"
           }
         ],
         "responses": {
@@ -10110,7 +10123,8 @@
           },
           "collectionSlug": {
             "type": "string",
-            "description": "Collection slug of the NFT",
+            "deprecated": true,
+            "description": "Deprecated: ignored by the server, which derives the collection slug from the resolved NFT. Accepted for backward compatibility only.",
             "maxLength": 200,
             "minLength": 0
           }
@@ -12944,12 +12958,12 @@
           "read": {
             "type": "string",
             "description": "Read rate limit",
-            "example": "60/m"
+            "example": "600/h"
           },
           "write": {
             "type": "string",
             "description": "Write rate limit",
-            "example": "5/m"
+            "example": "30/h"
           },
           "fulfillment": {
             "type": "string",
