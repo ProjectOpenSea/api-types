@@ -111,7 +111,7 @@ export const AUTH_SCOPES = [
     displayName: "Manage linked wallets",
     description: "Link, unlink, manage wallet visibility, and declare agent relationships for the authenticated account",
     group: "write",
-    endpoints: ["/api/v2/accounts/agent","/api/v2/accounts/agent-relationships","/api/v2/accounts/agent-relationships/confirm","/api/v2/accounts/wallets/siwx","/api/v2/accounts/wallets/{wallet}","/api/v2/accounts/wallets/{wallet}/agent","/api/v2/accounts/wallets/{wallet}/private"],
+    endpoints: ["/api/v2/accounts/agent","/api/v2/accounts/agent-relationships","/api/v2/accounts/agent-relationships/confirm","/api/v2/accounts/wallets/siwx","/api/v2/accounts/wallets/{wallet}","/api/v2/accounts/wallets/{wallet}/private"],
     mcpTools: ["manage_wallets"],
   },
 ] as const satisfies readonly {

@@ -334,78 +334,6 @@
         "x-opensea-auth-scopes": ["write:wallets"]
       }
     },
-    "/api/v2/accounts/wallets/{wallet}/agent": {
-      "put": {
-        "tags": ["Account Endpoints"],
-        "summary": "Mark a registered wallet as an agent wallet",
-        "operationId": "mark_wallet_as_agent",
-        "parameters": [
-          {
-            "name": "wallet",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WalletAgentStatusResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "ApiKeyAuth": [],
-            "WalletAuth": ["write:wallets"]
-          }
-        ],
-        "x-opensea-auth-required": true,
-        "x-opensea-auth-scopes": ["write:wallets"]
-      },
-      "delete": {
-        "tags": ["Account Endpoints"],
-        "summary": "Remove a registered wallet's agent designation",
-        "operationId": "remove_wallet_agent_designation",
-        "parameters": [
-          {
-            "name": "wallet",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WalletAgentStatusResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "ApiKeyAuth": [],
-            "WalletAuth": ["write:wallets"]
-          }
-        ],
-        "x-opensea-auth-required": true,
-        "x-opensea-auth-scopes": ["write:wallets"]
-      }
-    },
     "/api/v2/accounts/agent": {
       "put": {
         "tags": ["Account Endpoints"],
@@ -9072,18 +9000,6 @@
         },
         "required": ["address", "is_private"]
       },
-      "WalletAgentStatusResponse": {
-        "type": "object",
-        "properties": {
-          "address": {
-            "type": "string"
-          },
-          "is_agent": {
-            "type": "boolean"
-          }
-        },
-        "required": ["address", "is_agent"]
-      },
       "AgentAccountStatusResponse": {
         "type": "object",
         "properties": {
@@ -9301,7 +9217,7 @@
           "usd": {
             "type": "string",
             "description": "USD equivalent",
-            "example": 19250.0
+            "example": 19250
           }
         },
         "required": ["amount", "usd"]
@@ -9528,7 +9444,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1.0
+            "example": 1
           },
           "decimals": {
             "type": "integer",
@@ -9594,7 +9510,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1.0
+            "example": 1
           },
           "decimals": {
             "type": "integer",
@@ -9958,7 +9874,7 @@
             "type": "number",
             "format": "double",
             "description": "Total cost of tokens sent in USD",
-            "example": 1869.0
+            "example": 1869
           },
           "slippage_tolerance": {
             "type": "number",
@@ -9991,7 +9907,7 @@
             "type": "number",
             "format": "double",
             "description": "Recommended slippage tolerance based on volatility analysis (null if unavailable)",
-            "example": 2.0
+            "example": 2
           },
           "costs": {
             "type": "array",
@@ -12227,7 +12143,7 @@
           "max_price_per_item": {
             "type": "string",
             "description": "Maximum price per item in the payment token's units",
-            "example": 10.0
+            "example": 10
           },
           "buyer": {
             "type": "string",
@@ -12438,7 +12354,7 @@
           "amount": {
             "type": "string",
             "description": "Price amount in the currency's unit (e.g. '5.0' for 5 ETH)",
-            "example": 5.0
+            "example": 5
           },
           "currency": {
             "type": "string",
@@ -14781,7 +14697,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1.0
+            "example": 1
           },
           "decimals": {
             "type": "integer",
@@ -15261,7 +15177,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1.0
+            "example": 1
           },
           "decimals": {
             "type": "integer",
@@ -16450,7 +16366,7 @@
           "usd_price": {
             "type": "string",
             "description": "Price in USD",
-            "example": 1.0
+            "example": 1
           }
         },
         "required": ["time", "usd_price"]
@@ -16951,7 +16867,7 @@
           },
           "is_agent": {
             "type": "boolean",
-            "description": "Whether the account owner has designated at least one registered wallet as an agent wallet. This is self-declared and is not OpenSea verification."
+            "description": "Whether this account has declared itself an agent. Self-declared and not OpenSea verification, and the declaration on its own confers nothing: see GET /api/v2/accounts/{address_or_username}/agent-relationships for the ownership relationship, which is likewise a declaration rather than an authorization."
           },
           "follower_count": {
             "type": "integer",
@@ -17091,22 +17007,9 @@
             "items": {
               "$ref": "#/components/schemas/AgentProfileSummaryResponse"
             }
-          },
-          "agent_owner_profile": {
-            "$ref": "#/components/schemas/AgentProfileSummaryResponse",
-            "deprecated": true,
-            "description": "Superseded by agent_owner. Reads the retired wallet-level designation and is always null."
-          },
-          "public_agent_wallets": {
-            "type": "array",
-            "deprecated": true,
-            "description": "Superseded by agents. Reads the retired wallet-level designation and is always empty.",
-            "items": {
-              "$ref": "#/components/schemas/AgentProfileSummaryResponse"
-            }
           }
         },
-        "required": ["agents", "public_agent_wallets"]
+        "required": ["agents"]
       },
       "AgentProfileSummaryResponse": {
         "type": "object",
@@ -17212,7 +17115,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1.0
+            "example": 1
           },
           "decimals": {
             "type": "integer",
@@ -17412,7 +17315,7 @@
           "nft_value_usd": {
             "type": "string",
             "description": "NFT portfolio value in USD",
-            "example": 98200.0
+            "example": 98200
           },
           "token_value_usd": {
             "type": "string",
@@ -17455,17 +17358,17 @@
           "value_usd": {
             "type": "string",
             "description": "Total portfolio value in USD",
-            "example": 124180.0
+            "example": 124180
           },
           "token_value_usd": {
             "type": "string",
             "description": "Token value in USD",
-            "example": 26000.0
+            "example": 26000
           },
           "nft_value_usd": {
             "type": "string",
             "description": "NFT value in USD",
-            "example": 98180.0
+            "example": 98180
           }
         },
         "required": [
@@ -17516,7 +17419,7 @@
           "net_invested_usd": {
             "type": "string",
             "description": "Net amount invested in USD",
-            "example": 12500.0
+            "example": 12500
           },
           "current_value_usd": {
             "type": "string",
@@ -17626,7 +17529,7 @@
           "total_proceeds_usd": {
             "type": "string",
             "description": "Total USD proceeds from the sells that closed this position.",
-            "example": 5200.0
+            "example": 5200
           },
           "total_cost_basis_usd": {
             "type": "string",
@@ -18183,7 +18086,6 @@
             "/api/v2/accounts/agent-relationships/confirm",
             "/api/v2/accounts/wallets/siwx",
             "/api/v2/accounts/wallets/{wallet}",
-            "/api/v2/accounts/wallets/{wallet}/agent",
             "/api/v2/accounts/wallets/{wallet}/private"
           ]
         ],

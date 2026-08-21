@@ -1,5 +1,17 @@
 # @opensea/api-types
 
+## 0.8.10
+
+### Patch Changes
+
+- 5fdac00: Sync OpenAPI spec: drop `PUT` and `DELETE /api/v2/accounts/wallets/{wallet}/agent` with the `WalletAgentStatusResponse` schema, drop the deprecated `agent_owner_profile` and `public_agent_wallets` properties from `AgentProfileRelationshipsResponse`, and take the new `AccountResponse.is_agent` description.
+
+  The endpoints are gone from production (os2-core#52946), which is why they leave the spec here. `is_agent` on the account response now reports whether the account itself has declared it is an agent (os2-core#52948); it previously read the retired wallet-level designation and was therefore false for everyone.
+
+  `WalletAgentStatusResponse` is no longer exported. Nothing in this repo imports it as of the removal in #631.
+
+  `type-check` for this package now covers `test/` and `scripts/` through a `tsconfig.check.json`, matching sdk. It previously compiled `src/` alone, so a test importing a type the spec no longer defines passed both `type-check` and `vitest`, which erases types.
+
 ## 0.8.9
 
 ### Patch Changes

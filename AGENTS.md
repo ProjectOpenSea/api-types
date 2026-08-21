@@ -24,7 +24,7 @@ pnpm run lint
 1. **Never hand-edit generated files** in `src/generated.ts`, `src/schemas-generated.ts`, or `src/auth-scopes-generated.ts`. Run `pnpm run build` after `update-spec`.
 2. **Add API endpoints via the spec first**. Before writing SDK/CLI methods, run `pnpm --filter @opensea/api-types run update-spec && pnpm --filter @opensea/api-types run build`. Hand-rolling request/response types is forbidden and `pnpm check-api-paths` (from the repo root) will fail.
 3. **Schema additions are automatic**. New `components.schemas.*` entries become named exports automatically; only edit `src/index.ts` for non-schema helpers or response envelopes.
-4. **Rebuild downstream**. After spec changes, rebuild api-types, then run `pnpm --filter sdk run check-types` and `pnpm --filter cli run build`.
+4. **Rebuild downstream**. After spec changes, rebuild api-types, then run `pnpm --filter sdk run check-types` and `pnpm --filter cli run build`. Those use the workspace copy; the `Mirror layout` CI gate compiles sdk and cli against the *published* package, so SDK/CLI code that consumes a spec addition stays red until api-types is on npm. Land and release the spec refresh first, and see [Spec changes and release order](../../AGENTS.md#spec-changes-and-release-order) for the auth-scope case, which cannot be split that way.
 5. **Export check**. CI runs `node packages/api-types/scripts/check-consumer-imports.mjs` to ensure every workspace import from `@opensea/api-types` exists in `dist/index.d.ts`.
 6. **Auth-scope drift**. CI runs `node scripts/check-auth-scope-drift.mjs` (repo root) to compare the auth scopes in `opensea-api.json` against the live `/api/v2/auth/scopes` registry. Re-run `update-spec` + `build` when it reports drift.
 

@@ -26,7 +26,6 @@ import type {
   Schemas,
   TokenActivityStatsResponse,
   TokenActivityWindowStatsResponse,
-  WalletAgentStatusResponse,
 } from "../src/index.js"
 import { AUTH_SCOPES } from "../src/index.js"
 
@@ -68,7 +67,6 @@ describe("@opensea/api-types smoke tests", () => {
     type _contract = Contract
     type _tokenActivityStats = TokenActivityStatsResponse
     type _tokenActivityWindowStats = TokenActivityWindowStatsResponse
-    type _walletAgentStatus = WalletAgentStatusResponse
     expect(true).toBe(true)
   })
 

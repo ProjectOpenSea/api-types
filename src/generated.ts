@@ -52,24 +52,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v2/accounts/wallets/{wallet}/agent": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Mark a registered wallet as an agent wallet */
-        put: operations["mark_wallet_as_agent"];
-        post?: never;
-        /** Remove a registered wallet's agent designation */
-        delete: operations["remove_wallet_agent_designation"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v2/accounts/agent": {
         parameters: {
             query?: never;
@@ -2578,10 +2560,6 @@ export interface components {
         WalletVisibilityResponse: {
             address: string;
             is_private: boolean;
-        };
-        WalletAgentStatusResponse: {
-            address: string;
-            is_agent: boolean;
         };
         AgentAccountStatusResponse: {
             is_agent: boolean;
@@ -6011,7 +5989,7 @@ export interface components {
             display_name?: string;
             ens_name?: string;
             is_verified: boolean;
-            /** @description Whether the account owner has designated at least one registered wallet as an agent wallet. This is self-declared and is not OpenSea verification. */
+            /** @description Whether this account has declared itself an agent. Self-declared and not OpenSea verification, and the declaration on its own confers nothing: see GET /api/v2/accounts/{address_or_username}/agent-relationships for the ownership relationship, which is likewise a declaration rather than an authorization. */
             is_agent: boolean;
             /** Format: int64 */
             follower_count: number;
@@ -6056,16 +6034,6 @@ export interface components {
             agent_owner?: components["schemas"]["AgentProfileSummaryResponse"];
             /** @description The accounts this one is the confirmed owner of, newest relationship first. Empty when there are none. */
             agents: components["schemas"]["AgentProfileSummaryResponse"][];
-            /**
-             * @deprecated
-             * @description Superseded by agent_owner. Reads the retired wallet-level designation and is always null.
-             */
-            agent_owner_profile?: components["schemas"]["AgentProfileSummaryResponse"];
-            /**
-             * @deprecated
-             * @description Superseded by agents. Reads the retired wallet-level designation and is always empty.
-             */
-            public_agent_wallets: components["schemas"]["AgentProfileSummaryResponse"][];
         };
         /** @description Compact public profile summary for an agent relationship */
         AgentProfileSummaryResponse: {
@@ -6817,50 +6785,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WalletVisibilityResponse"];
-                };
-            };
-        };
-    };
-    mark_wallet_as_agent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                wallet: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WalletAgentStatusResponse"];
-                };
-            };
-        };
-    };
-    remove_wallet_agent_designation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                wallet: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WalletAgentStatusResponse"];
                 };
             };
         };

@@ -1,6 +1,6 @@
 {
   "name": "@opensea/api-types",
-  "version": "0.8.9",
+  "version": "0.8.10",
   "description": "Auto-generated TypeScript types from the OpenSea API OpenAPI spec",
   "license": "MIT",
   "author": "OpenSea Developers",
@@ -35,7 +35,7 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc -p tsconfig.check.json",
     "test": "vitest run",
     "update-spec": "node scripts/update-spec.mjs"
   },
