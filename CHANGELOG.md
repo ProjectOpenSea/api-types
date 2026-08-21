@@ -1,5 +1,12 @@
 # @opensea/api-types
 
+## 0.8.9
+
+### Patch Changes
+
+- 6ff8285: Sync OpenAPI spec: add `EXECUTION` to the `SwapCostResponse.type` enum and drop the write-only `skipLowercase` property from `EvmAddress`.
+- ad0fe38: Sync OpenAPI spec: add the agent account endpoints (`declare_agent_account`, `withdraw_agent_account_declaration`, `propose_agent_relationship`, `confirm_agent_relationship`, `revoke_agent_relationship`, `list_own_agent_relationships`) with their request and response schemas, and add `read:wallets` to `AuthScope`.
+
 ## 0.8.8
 
 ### Patch Changes

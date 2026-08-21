@@ -131,6 +131,7 @@ describe("@opensea/api-types smoke tests", () => {
       "read:favorites",
       "read:social",
       "read:tools",
+      "read:wallets",
       "write:favorites",
       "write:social",
       "write:tools",
@@ -146,6 +147,26 @@ describe("@opensea/api-types smoke tests", () => {
         endpoints: expect.arrayContaining(["/api/v2/profile/shelves"]),
         mcpTools: ["manage_profile"],
       }),
+    )
+  })
+
+  it("splits agent relationship reads and writes across two scopes", () => {
+    // Listing your own relationships is a read scope while every write is
+    // write:wallets, so a client running the whole handshake needs both.
+    expect(AUTH_SCOPES.find(scope => scope.name === "read:wallets")).toEqual(
+      expect.objectContaining({
+        group: "read",
+        endpoints: ["/api/v2/accounts/agent-relationships"],
+      }),
+    )
+    expect(
+      AUTH_SCOPES.find(scope => scope.name === "write:wallets")?.endpoints,
+    ).toEqual(
+      expect.arrayContaining([
+        "/api/v2/accounts/agent",
+        "/api/v2/accounts/agent-relationships",
+        "/api/v2/accounts/agent-relationships/confirm",
+      ]),
     )
   })
 })

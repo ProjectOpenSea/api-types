@@ -406,6 +406,59 @@
         "x-opensea-auth-scopes": ["write:wallets"]
       }
     },
+    "/api/v2/accounts/agent": {
+      "put": {
+        "tags": ["Account Endpoints"],
+        "summary": "Declare the authenticated account an agent",
+        "description": "Self-reported and not OpenSea verification. Independent of ownership: an agent nobody owns is valid.",
+        "operationId": "declare_agent_account",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentAccountStatusResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:wallets"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:wallets"]
+      },
+      "delete": {
+        "tags": ["Account Endpoints"],
+        "summary": "Withdraw the authenticated account's agent declaration",
+        "operationId": "withdraw_agent_account_declaration",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentAccountStatusResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:wallets"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:wallets"]
+      }
+    },
     "/api/v2/watchlist": {
       "post": {
         "tags": ["Account Endpoints"],
@@ -3003,6 +3056,151 @@
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:wallets"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:wallets"]
+      }
+    },
+    "/api/v2/accounts/agent-relationships": {
+      "get": {
+        "tags": ["Account Endpoints"],
+        "summary": "List the authenticated account's agent relationships",
+        "description": "Includes proposals still awaiting either party. Pending relationships appear here only; they are never shown on a public profile.",
+        "operationId": "list_own_agent_relationships",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRelationshipListResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["read:wallets"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["read:wallets"]
+      },
+      "post": {
+        "tags": ["Account Endpoints"],
+        "summary": "Propose an agent ownership relationship",
+        "description": "Both accounts must agree. Proposing a relationship that is already awaiting you confirms it, so a client that cannot tell who moved first can simply propose.",
+        "operationId": "propose_agent_relationship",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposeAgentRelationshipRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRelationshipMutationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:wallets"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:wallets"]
+      },
+      "delete": {
+        "tags": ["Account Endpoints"],
+        "summary": "Withdraw a proposal or revoke a confirmed agent relationship",
+        "description": "Either party may remove the relationship at any point.",
+        "operationId": "revoke_agent_relationship",
+        "parameters": [
+          {
+            "name": "counterparty_address",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "caller_role",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRelationshipRemovalResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:wallets"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:wallets"]
+      }
+    },
+    "/api/v2/accounts/agent-relationships/confirm": {
+      "post": {
+        "tags": ["Account Endpoints"],
+        "summary": "Confirm an agent relationship proposed to the authenticated account",
+        "operationId": "confirm_agent_relationship",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposeAgentRelationshipRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRelationshipMutationResponse"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -7447,7 +7645,7 @@
       "get": {
         "tags": ["Account Endpoints"],
         "summary": "Get public agent ownership relationships for a profile",
-        "description": "Returns an agent wallet's public owner profile or an account profile's public agent wallets. Private wallet relationships are omitted. Standard API-key quotas and an additional 30-per-hour per-profile limit apply.",
+        "description": "Returns the account confirmed to own this one as its agent, and the accounts it is the confirmed owner of. Only relationships both accounts confirmed appear; a proposal one side has not accepted is visible to the two parties alone. Ownership is a declaration and not an authorization, and is self-reported rather than verified by OpenSea. Standard API-key quotas and an additional 30-per-hour per-profile limit apply.",
         "operationId": "get_agent_profile_relationships",
         "parameters": [
           {
@@ -8886,6 +9084,18 @@
         },
         "required": ["address", "is_agent"]
       },
+      "AgentAccountStatusResponse": {
+        "type": "object",
+        "properties": {
+          "is_agent": {
+            "type": "boolean"
+          },
+          "changed": {
+            "type": "boolean"
+          }
+        },
+        "required": ["changed", "is_agent"]
+      },
       "WatchlistRequest": {
         "type": "object",
         "description": "Request body for managing a watchlist entry",
@@ -9091,7 +9301,7 @@
           "usd": {
             "type": "string",
             "description": "USD equivalent",
-            "example": 19250
+            "example": 19250.0
           }
         },
         "required": ["amount", "usd"]
@@ -9318,7 +9528,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1
+            "example": 1.0
           },
           "decimals": {
             "type": "integer",
@@ -9384,7 +9594,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1
+            "example": 1.0
           },
           "decimals": {
             "type": "integer",
@@ -9686,7 +9896,8 @@
               "SWAP",
               "MARKETPLACE",
               "CREATOR",
-              "MEV_PROTECTION"
+              "MEV_PROTECTION",
+              "EXECUTION"
             ],
             "example": "GAS"
           },
@@ -9747,7 +9958,7 @@
             "type": "number",
             "format": "double",
             "description": "Total cost of tokens sent in USD",
-            "example": 1869
+            "example": 1869.0
           },
           "slippage_tolerance": {
             "type": "number",
@@ -9780,7 +9991,7 @@
             "type": "number",
             "format": "double",
             "description": "Recommended slippage tolerance based on volatility analysis (null if unavailable)",
-            "example": 2
+            "example": 2.0
           },
           "costs": {
             "type": "array",
@@ -10119,13 +10330,6 @@
             "description": "Chain the NFT is on",
             "example": "ethereum",
             "maxLength": 100,
-            "minLength": 0
-          },
-          "collectionSlug": {
-            "type": "string",
-            "deprecated": true,
-            "description": "Deprecated: ignored by the server, which derives the collection slug from the resolved NFT. Accepted for backward compatibility only.",
-            "maxLength": 200,
             "minLength": 0
           }
         },
@@ -12023,7 +12227,7 @@
           "max_price_per_item": {
             "type": "string",
             "description": "Maximum price per item in the payment token's units",
-            "example": 10
+            "example": 10.0
           },
           "buyer": {
             "type": "string",
@@ -12234,7 +12438,7 @@
           "amount": {
             "type": "string",
             "description": "Price amount in the currency's unit (e.g. '5.0' for 5 ETH)",
-            "example": 5
+            "example": 5.0
           },
           "currency": {
             "type": "string",
@@ -13073,6 +13277,75 @@
           }
         },
         "required": ["linkedWalletAddress"]
+      },
+      "ProposeAgentRelationshipRequestBody": {
+        "type": "object",
+        "properties": {
+          "counterparty_address": {
+            "type": "string"
+          },
+          "caller_role": {
+            "type": "string",
+            "description": "Which side of the relationship the caller is on",
+            "enum": ["AGENT", "OWNER"]
+          }
+        },
+        "required": ["caller_role", "counterparty_address"]
+      },
+      "AgentRelationshipMutationResponse": {
+        "type": "object",
+        "properties": {
+          "relation": {
+            "$ref": "#/components/schemas/AgentRelationshipResponse"
+          },
+          "created": {
+            "type": "boolean"
+          }
+        },
+        "required": ["created", "relation"]
+      },
+      "AgentRelationshipResponse": {
+        "type": "object",
+        "properties": {
+          "initiator_address": {
+            "type": "string"
+          },
+          "counterparty_address": {
+            "type": "string"
+          },
+          "agent_account_id": {
+            "type": "string"
+          },
+          "owner_account_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "initiated_by": {
+            "type": "string"
+          },
+          "awaiting_confirmation_from": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "number",
+            "format": "double",
+            "description": "Unix timestamp in seconds, including fractional seconds"
+          },
+          "confirmed_at": {
+            "type": "number",
+            "format": "double",
+            "description": "Unix timestamp in seconds, including fractional seconds"
+          }
+        },
+        "required": [
+          "agent_account_id",
+          "created_at",
+          "initiated_by",
+          "owner_account_id",
+          "status"
+        ]
       },
       "UpdateProfileSettingsRequest": {
         "type": "object",
@@ -14508,7 +14781,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1
+            "example": 1.0
           },
           "decimals": {
             "type": "integer",
@@ -14988,7 +15261,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1
+            "example": 1.0
           },
           "decimals": {
             "type": "integer",
@@ -16177,7 +16450,7 @@
           "usd_price": {
             "type": "string",
             "description": "Price in USD",
-            "example": 1
+            "example": 1.0
           }
         },
         "required": ["time", "usd_price"]
@@ -16808,17 +17081,32 @@
         "type": "object",
         "description": "Public agent ownership relationships for a profile",
         "properties": {
+          "agent_owner": {
+            "$ref": "#/components/schemas/AgentProfileSummaryResponse",
+            "description": "The account confirmed to own this one as its agent. Null when there is none, which is ordinary rather than exceptional: an agent nobody declared is a valid agent account. Only a relationship both accounts confirmed appears here."
+          },
+          "agents": {
+            "type": "array",
+            "description": "The accounts this one is the confirmed owner of, newest relationship first. Empty when there are none.",
+            "items": {
+              "$ref": "#/components/schemas/AgentProfileSummaryResponse"
+            }
+          },
           "agent_owner_profile": {
-            "$ref": "#/components/schemas/AgentProfileSummaryResponse"
+            "$ref": "#/components/schemas/AgentProfileSummaryResponse",
+            "deprecated": true,
+            "description": "Superseded by agent_owner. Reads the retired wallet-level designation and is always null."
           },
           "public_agent_wallets": {
             "type": "array",
+            "deprecated": true,
+            "description": "Superseded by agents. Reads the retired wallet-level designation and is always empty.",
             "items": {
               "$ref": "#/components/schemas/AgentProfileSummaryResponse"
             }
           }
         },
-        "required": ["public_agent_wallets"]
+        "required": ["agents", "public_agent_wallets"]
       },
       "AgentProfileSummaryResponse": {
         "type": "object",
@@ -16862,6 +17150,18 @@
           }
         },
         "required": ["address"]
+      },
+      "AgentRelationshipListResponse": {
+        "type": "object",
+        "properties": {
+          "relationships": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentRelationshipResponse"
+            }
+          }
+        },
+        "required": ["relationships"]
       },
       "TokenBalancePaginatedResponse": {
         "type": "object",
@@ -16912,7 +17212,7 @@
           "usd_price": {
             "type": "string",
             "description": "Current price in USD",
-            "example": 1
+            "example": 1.0
           },
           "decimals": {
             "type": "integer",
@@ -17004,10 +17304,6 @@
             "type": "object",
             "properties": {
               "validate": {
-                "type": "boolean",
-                "writeOnly": true
-              },
-              "skipLowercase": {
                 "type": "boolean",
                 "writeOnly": true
               }
@@ -17116,7 +17412,7 @@
           "nft_value_usd": {
             "type": "string",
             "description": "NFT portfolio value in USD",
-            "example": 98200
+            "example": 98200.0
           },
           "token_value_usd": {
             "type": "string",
@@ -17159,17 +17455,17 @@
           "value_usd": {
             "type": "string",
             "description": "Total portfolio value in USD",
-            "example": 124180
+            "example": 124180.0
           },
           "token_value_usd": {
             "type": "string",
             "description": "Token value in USD",
-            "example": 26000
+            "example": 26000.0
           },
           "nft_value_usd": {
             "type": "string",
             "description": "NFT value in USD",
-            "example": 98180
+            "example": 98180.0
           }
         },
         "required": [
@@ -17220,7 +17516,7 @@
           "net_invested_usd": {
             "type": "string",
             "description": "Net amount invested in USD",
-            "example": 12500
+            "example": 12500.0
           },
           "current_value_usd": {
             "type": "string",
@@ -17330,7 +17626,7 @@
           "total_proceeds_usd": {
             "type": "string",
             "description": "Total USD proceeds from the sells that closed this position.",
-            "example": 5200
+            "example": 5200.0
           },
           "total_cost_basis_usd": {
             "type": "string",
@@ -17750,6 +18046,15 @@
         },
         "required": ["success"]
       },
+      "AgentRelationshipRemovalResponse": {
+        "type": "object",
+        "properties": {
+          "removed": {
+            "type": "boolean"
+          }
+        },
+        "required": ["removed"]
+      },
       "AuthScope": {
         "type": "string",
         "description": "OAuth-style scope recognized by the OpenSea API for wallet-authenticated requests",
@@ -17758,6 +18063,7 @@
           "read:favorites",
           "read:social",
           "read:tools",
+          "read:wallets",
           "write:favorites",
           "write:social",
           "write:tools",
@@ -17773,20 +18079,22 @@
           "View favorites and watchlist for authenticated account",
           "View follows, watches, followers, and following for the authenticated account",
           "View saved tools and toolkits for the authenticated account",
+          "View wallet state for the authenticated account, currently agent ownership relationships including pending proposals",
           "Add and remove favorites and watchlist entries for authenticated account",
-          "Follow, unfollow, watch, and unwatch profiles for the authenticated account",
+          "Follow, unfollow, watch, and unwatch profiles, and link or unlink an X account, for the authenticated account",
           "Save and remove tools and manage toolkits for the authenticated account",
           "Cancel orders on behalf of authenticated account",
           "Manage Creator Studio drops for authenticated account",
           "Modify collection metadata for authenticated account",
           "Modify profile settings for authenticated account",
-          "Link, unlink, and manage wallet visibility for the authenticated account"
+          "Link, unlink, manage wallet visibility, and declare agent relationships for the authenticated account"
         ],
         "x-enum-display-names": [
           "Check drop eligibility",
           "View favorites and watchlist",
           "View social relationships",
           "View saved tools and toolkits",
+          "View linked wallets and agent relationships",
           "Manage favorites and watchlist",
           "Manage social relationships",
           "Manage saved tools and toolkits",
@@ -17797,6 +18105,7 @@
           "Manage linked wallets"
         ],
         "x-enum-groups": [
+          "read",
           "read",
           "read",
           "read",
@@ -17827,10 +18136,14 @@
             "/api/v2/toolkits",
             "/api/v2/toolkits/{toolkit_slug}"
           ],
+          ["/api/v2/accounts/agent-relationships"],
           ["/api/v2/watchlist"],
           [
             "/api/v2/accounts/{address_or_username}/follow",
-            "/api/v2/accounts/{address_or_username}/watch"
+            "/api/v2/accounts/{address_or_username}/watch",
+            "/api/v2/accounts/social/x/link",
+            "/api/v2/accounts/social/x/link/{link_id}",
+            "/api/v2/accounts/social/x"
           ],
           [
             "/api/v2/saved-tools",
@@ -17865,6 +18178,9 @@
             "/api/v2/profile/shelves/{shelf_id}"
           ],
           [
+            "/api/v2/accounts/agent",
+            "/api/v2/accounts/agent-relationships",
+            "/api/v2/accounts/agent-relationships/confirm",
             "/api/v2/accounts/wallets/siwx",
             "/api/v2/accounts/wallets/{wallet}",
             "/api/v2/accounts/wallets/{wallet}/agent",
@@ -17876,8 +18192,9 @@
           ["get_favorites"],
           ["view_social_graph"],
           ["list_saved_tools", "list_toolkits", "get_toolkit"],
+          [],
           ["manage_watchlist"],
-          ["manage_social_graph"],
+          ["manage_social_graph", "link_x_account"],
           [
             "save_tool",
             "unsave_tool",

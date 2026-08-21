@@ -43,6 +43,14 @@ export const AUTH_SCOPES = [
     mcpTools: ["list_saved_tools","list_toolkits","get_toolkit"],
   },
   {
+    name: "read:wallets",
+    displayName: "View linked wallets and agent relationships",
+    description: "View wallet state for the authenticated account, currently agent ownership relationships including pending proposals",
+    group: "read",
+    endpoints: ["/api/v2/accounts/agent-relationships"],
+    mcpTools: [],
+  },
+  {
     name: "write:favorites",
     displayName: "Manage favorites and watchlist",
     description: "Add and remove favorites and watchlist entries for authenticated account",
@@ -53,10 +61,10 @@ export const AUTH_SCOPES = [
   {
     name: "write:social",
     displayName: "Manage social relationships",
-    description: "Follow, unfollow, watch, and unwatch profiles for the authenticated account",
+    description: "Follow, unfollow, watch, and unwatch profiles, and link or unlink an X account, for the authenticated account",
     group: "write",
-    endpoints: ["/api/v2/accounts/{address_or_username}/follow","/api/v2/accounts/{address_or_username}/watch"],
-    mcpTools: ["manage_social_graph"],
+    endpoints: ["/api/v2/accounts/{address_or_username}/follow","/api/v2/accounts/{address_or_username}/watch","/api/v2/accounts/social/x/link","/api/v2/accounts/social/x/link/{link_id}","/api/v2/accounts/social/x"],
+    mcpTools: ["manage_social_graph","link_x_account"],
   },
   {
     name: "write:tools",
@@ -101,9 +109,9 @@ export const AUTH_SCOPES = [
   {
     name: "write:wallets",
     displayName: "Manage linked wallets",
-    description: "Link, unlink, and manage wallet visibility for the authenticated account",
+    description: "Link, unlink, manage wallet visibility, and declare agent relationships for the authenticated account",
     group: "write",
-    endpoints: ["/api/v2/accounts/wallets/siwx","/api/v2/accounts/wallets/{wallet}","/api/v2/accounts/wallets/{wallet}/agent","/api/v2/accounts/wallets/{wallet}/private"],
+    endpoints: ["/api/v2/accounts/agent","/api/v2/accounts/agent-relationships","/api/v2/accounts/agent-relationships/confirm","/api/v2/accounts/wallets/siwx","/api/v2/accounts/wallets/{wallet}","/api/v2/accounts/wallets/{wallet}/agent","/api/v2/accounts/wallets/{wallet}/private"],
     mcpTools: ["manage_wallets"],
   },
 ] as const satisfies readonly {

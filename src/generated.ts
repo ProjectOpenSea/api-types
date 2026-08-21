@@ -70,6 +70,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/accounts/agent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Declare the authenticated account an agent
+         * @description Self-reported and not OpenSea verification. Independent of ownership: an agent nobody owns is valid.
+         */
+        put: operations["declare_agent_account"];
+        post?: never;
+        /** Withdraw the authenticated account's agent declaration */
+        delete: operations["withdraw_agent_account_declaration"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/watchlist": {
         parameters: {
             query?: never;
@@ -888,6 +909,51 @@ export interface paths {
          * @description Verify control of a wallet using a SIWX signature and link it to the authenticated account.
          */
         post: operations["link_wallet_with_siwx"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/accounts/agent-relationships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the authenticated account's agent relationships
+         * @description Includes proposals still awaiting either party. Pending relationships appear here only; they are never shown on a public profile.
+         */
+        get: operations["list_own_agent_relationships"];
+        put?: never;
+        /**
+         * Propose an agent ownership relationship
+         * @description Both accounts must agree. Proposing a relationship that is already awaiting you confirms it, so a client that cannot tell who moved first can simply propose.
+         */
+        post: operations["propose_agent_relationship"];
+        /**
+         * Withdraw a proposal or revoke a confirmed agent relationship
+         * @description Either party may remove the relationship at any point.
+         */
+        delete: operations["revoke_agent_relationship"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/accounts/agent-relationships/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm an agent relationship proposed to the authenticated account */
+        post: operations["confirm_agent_relationship"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2133,7 +2199,7 @@ export interface paths {
         };
         /**
          * Get public agent ownership relationships for a profile
-         * @description Returns an agent wallet's public owner profile or an account profile's public agent wallets. Private wallet relationships are omitted. Standard API-key quotas and an additional 30-per-hour per-profile limit apply.
+         * @description Returns the account confirmed to own this one as its agent, and the accounts it is the confirmed owner of. Only relationships both accounts confirmed appear; a proposal one side has not accepted is visible to the two parties alone. Ownership is a declaration and not an authorization, and is self-reported rather than verified by OpenSea. Standard API-key quotas and an additional 30-per-hour per-profile limit apply.
          */
         get: operations["get_agent_profile_relationships"];
         put?: never;
@@ -2516,6 +2582,10 @@ export interface components {
         WalletAgentStatusResponse: {
             address: string;
             is_agent: boolean;
+        };
+        AgentAccountStatusResponse: {
+            is_agent: boolean;
+            changed: boolean;
         };
         /** @description Request body for managing a watchlist entry */
         WatchlistRequest: {
@@ -2999,7 +3069,7 @@ export interface components {
              * @example GAS
              * @enum {string}
              */
-            type: "GAS" | "PROVIDER" | "PROTOCOL" | "SWAP" | "MARKETPLACE" | "CREATOR" | "MEV_PROTECTION";
+            type: "GAS" | "PROVIDER" | "PROTOCOL" | "SWAP" | "MARKETPLACE" | "CREATOR" | "MEV_PROTECTION" | "EXECUTION";
             /**
              * @description Cost amount in USD
              * @example 0.5
@@ -3220,11 +3290,6 @@ export interface components {
              * @example ethereum
              */
             chain: string;
-            /**
-             * @deprecated
-             * @description Deprecated: ignored by the server, which derives the collection slug from the resolved NFT. Accepted for backward compatibility only.
-             */
-            collectionSlug?: string;
         };
         /** @description This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds. */
         UploadContext: {
@@ -4346,6 +4411,37 @@ export interface components {
         };
         WalletLinkResponse: {
             linkedWalletAddress: string;
+        };
+        ProposeAgentRelationshipRequestBody: {
+            counterparty_address: string;
+            /**
+             * @description Which side of the relationship the caller is on
+             * @enum {string}
+             */
+            caller_role: "AGENT" | "OWNER";
+        };
+        AgentRelationshipMutationResponse: {
+            relation: components["schemas"]["AgentRelationshipResponse"];
+            created: boolean;
+        };
+        AgentRelationshipResponse: {
+            initiator_address?: string;
+            counterparty_address?: string;
+            agent_account_id: string;
+            owner_account_id: string;
+            status: string;
+            initiated_by: string;
+            awaiting_confirmation_from?: string;
+            /**
+             * Format: double
+             * @description Unix timestamp in seconds, including fractional seconds
+             */
+            created_at: number;
+            /**
+             * Format: double
+             * @description Unix timestamp in seconds, including fractional seconds
+             */
+            confirmed_at?: number;
         };
         /** @description Request body for updating profile settings */
         UpdateProfileSettingsRequest: {
@@ -5956,7 +6052,19 @@ export interface components {
         };
         /** @description Public agent ownership relationships for a profile */
         AgentProfileRelationshipsResponse: {
+            /** @description The account confirmed to own this one as its agent. Null when there is none, which is ordinary rather than exceptional: an agent nobody declared is a valid agent account. Only a relationship both accounts confirmed appears here. */
+            agent_owner?: components["schemas"]["AgentProfileSummaryResponse"];
+            /** @description The accounts this one is the confirmed owner of, newest relationship first. Empty when there are none. */
+            agents: components["schemas"]["AgentProfileSummaryResponse"][];
+            /**
+             * @deprecated
+             * @description Superseded by agent_owner. Reads the retired wallet-level designation and is always null.
+             */
             agent_owner_profile?: components["schemas"]["AgentProfileSummaryResponse"];
+            /**
+             * @deprecated
+             * @description Superseded by agents. Reads the retired wallet-level designation and is always empty.
+             */
             public_agent_wallets: components["schemas"]["AgentProfileSummaryResponse"][];
         };
         /** @description Compact public profile summary for an agent relationship */
@@ -5981,6 +6089,9 @@ export interface components {
              * @example vitalik.eth
              */
             ens_name?: string;
+        };
+        AgentRelationshipListResponse: {
+            relationships: components["schemas"]["AgentRelationshipResponse"][];
         };
         /** @description Paginated list of token balances */
         TokenBalancePaginatedResponse: {
@@ -6066,7 +6177,6 @@ export interface components {
             "@type": "EvmAddress";
         } & (Omit<WithRequired<components["schemas"]["BlockchainAddress"], "value">, "@type"> & {
             validate?: boolean;
-            skipLowercase?: boolean;
         });
         SolanaAddress: {
             "@type": "SolanaAddress";
@@ -6480,12 +6590,15 @@ export interface components {
         WalletUnlinkResponse: {
             success: boolean;
         };
+        AgentRelationshipRemovalResponse: {
+            removed: boolean;
+        };
         /**
          * @description OAuth-style scope recognized by the OpenSea API for wallet-authenticated requests
          * @example read:favorites
          * @enum {string}
          */
-        AuthScope: "read:eligibility" | "read:favorites" | "read:social" | "read:tools" | "write:favorites" | "write:social" | "write:tools" | "write:orders" | "write:drops" | "write:collections" | "write:profile" | "write:wallets";
+        AuthScope: "read:eligibility" | "read:favorites" | "read:social" | "read:tools" | "read:wallets" | "write:favorites" | "write:social" | "write:tools" | "write:orders" | "write:drops" | "write:collections" | "write:profile" | "write:wallets";
     };
     responses: {
         /** @description For error reasons, review the response data. */
@@ -6748,6 +6861,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WalletAgentStatusResponse"];
+                };
+            };
+        };
+    };
+    declare_agent_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentAccountStatusResponse"];
+                };
+            };
+        };
+    };
+    withdraw_agent_account_declaration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentAccountStatusResponse"];
                 };
             };
         };
@@ -8420,6 +8573,97 @@ export interface operations {
                 };
             };
             500: components["responses"]["InternalError"];
+        };
+    };
+    list_own_agent_relationships: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRelationshipListResponse"];
+                };
+            };
+        };
+    };
+    propose_agent_relationship: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProposeAgentRelationshipRequestBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRelationshipMutationResponse"];
+                };
+            };
+        };
+    };
+    revoke_agent_relationship: {
+        parameters: {
+            query: {
+                counterparty_address: string;
+                caller_role: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRelationshipRemovalResponse"];
+                };
+            };
+        };
+    };
+    confirm_agent_relationship: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProposeAgentRelationshipRequestBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRelationshipMutationResponse"];
+                };
+            };
         };
     };
     update_profile_settings: {
