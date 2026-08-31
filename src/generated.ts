@@ -357,6 +357,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/orders/chain/{chain}/protocol/{protocol_address}/{order_hash}/cancel/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get order cancellation actions
+         * @description Returns the blockchain actions needed to cancel an order onchain, for orders that cannot be cancelled offchain through the cancel endpoint. A Solana order is always cancelled this way, because it lives onchain from the moment it is created. The order is addressed by the same identifier the get-order endpoint uses, and only its maker may cancel it.
+         */
+        post: operations["create_cancel_order_actions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/offers": {
         parameters: {
             query?: never;
@@ -397,6 +417,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/offers/fulfillment/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get offer fulfillment actions
+         * @description Returns the blockchain actions a seller needs to accept an offer, for offers that cannot be accepted with Seaport calldata. A Solana offer is always accepted this way, because it settles through an onchain program rather than a signed order. The offer is addressed by the same identifier the get-order endpoint uses, and a criteria offer additionally requires a consideration naming the token being sold.
+         *
+         *     On Solana two fields on the returned action are load-bearing. When `partially_signed_transaction` is present the transaction is already cosigned: append your signature to those exact bytes and broadcast them, and do not rebuild the message from `instructions`, which invalidates the cosigner signature. When `sponsored_fee_payer` is present an OpenSea relayer pays the fee and your wallet is only a co-signer; when it is absent you pay your own fee.
+         *
+         *     Accepting fewer units than an offer's remaining quantity leaves the offer live, so a successful fill does not imply the offer is consumed.
+         */
+        post: operations["create_offer_fulfillment_actions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/offers/build": {
         parameters: {
             query?: never;
@@ -411,6 +455,26 @@ export interface paths {
          * @description Build a portion of a criteria offer including the consideration item, zone, and zone hash needed to post an offer. For trait offers on supported collections, the identifierOrCriteria in the returned consideration will be '0' (no merkle root computation needed). For other collections, a computed merkle root is returned. When identifierOrCriteria is '0', the encodedTokenIds field is informational only and not required for constructing the onchain order.
          */
         post: operations["build_offer_v2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/offers/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get offer creation actions
+         * @description Returns the blockchain actions needed to offer on an NFT, the offer-side counterpart of the listing actions endpoint. On EVM chains these are payment approvals followed by a Seaport order to sign, which the signature endpoints then accept. On Solana the actions instead carry an unsigned bid transaction to sign and submit onchain; there is no order to post back to OpenSea afterwards.
+         */
+        post: operations["create_offer_actions"];
         delete?: never;
         options?: never;
         head?: never;
@@ -448,7 +512,7 @@ export interface paths {
         put?: never;
         /**
          * Sweep buy items from a collection
-         * @description Buy up to N items from a collection using any payment token, including cross-chain. If a requested item becomes unavailable, the system can automatically substitute it with the next cheapest listing from the same collection (enabled by default). Returns an ordered list of transactions to execute.
+         * @description Buy up to N items from a collection using any payment token, including cross-chain. If a requested item becomes unavailable, the system can automatically substitute it with the next cheapest listing from the same collection (enabled by default). Returns an ordered list of transactions to execute. Collections on EVM chains only; a collection on any other chain is rejected.
          */
         post: operations["sweep_collection"];
         delete?: never;
@@ -477,6 +541,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/listings/fulfillment/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get listing fulfillment actions
+         * @description Returns the blockchain actions needed to fulfill a listing, for listings that cannot be fulfilled with Seaport calldata. A Solana listing is always fulfilled this way, because it settles through an onchain program rather than a signed order. The listing is addressed by the same identifier the get-order endpoint uses.
+         */
+        post: operations["create_listing_fulfillment_actions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/listings/cross_chain_fulfillment_data": {
         parameters: {
             query?: never;
@@ -488,7 +572,7 @@ export interface paths {
         put?: never;
         /**
          * Fulfill a listing using a different token
-         * @description Get fulfillment data to buy one or more listings using a token on a different chain or a different token on the same chain. Supports cross-chain purchases and same-chain token swaps via the Relay protocol. Returns an ordered list of transactions to execute.
+         * @description Get fulfillment data to buy one or more listings using a token on a different chain or a different token on the same chain. Supports cross-chain purchases and same-chain token swaps via the Relay protocol. Returns an ordered list of transactions to execute. Listings on EVM chains only; a listing on any other chain is rejected.
          */
         post: operations["generate_cross_chain_listing_fulfillment_data"];
         delete?: never;
@@ -533,6 +617,21 @@ export interface paths {
         /**
          * Update Creator Studio drop edits
          * @description Update an existing ERC-721 SeaDrop V1 drop and its stages.
+         *
+         *     Saves a Creator Studio draft. It does not change the live drop: SeaDrop stages are onchain contract state, so the draft has to be published separately before buyers see it. A 200 here means the draft was accepted, not that the drop changed.
+         *
+         *     `stages` replaces the whole set rather than merging, so send every stage the drop should end up with, including ones you are not changing. Reuse an existing stage uuid to update it, supply a new UUID to add one, and omit a stage to delete it.
+         *
+         *     The stage list has four rules, and rules 2 and 4 interact in a way worth reading before the first attempt:
+         *
+         *     1. Exactly one stage must be `public_sale`.
+         *     2. That public stage must be first in the array.
+         *     3. The presales, meaning every stage after the first, must be contiguous among themselves: each one starts exactly when the previous presale ended. The first presale start time is not constrained.
+         *     4. The last presale must end exactly when the public stage starts.
+         *
+         *     Together, 2 and 4 mean array order is not chronological order: the public stage is listed first and runs last, with the presales running in array order before it. A drop with two allowlist stages therefore sends `[public, presale1, presale2]` while time runs presale1, then presale2, then public. Rule 3 does not tie presale1 back to the public stage, which is why the chain reads forward from presale1 rather than from the array head.
+         *
+         *     Per-wallet mint limits are cumulative across stages, so `max_total_mintable_by_wallet` on a later stage is a running total for the wallet rather than a fresh allowance.
          */
         post: operations["save_drop_edits"];
         delete?: never;
@@ -672,7 +771,7 @@ export interface paths {
         put?: never;
         /**
          * Upload drop allowlist
-         * @description This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds. Pass the token as allowlist_file_token to POST /api/v2/drops/{slug}/allowlist/validate.
+         * @description The file is CSV with a header row, and the wallet column must be named address or walletaddress. Optional per-row columns are a custom mint limit and a custom price. This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds. Pass the token as allowlist_file_token to POST /api/v2/drops/{slug}/allowlist/validate, which returns a different token. That second token is the one a stage takes: send it as allowlist_file_token on the stage in POST /api/v2/drops/{slug}, or the uploaded file is never attached to anything. The presigned upload expires about a minute after it is issued, so request the context and upload in one go rather than requesting it ahead of time.
          */
         post: operations["upload_drop_allowlist"];
         delete?: never;
@@ -906,7 +1005,7 @@ export interface paths {
         };
         /**
          * List the authenticated account's agent relationships
-         * @description Includes proposals still awaiting either party. Pending relationships appear here only; they are never shown on a public profile.
+         * @description Includes proposals still awaiting either party. Pending relationships appear here only; they are never shown on a public profile. Truncated to the 100 most recent confirmed relationships and the 50 most recent live proposals, bounded separately so unanswered proposals cannot displace confirmed relationships. No total is returned. Confirming or revoking names the counterparty address, so neither needs a relationship to appear here.
          */
         get: operations["list_own_agent_relationships"];
         put?: never;
@@ -1927,7 +2026,7 @@ export interface paths {
         };
         /**
          * Get token trading activity stats
-         * @description Get materialized trade count, USD volume, and average trade size for a token. Windows with no swaps are omitted; an omitted requested key means zero trades in that window. Each window ends at its own materialized snapshot; computed_at is the oldest snapshot among the returned windows and can precede request time because the response is cached.
+         * @description Get materialized trade count, USD volume, and average trade size for a token. Windows with no swaps are omitted; an omitted requested key means zero trades in that window. Each window ends at its own materialized snapshot; computed_at is the oldest snapshot among the returned windows and can precede request time because the response is cached. The 1h and 24h windows also carry unique_buyer_count and unique_seller_count, which are null when the counts are unavailable for that token; 5m and 4h never carry them.
          */
         get: operations["get_token_activity_stats"];
         put?: never;
@@ -2554,6 +2653,8 @@ export interface components {
             description?: string;
             /** @description External URL */
             external_url?: string;
+            /** @description Animated media for the item, alongside its image. Omit to leave the stored value alone; send an empty string to remove it. */
+            animation_url?: string;
             /** @description Item traits */
             traits?: components["schemas"]["SelfMintDropItemTraitRequest"][];
         };
@@ -3149,6 +3250,8 @@ export interface components {
             value_hex?: string;
             /** @description Structured Solana transaction contents. Set for SVM chains only; `data` is a lossy summary of the same instructions. */
             svm?: components["schemas"]["SvmTransactionDetailsResponse"];
+            /** @description Gas limit for the transaction, in gas units. Already includes a safety buffer over the estimate — use it as-is (or take the max of this and your own buffered estimate) and do not shrink it. Null when no reliable estimate is available. */
+            gas_limit?: string;
         };
         /** @description A registered tool to save or remove from saved tools */
         SavedToolRequest: {
@@ -3375,7 +3478,8 @@ export interface components {
             max?: number;
         };
         Offer: components["schemas"]["ListingOrOffer"] & {
-            order_hash: string;
+            /** @description Seaport order hash, a 0x-prefixed 32-byte value. Absent on an order that settles through a Solana marketplace program, which has no Seaport identity and carries `svm_order` instead. Every EVM order has one. */
+            order_hash?: string;
             chain: string;
             protocol_data?: components["schemas"]["ProtocolData"];
             protocol_address?: string;
@@ -3384,13 +3488,18 @@ export interface components {
             remaining_quantity: number;
             /** Format: int64 */
             order_created_at?: number;
+            /** @description Marketplace protocol a Solana order settles through, which is what tells you which identity shape the order uses. Absent on a Seaport order, whose payload is unchanged. Only orders we can build fulfillment for carry a value here. */
+            protocol?: string;
+            /** @description Identity of a Solana order, present in place of `order_hash`. A client that assumes `order_hash` is always set should read this field first and fall back to `order_hash`. */
+            svm_order?: components["schemas"]["SvmOrderIdentity"];
             criteria?: components["schemas"]["Criteria"];
             price: components["schemas"]["Price"];
             /** @enum {string} */
             status: "ACTIVE" | "INACTIVE" | "FULFILLED" | "EXPIRED" | "CANCELLED";
         };
         Order: {
-            order_hash: string;
+            /** @description Seaport order hash, a 0x-prefixed 32-byte value. Absent on an order that settles through a Solana marketplace program, which has no Seaport identity and carries `svm_order` instead. Every EVM order has one. */
+            order_hash?: string;
             chain: string;
             protocol_data?: components["schemas"]["ProtocolData"];
             protocol_address?: string;
@@ -3399,6 +3508,10 @@ export interface components {
             remaining_quantity: number;
             /** Format: int64 */
             order_created_at?: number;
+            /** @description Marketplace protocol a Solana order settles through, which is what tells you which identity shape the order uses. Absent on a Seaport order, whose payload is unchanged. Only orders we can build fulfillment for carry a value here. */
+            protocol?: string;
+            /** @description Identity of a Solana order, present in place of `order_hash`. A client that assumes `order_hash` is always set should read this field first and fall back to `order_hash`. */
+            svm_order?: components["schemas"]["SvmOrderIdentity"];
         };
         OrderAsset: {
             identifier?: string;
@@ -3430,12 +3543,29 @@ export interface components {
             parameters: components["schemas"]["Parameters"];
             signature?: string;
         };
+        /** @description Identity of an order that settles through a Solana marketplace program. Such an order has no Seaport order hash, so `order_hash` is absent from its payload and it is addressed instead by `id`, the transaction signature that created it joined to the onchain state account holding it. Pass that `id` wherever an endpoint takes an order hash. */
+        SvmOrderIdentity: {
+            /**
+             * @description `creation_signature:order_state`. This is what an endpoint expecting an order hash takes for a Solana order, for example `GET /api/v2/orders/chain/solana/protocol/{protocol_address}/{order_hash}`. Base58 and case-sensitive; do not lowercase it.
+             * @example 5j7s1QzqC8sT4Kz1oB9dYnUZ4qHnKX6h9YmZ6Zt7Zb3Q:CvhyBLWDcNwMatkNvMYuHALvbG1NzYrGw32dGzREaQKc
+             */
+            id: string;
+            /** @description Address of the onchain account holding the order's state. The second half of `id`. */
+            order_state: string;
+            /** @description Signature of the transaction that created the order. The first half of `id`. */
+            creation_signature: string;
+            /** @description Mint of the asset the order is for, where the program records one. Absent otherwise. */
+            asset_id?: string;
+            /** @description Wallet that created the order. */
+            maker: string;
+        };
         TraitData: {
             type: string;
             value: string;
         };
         Listing: components["schemas"]["ListingOrOffer"] & {
-            order_hash: string;
+            /** @description Seaport order hash, a 0x-prefixed 32-byte value. Absent on an order that settles through a Solana marketplace program, which has no Seaport identity and carries `svm_order` instead. Every EVM order has one. */
+            order_hash?: string;
             chain: string;
             protocol_data?: components["schemas"]["ProtocolData"];
             protocol_address?: string;
@@ -3444,6 +3574,10 @@ export interface components {
             remaining_quantity: number;
             /** Format: int64 */
             order_created_at?: number;
+            /** @description Marketplace protocol a Solana order settles through, which is what tells you which identity shape the order uses. Absent on a Seaport order, whose payload is unchanged. Only orders we can build fulfillment for carry a value here. */
+            protocol?: string;
+            /** @description Identity of a Solana order, present in place of `order_hash`. A client that assumes `order_hash` is always set should read this field first and fall back to `order_hash`. */
+            svm_order?: components["schemas"]["SvmOrderIdentity"];
             price: components["schemas"]["ListingPrice"];
             type: string;
             /** @enum {string} */
@@ -3458,6 +3592,20 @@ export interface components {
         CancelResponse: {
             last_signature_issued_valid_until: string;
         };
+        /** @description Request to get order cancellation actions */
+        CancelOrderActionsRequest: {
+            /**
+             * @description Maker wallet address that owns the order
+             * @example 0x...
+             */
+            address: string;
+        };
+        /** @description Response containing blockchain actions to execute for order cancellation */
+        CancelOrderActionsResponse: {
+            /** @description Ordered list of blockchain actions to execute. May include approval actions (e.g. setApprovalForAll) and a createListingsAction containing the Seaport order to sign. Serialized using proto3 JSON format — fields with default values (empty string, 0, false) may be omitted. */
+            steps: components["schemas"]["JsonNode"][];
+        };
+        JsonNode: unknown;
         CollectionCriteria: {
             slug: string;
         };
@@ -3690,6 +3838,11 @@ export interface components {
             bitSize?: number;
             typeAsString?: string;
         };
+        /** @description Response containing blockchain actions to execute to fulfill an order */
+        FulfillmentActionsResponse: {
+            /** @description Ordered list of blockchain actions to execute. May include approval actions (e.g. setApprovalForAll) and a createListingsAction containing the Seaport order to sign. Serialized using proto3 JSON format — fields with default values (empty string, 0, false) may be omitted. */
+            steps: components["schemas"]["JsonNode"][];
+        };
         BuildOfferRequest: {
             offerer: string;
             /** Format: int32 */
@@ -3736,6 +3889,54 @@ export interface components {
             consideration: components["schemas"]["Consideration"][];
             zone: string;
             zoneHash: string;
+        };
+        /** @description Request to get offer creation actions */
+        CreateOfferActionsRequest: {
+            /** @description Item to make an offer on */
+            item: components["schemas"]["OfferItem"];
+            /**
+             * @description Maker (buyer) wallet address
+             * @example 0x...
+             */
+            address: string;
+            /**
+             * Format: int64
+             * @description Quantity to offer on (use 1 for ERC-721)
+             * @example 1
+             */
+            quantity: number;
+            /** @description Price per item */
+            price: components["schemas"]["ListingPriceInput"];
+            /**
+             * @description Offer start time in ISO 8601 format. Defaults to now.
+             * @example 2026-05-01T00:00:00Z
+             */
+            start_time?: string;
+            /**
+             * @description Offer end time in ISO 8601 format. Defaults to 30 days from start.
+             * @example 2026-06-01T00:00:00Z
+             */
+            end_time?: string;
+            /** @description Whether to include optional creator fees. Defaults to false. */
+            use_creator_fee?: boolean;
+        };
+        /** @description Price for a listing item */
+        ListingPriceInput: {
+            /**
+             * @description Price amount in the currency's unit (e.g. '5.0' for 5 ETH)
+             * @example 5
+             */
+            amount: string;
+            /**
+             * @description Contract address of the payment currency (use 0x0000000000000000000000000000000000000000 for native token)
+             * @example 0x0000000000000000000000000000000000000000
+             */
+            currency: string;
+        };
+        /** @description Response containing blockchain actions to execute for offer creation */
+        CreateOfferActionsResponse: {
+            /** @description Ordered list of blockchain actions to execute. May include approval actions (e.g. setApprovalForAll) and a createListingsAction containing the Seaport order to sign. Serialized using proto3 JSON format — fields with default values (empty string, 0, false) may be omitted. */
+            steps: components["schemas"]["JsonNode"][];
         };
         /** @description Request body for batch NFT retrieval by identifiers */
         BatchNftsRequest: {
@@ -3895,7 +4096,6 @@ export interface components {
             /** @description Optional recipient address for the purchased items */
             recipient?: string;
         };
-        JsonNode: unknown;
         /** @description Response containing ordered blockchain actions to execute for a collection sweep */
         SweepCollectionResponse: {
             /** @description Ordered list of blockchain actions to execute. Each action is a JSON object with a single field indicating the type (e.g. buyItemAction, permit2SignatureAction, paymentApprovalAction) and its associated data. Serialized using proto3 JSON format — fields with default values (empty string, 0, false) may be omitted. */
@@ -3994,19 +4194,6 @@ export interface components {
              */
             end_time?: string;
         };
-        /** @description Price for a listing item */
-        ListingPriceInput: {
-            /**
-             * @description Price amount in the currency's unit (e.g. '5.0' for 5 ETH)
-             * @example 5
-             */
-            amount: string;
-            /**
-             * @description Contract address of the payment currency (use 0x0000000000000000000000000000000000000000 for native token)
-             * @example 0x0000000000000000000000000000000000000000
-             */
-            currency: string;
-        };
         /** @description Response containing blockchain actions to execute for listing creation */
         CreateListingActionsResponse: {
             /** @description Ordered list of blockchain actions to execute. May include approval actions (e.g. setApprovalForAll) and a createListingsAction containing the Seaport order to sign. Serialized using proto3 JSON format — fields with default values (empty string, 0, false) may be omitted. */
@@ -4026,7 +4213,7 @@ export interface components {
         };
         /** @description Request to save Creator Studio drop edits */
         SaveDropEditsRequest: {
-            /** @description Drop stages to save */
+            /** @description The drop's complete stage set, replacing any existing stages rather than merging with them. Exactly one stage must be `public_sale` and it must be first in this array. The presales that follow must be contiguous among themselves, each starting exactly when the previous presale ended, and the last must end exactly when the public stage starts. The first presale start time is not constrained. Array order is therefore not chronological: the public stage is listed first and runs last. */
             stages: components["schemas"]["SaveDropEditsStageRequest"][];
             /** @description Maximum supply for the drop as a decimal string */
             max_supply?: string;
@@ -4035,13 +4222,14 @@ export interface components {
         };
         /** @description A drop stage for Creator Studio edits */
         SaveDropEditsStageRequest: {
-            /** @description Stage UUID */
+            /** @description Stage UUID. Reuse an existing stage UUID to update that stage, or supply a new one to add a stage. Because `stages` replaces the whole set, omitting a stage deletes it. */
             uuid: string;
             /**
-             * @description Stage type
-             * @example public_sale
+             * @description Stage type. `public_sale` for the open stage, `signed_presale` for an allowlist stage. `merkle_presale` exists in the underlying enum but is rejected: no drop has ever used one and mints against such a stage fail.
+             * @example signed_presale
+             * @enum {string}
              */
-            stage_type: string;
+            stage_type: "public_sale" | "signed_presale";
             /**
              * Format: date-time
              * @description Stage start time
@@ -4056,7 +4244,7 @@ export interface components {
             end_time: string;
             /** @description Stage price */
             price: components["schemas"]["SaveDropEditsPriceRequest"];
-            /** @description Maximum tokens mintable per wallet as a decimal string */
+            /** @description Maximum tokens mintable per wallet as a decimal string. Cumulative across stages rather than per stage, so this is a running total for the wallet. A wallet that already minted more than a later stage allows has no remaining allowance on it. */
             max_total_mintable_by_wallet: string;
             /** @description Maximum token supply for this stage as a decimal string */
             max_token_supply_for_stage?: string;
@@ -4128,6 +4316,8 @@ export interface components {
             description?: string;
             /** @description External URL */
             external_url?: string;
+            /** @description Animated media for the item, alongside its image. Blank is treated as no animation, the same as omitting the field. */
+            animation_url?: string;
             /** @description Item traits */
             traits?: components["schemas"]["SelfMintDropItemTraitRequest"][];
         };
@@ -4497,6 +4687,8 @@ export interface components {
             contract_standard: string;
             /** @description External URL */
             external_url?: string;
+            /** @description Animated media for the item, alongside its image */
+            animation_url?: string;
             /** @description Chain identifier */
             chain: string;
             /** @description Contract address */
@@ -4510,6 +4702,8 @@ export interface components {
             name: string;
             /** @description External URL */
             external_url?: string;
+            /** @description Animated media for the item, alongside its image. Omit to leave the stored value alone; send an empty string to remove it. */
+            animation_url?: string;
             /** @description Item description */
             description?: string;
             /** @description Traits to apply */
@@ -5436,6 +5630,12 @@ export interface components {
             end_time: string;
             /** @description Max tokens mintable per wallet in this stage */
             max_per_wallet: string;
+            /**
+             * Format: int32
+             * @description Wallets on this stage's allowlist when the drop service last synced it. Null when the stage has no synced allowlist, which includes every public sale stage; that is distinct from 0, which means the allowlist is empty. Equivalent to allowlistMemberCount on the GraphQL DropStage.
+             * @example 1200
+             */
+            allowlist_wallet_count?: number;
         };
         /** @description Detailed drop information including stages and supply */
         DropDetailedResponse: {
@@ -5942,6 +6142,18 @@ export interface components {
              * @example 232.92
              */
             average_trade_usd: string;
+            /**
+             * Format: int64
+             * @description Distinct wallets that bought this token during the window. Only populated for the 1h and 24h windows; always null for 5m and 4h, which have no materialized source. Null also means the value is unavailable or not yet authoritative for this token, which remains a valid runtime state. Zero is an authoritative zero, so do not treat null as 0.
+             * @example 412
+             */
+            unique_buyer_count?: number;
+            /**
+             * Format: int64
+             * @description Distinct wallets that sold this token during the window. Only populated for the 1h and 24h windows; always null for 5m and 4h, which have no materialized source. Null also means the value is unavailable or not yet authoritative for this token, which remains a valid runtime state. Zero is an authoritative zero, so do not treat null as 0.
+             * @example 377
+             */
+            unique_seller_count?: number;
         };
         ContractResponse: {
             address: string;
@@ -7368,6 +7580,50 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    create_cancel_order_actions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The blockchain on which to filter the results
+                 * @example ethereum
+                 */
+                chain: components["schemas"]["ChainIdentifier"];
+                /** @description Protocol contract address */
+                protocol_address: string;
+                /** @description Order identifier, as returned by the get-order endpoint: a Seaport order hash on EVM chains, and a creation signature paired with the order state account on Solana. */
+                order_hash: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelOrderActionsRequest"];
+            };
+        };
+        responses: {
+            /** @description Cancellation actions retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CancelOrderActionsResponse"];
+                };
+            };
+            /** @description The request is invalid. Possible reasons: order not found, invalid address, or the address is not the order's maker. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CancelOrderActionsResponse"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
     post_criteria_offer_v2: {
         parameters: {
             query?: never;
@@ -7434,6 +7690,40 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    create_offer_fulfillment_actions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FullfillmentDataRequest"];
+            };
+        };
+        responses: {
+            /** @description Offer fulfillment actions retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FulfillmentActionsResponse"];
+                };
+            };
+            /** @description The request is invalid. Possible reasons: order not found, order not valid, order is not an offer, consideration missing for a criteria offer, or no actions could be composed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FulfillmentActionsResponse"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
     build_offer_v2: {
         parameters: {
             query?: never;
@@ -7457,6 +7747,40 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    create_offer_actions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateOfferActionsRequest"];
+            };
+        };
+        responses: {
+            /** @description Offer creation actions retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CreateOfferActionsResponse"];
+                };
+            };
+            /** @description The request is invalid. Possible reasons: invalid addresses, item not found, invalid currency, or price/quantity not positive. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CreateOfferActionsResponse"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -7555,6 +7879,40 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["FulfillListingResponse"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    create_listing_fulfillment_actions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FullfillListingRequest"];
+            };
+        };
+        responses: {
+            /** @description Listing fulfillment actions retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FulfillmentActionsResponse"];
+                };
+            };
+            /** @description The request is invalid. Possible reasons: order not found, order not valid, order is not a listing, or no actions could be composed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FulfillmentActionsResponse"];
                 };
             };
             500: components["responses"]["InternalError"];
@@ -9558,6 +9916,15 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
+            /** @description Trait filter query timed out; try a more selective filter */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     list_listings_collection_all: {

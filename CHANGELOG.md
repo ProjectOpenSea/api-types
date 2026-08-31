@@ -1,5 +1,18 @@
 # @opensea/api-types
 
+## 0.9.0
+
+### Minor Changes
+
+- 379d7c6: Sync OpenAPI spec: Solana order identity (`SvmOrderIdentity`, `protocol`/`svm_order` on order payloads), `gas_limit` on transaction details, `animation_url` on self-mint drop item requests/responses, `allowlist_wallet_count` on drop stages, `unique_buyer_count`/`unique_seller_count` on token activity stats, and a narrowed `stage_type` enum on Creator Studio drop stage edits.
+- 18530ea: Publish Solana order action endpoints for creating offers, fulfilling listings and offers, and cancelling orders, with generated request and response types. Order hashes are now optional because Solana orders use `svm_order.id` instead.
+
+## 0.8.11
+
+### Patch Changes
+
+- ed91bb6: Sync OpenAPI spec: add the 503 trait-filter timeout response to `get_best_listings_collection`, document agent-relationship list truncation, and map the `read:wallets`/`write:wallets` scopes to their MCP tools.
+
 ## 0.8.10
 
 ### Patch Changes

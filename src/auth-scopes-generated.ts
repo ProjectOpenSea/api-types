@@ -48,7 +48,7 @@ export const AUTH_SCOPES = [
     description: "View wallet state for the authenticated account, currently agent ownership relationships including pending proposals",
     group: "read",
     endpoints: ["/api/v2/accounts/agent-relationships"],
-    mcpTools: [],
+    mcpTools: ["get_agent_relationships"],
   },
   {
     name: "write:favorites",
@@ -112,7 +112,7 @@ export const AUTH_SCOPES = [
     description: "Link, unlink, manage wallet visibility, and declare agent relationships for the authenticated account",
     group: "write",
     endpoints: ["/api/v2/accounts/agent","/api/v2/accounts/agent-relationships","/api/v2/accounts/agent-relationships/confirm","/api/v2/accounts/wallets/siwx","/api/v2/accounts/wallets/{wallet}","/api/v2/accounts/wallets/{wallet}/private"],
-    mcpTools: ["manage_wallets"],
+    mcpTools: ["manage_wallets","manage_agent_account"],
   },
 ] as const satisfies readonly {
   name: AuthScope
