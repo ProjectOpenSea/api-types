@@ -12080,12 +12080,34 @@
         },
         "required": ["consideration", "zone", "zoneHash"]
       },
+      "CreateOfferActionItem": {
+        "type": "object",
+        "description": "An item to make an offer on",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "description": "Chain of the item (e.g. 'ethereum', 'base')",
+            "example": "ethereum"
+          },
+          "contract": {
+            "type": "string",
+            "description": "Contract address of the NFT",
+            "example": "0x..."
+          },
+          "token_id": {
+            "type": "string",
+            "description": "Token ID of the NFT",
+            "example": 1234
+          }
+        },
+        "required": ["chain", "contract", "token_id"]
+      },
       "CreateOfferActionsRequest": {
         "type": "object",
         "description": "Request to get offer creation actions",
         "properties": {
           "item": {
-            "$ref": "#/components/schemas/OfferItem",
+            "$ref": "#/components/schemas/CreateOfferActionItem",
             "description": "Item to make an offer on"
           },
           "address": {

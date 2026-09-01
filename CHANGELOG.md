@@ -1,5 +1,11 @@
 # @opensea/api-types
 
+## 0.9.1
+
+### Patch Changes
+
+- 8fea445: Correct the create-offer-actions item schema to expose `chain`, `contract`, and `token_id`.
+
 ## 0.9.0
 
 ### Minor Changes

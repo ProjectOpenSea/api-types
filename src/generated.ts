@@ -3890,10 +3890,28 @@ export interface components {
             zone: string;
             zoneHash: string;
         };
+        /** @description An item to make an offer on */
+        CreateOfferActionItem: {
+            /**
+             * @description Chain of the item (e.g. 'ethereum', 'base')
+             * @example ethereum
+             */
+            chain: string;
+            /**
+             * @description Contract address of the NFT
+             * @example 0x...
+             */
+            contract: string;
+            /**
+             * @description Token ID of the NFT
+             * @example 1234
+             */
+            token_id: string;
+        };
         /** @description Request to get offer creation actions */
         CreateOfferActionsRequest: {
             /** @description Item to make an offer on */
-            item: components["schemas"]["OfferItem"];
+            item: components["schemas"]["CreateOfferActionItem"];
             /**
              * @description Maker (buyer) wallet address
              * @example 0x...
