@@ -27,3 +27,7 @@ type Collection = Schemas["CollectionResponse"];
 type ListingsResult = OperationResponse<"get_listings_1">;
 type ListParams = OperationQueryParams<"list_collections">;
 ```
+
+## Security
+
+Found a vulnerability? Report it through OpenSea's Bugcrowd program at https://bugcrowd.com/engagements/opensea rather than opening a public issue. See [SECURITY.md](SECURITY.md).
