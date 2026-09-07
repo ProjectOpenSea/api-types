@@ -5,7 +5,6 @@
  * missing again.
  */
 
-import { createRequire } from "node:module"
 import { describe, expect, it } from "vitest"
 import pkg from "../package.json" with { type: "json" }
 
@@ -17,15 +16,20 @@ describe("package exports", () => {
     expect(exports["./opensea-api.json"]).toBe("./opensea-api.json")
   })
 
-  it("resolves the spec through the package name, so the exports map is what is tested", () => {
+  it("resolves the spec through the package name, so the exports map is what is tested", async () => {
     // Self-reference, not a relative path: "../opensea-api.json" reads the file straight off disk
     // and would still pass with the subpath deleted. Going through the package name is the only
     // form that fails when the exports map stops naming it, which is the regression to catch.
-    const require = createRequire(import.meta.url)
-    const spec = require("@opensea/api-types/opensea-api.json") as {
-      openapi: string
-      paths: Record<string, unknown>
-    }
+    //
+    // Dynamic import rather than createRequire: this package's tsconfig.check.json sets
+    // types: ["vitest/globals"], so "node:module" only resolves where @types/node happens to be
+    // installed. It is in this monorepo and is not in the flat mirror layout the public repo
+    // builds in, which is how a green check here shipped a red one there.
+    const spec = (
+      await import("@opensea/api-types/opensea-api.json", {
+        with: { type: "json" },
+      })
+    ).default as { openapi: string; paths: Record<string, unknown> }
 
     expect(spec.openapi).toMatch(/^3\./)
     expect(Object.keys(spec.paths).length).toBeGreaterThan(100)
