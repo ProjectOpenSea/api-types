@@ -81,6 +81,10 @@
     {
       "name": "Transaction Endpoints",
       "description": "Transaction endpoints for checking transaction receipts and status"
+    },
+    {
+      "name": "Auth Endpoints",
+      "description": "Authentication endpoints for obtaining an API key and for exchanging a scoped token for a short-lived wallet access token"
     }
   ],
   "paths": {
@@ -8025,7 +8029,7 @@
       "get": {
         "tags": ["Account Endpoints"],
         "summary": "Get tokens watched by an account",
-        "description": "Get the tokens watched by a wallet address. Requires wallet identity authentication; the requested address must belong to the authenticated account.",
+        "description": "Get the tokens watched by the authenticated account. Requires wallet identity authentication; the requested address must belong to the authenticated account.",
         "operationId": "get_account_token_watchlist",
         "parameters": [
           {
@@ -8496,7 +8500,7 @@
       "get": {
         "tags": ["Account Endpoints"],
         "summary": "Get perpetuals watched by an account",
-        "description": "Get the perpetual futures watched by a wallet address. Requires wallet identity authentication; the requested address must belong to the authenticated account.",
+        "description": "Get the perpetual futures watched by the authenticated account. Requires wallet identity authentication; the requested address must belong to the authenticated account.",
         "operationId": "get_account_perpetual_watchlist",
         "parameters": [
           {
@@ -9118,6 +9122,107 @@
         ],
         "x-opensea-auth-required": true,
         "x-opensea-auth-scopes": ["write:wallets"]
+      }
+    },
+    "/api/v2/auth/tokens/exchange": {
+      "post": {
+        "tags": ["Auth Endpoints"],
+        "summary": "Exchange a scoped token for an access token",
+        "description": "Exchanges an opaque scoped token (personal access token) for a short-lived access token that satisfies `WalletAuth` on wallet-scoped endpoints. Send the returned `accessToken` as `Authorization: Bearer <token>`.\n\nThis is the credential path for headless callers that hold no signing key: the scoped token in the request body is the only credential, so no session cookie, wallet signature, or API key is required. The alternative is the OAuth 2.1 authorization-code flow described by the `WalletAuth` security scheme.\n\nFailures are deliberately opaque. An unknown, revoked, rotated, or non-scoped subject token and a disabled integration all return the same 403 `Token exchange is not available`, so a 403 is not by itself evidence that the endpoint is unavailable.",
+        "operationId": "exchange_scoped_token",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenExchangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Access token minted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenExchangeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request body failed validation, for example a `subjectToken` outside the 10 to 8192 character range",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Token exchange is not available. Returned for an unknown, revoked, or non-scoped subject token as well as for a disabled integration; the two are not distinguishable by design.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Body could not be read: malformed JSON, a missing required field, or an unsupported `subjectTokenType`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Exchange failed after the token was minted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream auth service error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Upstream auth service temporarily unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": []
       }
     }
   },
@@ -18655,6 +18760,82 @@
           ["manage_profile"],
           ["manage_wallets", "manage_agent_account"]
         ]
+      },
+      "TokenExchangeRequest": {
+        "type": "object",
+        "description": "Scoped-token exchange request",
+        "properties": {
+          "subjectToken": {
+            "type": "string",
+            "description": "The opaque scoped token (personal access token) to exchange. A session JWT is not accepted.",
+            "maxLength": 8192,
+            "minLength": 10
+          },
+          "subjectTokenType": {
+            "type": "string",
+            "default": "ACCESS_TOKEN",
+            "description": "Type of the presented subject token",
+            "enum": ["ACCESS_TOKEN"]
+          }
+        },
+        "required": ["subjectToken"]
+      },
+      "TokenExchangeResponse": {
+        "type": "object",
+        "description": "Minted access token",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "Bearer token to send as `Authorization: Bearer <token>`"
+          },
+          "tokenType": {
+            "type": "string",
+            "description": "Token type",
+            "example": "Bearer"
+          },
+          "expiresIn": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Token lifetime in seconds, when the issuer reports one"
+          },
+          "scope": {
+            "type": "string",
+            "description": "Space-delimited scopes on the minted token, when present"
+          },
+          "tokenScopes": {
+            "type": "array",
+            "description": "Scopes bound to the presented scoped token at mint time. Requests are authorized against these, not the full account scope set.",
+            "items": {
+              "$ref": "#/components/schemas/AuthScope"
+            },
+            "uniqueItems": true
+          }
+        },
+        "required": ["accessToken", "tokenType"]
+      },
+      "AuthErrorResponse": {
+        "type": "object",
+        "description": "Error envelope returned by the authentication endpoints",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "description": "Human-readable reason"
+              },
+              "status": {
+                "type": "string",
+                "description": "Status name"
+              },
+              "code": {
+                "type": "integer",
+                "format": "int32",
+                "description": "HTTP status code"
+              }
+            }
+          }
+        }
       }
     },
     "responses": {
@@ -18751,6 +18932,10 @@
     {
       "name": "Transactions",
       "tags": ["Transaction Endpoints"]
+    },
+    {
+      "name": "Authentication",
+      "tags": ["Auth Endpoints"]
     }
   ]
 }

@@ -2366,7 +2366,7 @@ export interface paths {
         };
         /**
          * Get tokens watched by an account
-         * @description Get the tokens watched by a wallet address. Requires wallet identity authentication; the requested address must belong to the authenticated account.
+         * @description Get the tokens watched by the authenticated account. Requires wallet identity authentication; the requested address must belong to the authenticated account.
          */
         get: operations["get_account_token_watchlist"];
         put?: never;
@@ -2506,7 +2506,7 @@ export interface paths {
         };
         /**
          * Get perpetuals watched by an account
-         * @description Get the perpetual futures watched by a wallet address. Requires wallet identity authentication; the requested address must belong to the authenticated account.
+         * @description Get the perpetual futures watched by the authenticated account. Requires wallet identity authentication; the requested address must belong to the authenticated account.
          */
         get: operations["get_account_perpetual_watchlist"];
         put?: never;
@@ -2632,6 +2632,30 @@ export interface paths {
          * @description Unlink a wallet from the authenticated account using a scoped wallet token.
          */
         delete: operations["unlink_wallet"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/auth/tokens/exchange": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Exchange a scoped token for an access token
+         * @description Exchanges an opaque scoped token (personal access token) for a short-lived access token that satisfies `WalletAuth` on wallet-scoped endpoints. Send the returned `accessToken` as `Authorization: Bearer <token>`.
+         *
+         *     This is the credential path for headless callers that hold no signing key: the scoped token in the request body is the only credential, so no session cookie, wallet signature, or API key is required. The alternative is the OAuth 2.1 authorization-code flow described by the `WalletAuth` security scheme.
+         *
+         *     Failures are deliberately opaque. An unknown, revoked, rotated, or non-scoped subject token and a disabled integration all return the same 403 `Token exchange is not available`, so a 403 is not by itself evidence that the endpoint is unavailable.
+         */
+        post: operations["exchange_scoped_token"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -6891,6 +6915,50 @@ export interface components {
          * @enum {string}
          */
         AuthScope: "read:eligibility" | "read:favorites" | "read:social" | "read:tools" | "read:wallets" | "write:favorites" | "write:social" | "write:tools" | "write:orders" | "write:drops" | "write:collections" | "write:profile" | "write:wallets";
+        /** @description Scoped-token exchange request */
+        TokenExchangeRequest: {
+            /** @description The opaque scoped token (personal access token) to exchange. A session JWT is not accepted. */
+            subjectToken: string;
+            /**
+             * @description Type of the presented subject token
+             * @default ACCESS_TOKEN
+             * @enum {string}
+             */
+            subjectTokenType: "ACCESS_TOKEN";
+        };
+        /** @description Minted access token */
+        TokenExchangeResponse: {
+            /** @description Bearer token to send as `Authorization: Bearer <token>` */
+            accessToken: string;
+            /**
+             * @description Token type
+             * @example Bearer
+             */
+            tokenType: string;
+            /**
+             * Format: int64
+             * @description Token lifetime in seconds, when the issuer reports one
+             */
+            expiresIn?: number;
+            /** @description Space-delimited scopes on the minted token, when present */
+            scope?: string;
+            /** @description Scopes bound to the presented scoped token at mint time. Requests are authorized against these, not the full account scope set. */
+            tokenScopes?: components["schemas"]["AuthScope"][];
+        };
+        /** @description Error envelope returned by the authentication endpoints */
+        AuthErrorResponse: {
+            error?: {
+                /** @description Human-readable reason */
+                message?: string;
+                /** @description Status name */
+                status?: string;
+                /**
+                 * Format: int32
+                 * @description HTTP status code
+                 */
+                code?: number;
+            };
+        };
     };
     responses: {
         /** @description For error reasons, review the response data. */
@@ -12122,6 +12190,93 @@ export interface operations {
             };
             404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
+        };
+    };
+    exchange_scoped_token: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TokenExchangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Access token minted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenExchangeResponse"];
+                };
+            };
+            /** @description Request body failed validation, for example a `subjectToken` outside the 10 to 8192 character range */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponse"];
+                };
+            };
+            /** @description Token exchange is not available. Returned for an unknown, revoked, or non-scoped subject token as well as for a disabled integration; the two are not distinguishable by design. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponse"];
+                };
+            };
+            /** @description Body could not be read: malformed JSON, a missing required field, or an unsupported `subjectTokenType` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponse"];
+                };
+            };
+            /** @description Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponse"];
+                };
+            };
+            /** @description Exchange failed after the token was minted */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponse"];
+                };
+            };
+            /** @description Upstream auth service error */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponse"];
+                };
+            };
+            /** @description Upstream auth service temporarily unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponse"];
+                };
+            };
         };
     };
 }

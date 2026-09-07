@@ -1,5 +1,11 @@
 # @opensea/api-types
 
+## 0.9.3
+
+### Patch Changes
+
+- d141f45: Sync OpenAPI spec: add `POST /api/v2/auth/tokens/exchange` (`exchange_scoped_token`) with the `TokenExchangeRequest`, `TokenExchangeResponse` and `AuthErrorResponse` schemas. The endpoint exchanges an opaque scoped token for a short-lived access token that satisfies `WalletAuth`, and is the credential path for headless callers holding no signing key. It reads no API key, so the operation declares empty security.
+
 ## 0.9.2
 
 ### Patch Changes
