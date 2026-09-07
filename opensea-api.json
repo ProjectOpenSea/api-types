@@ -3803,6 +3803,57 @@
         }
       }
     },
+    "/api/v2/traits/{slug}/floors": {
+      "get": {
+        "tags": ["Collection Endpoints"],
+        "summary": "Get trait floor prices",
+        "description": "Get the cheapest active listing for every trait value in a collection, in one request. Trait values with no active listing are omitted. Results are ordered by trait type, then value, then price.\n\nOnly traits with text values are included. A numeric trait has no enumerable set of values, so it is reported as a min/max range by 'GET /api/v2/traits/{slug}' rather than as a floor per value here.\n\nPrices come from each item's best listing across every marketplace OpenSea aggregates, the same basis as 'floor_price' in 'GET /api/v2/collections/{slug}/stats'. A floor can therefore be below the cheapest listing fulfillable through this API, because 'GET /api/v2/listings/collection/{slug}/best' serves only the OpenSea order book.\n\nPrices are not converted to a common currency: a trait value listed in more than one currency appears once per currency, and prices are only comparable within the same 'payment_token_symbol'.",
+        "operationId": "get_collection_trait_floors",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Unique identifier for the specific collection",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "doodles-official"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraitFloorsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "description": "Aggregation timed out; the collection is too large to serve",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1ErrorWrapper"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/tools": {
       "get": {
         "tags": ["Tool Endpoints [Beta]"],
@@ -6048,7 +6099,7 @@
       "get": {
         "tags": ["Collection Endpoints", "Analytics Endpoints"],
         "summary": "Get collection stats",
-        "description": "Get comprehensive statistics for a collection including volume, floor price, and trading metrics.",
+        "description": "Get statistics for a collection including volume, floor price, and trading metrics. Each currency-denominated figure carries its own symbol: volume is reported in the currency named by volume_symbol, and the floor in the currency named by floor_price_symbol. The two can differ, so read each number against its own symbol.",
         "operationId": "get_collection_stats",
         "parameters": [
           {
@@ -10106,6 +10157,12 @@
             "description": "Estimated swap duration in milliseconds",
             "example": 30000
           },
+          "refresh_after_ms": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Recommended delay in milliseconds before re-requesting this quote; absent when there is no actionable route",
+            "example": 2000
+          },
           "marketplace_fee_bps": {
             "type": "integer",
             "format": "int32",
@@ -12804,6 +12861,11 @@
           "creator_payout_address": {
             "type": "string",
             "description": "Creator payout address"
+          },
+          "launch_date_pending": {
+            "type": "boolean",
+            "default": false,
+            "description": "Set when saving a configuration the creator has not chosen a launch date for. Stage start and end times are still required, but they are held as a placeholder rather than a schedule: the whole stage set is shifted so the earliest stage opens at the Unix epoch, preserving each stage's duration and the gaps between them, and publishing the drop is refused until a launch date is set. Omit it to leave the drop scheduled; an explicit null is rejected."
           }
         },
         "required": ["stages"]
@@ -12840,7 +12902,7 @@
           },
           "max_total_mintable_by_wallet": {
             "type": "string",
-            "description": "Maximum tokens mintable per wallet as a decimal string. Cumulative across stages rather than per stage, so this is a running total for the wallet. A wallet that already minted more than a later stage allows has no remaining allowance on it."
+            "description": "Maximum tokens mintable per wallet as a decimal string. Cumulative across stages rather than per stage, so this is a running total for the wallet. A wallet that has already reached a later stage's cap cannot mint on it."
           },
           "max_token_supply_for_stage": {
             "type": "string",
@@ -14555,6 +14617,53 @@
         },
         "required": ["token"]
       },
+      "TraitFloorResponse": {
+        "type": "object",
+        "description": "Floor price for one trait value in one payment currency",
+        "properties": {
+          "trait_type": {
+            "type": "string",
+            "description": "Trait category, for example Background"
+          },
+          "value": {
+            "type": "string",
+            "description": "Trait value, for example Purple"
+          },
+          "floor_price": {
+            "type": "number",
+            "format": "double",
+            "description": "Price of the cheapest listing carrying this trait value, across every marketplace OpenSea aggregates. This matches the basis of the collection's floor_price and may be below the cheapest listing fulfillable through this API."
+          },
+          "payment_token_symbol": {
+            "type": "string",
+            "description": "Payment token this floor is denominated in, on the response's chain. Floors are not converted to a common currency, so a trait value listed in more than one currency appears once per currency and prices are only comparable within the same symbol."
+          }
+        },
+        "required": [
+          "floor_price",
+          "payment_token_symbol",
+          "trait_type",
+          "value"
+        ]
+      },
+      "TraitFloorsResponse": {
+        "type": "object",
+        "description": "Floor price per trait value for a collection",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "description": "Chain every floor in this response is denominated on. A collection lives on one chain, so the payment token is identified by this plus 'payment_token_symbol'."
+          },
+          "floors": {
+            "type": "array",
+            "description": "One entry per text trait value and payment currency that has at least one active listing, ordered by trait type, then value, then price. Numeric traits are not enumerated here; see GET /api/v2/traits/{slug} for their min/max range.",
+            "items": {
+              "$ref": "#/components/schemas/TraitFloorResponse"
+            }
+          }
+        },
+        "required": ["chain", "floors"]
+      },
       "ToolListItemResponse": {
         "type": "object",
         "properties": {
@@ -16068,7 +16177,7 @@
           },
           "max_per_wallet": {
             "type": "string",
-            "description": "Max tokens mintable per wallet in this stage"
+            "description": "Ceiling on the wallet's mints for the whole drop, not this stage alone. Cumulative: SeaDrop checks it against the wallet's lifetime minted count on the contract, so caps on different stages do not add together. Matches max_total_mintable_by_wallet on the eligibility response."
           },
           "allowlist_wallet_count": {
             "type": "integer",
@@ -16193,11 +16302,11 @@
           },
           "max_total_mintable_by_wallet": {
             "type": "string",
-            "description": "Max tokens the wallet can mint in this stage across all tokens"
+            "description": "Ceiling on the wallet's mints for the whole drop, all token ids included, as a decimal string. Cumulative rather than per stage: SeaDrop checks it against the wallet's lifetime minted count on the contract, so caps on different stages do not add together, and a wallet that has already reached a later stage's cap cannot mint on it."
           },
           "max_total_mintable_by_wallet_per_token": {
             "type": "string",
-            "description": "Max tokens the wallet can mint per token in this stage (ERC-1155)"
+            "description": "The same ceiling for a single token id (ERC-1155), as a decimal string. Also a lifetime total for that token id rather than a per-stage allowance."
           }
         },
         "required": ["is_eligible", "stage_uuid"]
@@ -16475,40 +16584,60 @@
         "type": "object",
         "properties": {
           "interval": {
-            "type": "string"
+            "type": "string",
+            "description": "Window the stats cover",
+            "example": "one_day"
           },
           "volume": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "description": "Trading volume over the interval, denominated in the currency named by volume_symbol"
+          },
+          "volume_symbol": {
+            "type": "string",
+            "description": "Currency that volume is denominated in. Empty when the conversion rate was unavailable and the unit could not be determined.",
+            "example": "ETH"
           },
           "sales": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "description": "Number of sales over the interval"
           }
         },
-        "required": ["interval", "sales", "volume"]
+        "required": ["interval", "sales", "volume", "volume_symbol"]
       },
       "Total": {
         "type": "object",
         "properties": {
           "volume": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "description": "All-time trading volume, denominated in the currency named by volume_symbol. This is not necessarily the currency of floor_price."
+          },
+          "volume_symbol": {
+            "type": "string",
+            "description": "Currency that volume is denominated in. Empty when the conversion rate was unavailable and the unit could not be determined.",
+            "example": "ETH"
           },
           "sales": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "description": "All-time number of sales"
           },
           "num_owners": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "Number of distinct addresses holding an item in the collection"
           },
           "floor_price": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "description": "Price of the cheapest current listing, denominated in the currency named by floor_price_symbol. 0 when the collection has no listing."
           },
           "floor_price_symbol": {
-            "type": "string"
+            "type": "string",
+            "description": "Currency that floor_price is denominated in. Empty when there is no listing.",
+            "example": "ETH"
           }
         },
         "required": [
@@ -16516,7 +16645,8 @@
           "floor_price_symbol",
           "num_owners",
           "sales",
-          "volume"
+          "volume",
+          "volume_symbol"
         ]
       },
       "BidderResponse": {

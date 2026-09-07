@@ -1169,6 +1169,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/traits/{slug}/floors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get trait floor prices
+         * @description Get the cheapest active listing for every trait value in a collection, in one request. Trait values with no active listing are omitted. Results are ordered by trait type, then value, then price.
+         *
+         *     Only traits with text values are included. A numeric trait has no enumerable set of values, so it is reported as a min/max range by 'GET /api/v2/traits/{slug}' rather than as a floor per value here.
+         *
+         *     Prices come from each item's best listing across every marketplace OpenSea aggregates, the same basis as 'floor_price' in 'GET /api/v2/collections/{slug}/stats'. A floor can therefore be below the cheapest listing fulfillable through this API, because 'GET /api/v2/listings/collection/{slug}/best' serves only the OpenSea order book.
+         *
+         *     Prices are not converted to a common currency: a trait value listed in more than one currency appears once per currency, and prices are only comparable within the same 'payment_token_symbol'.
+         */
+        get: operations["get_collection_trait_floors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/tools": {
         parameters: {
             query?: never;
@@ -1746,7 +1772,7 @@ export interface paths {
         };
         /**
          * Get collection stats
-         * @description Get comprehensive statistics for a collection including volume, floor price, and trading metrics.
+         * @description Get statistics for a collection including volume, floor price, and trading metrics. Each currency-denominated figure carries its own symbol: volume is reported in the currency named by volume_symbol, and the floor in the currency named by floor_price_symbol. The two can differ, so read each number against its own symbol.
          */
         get: operations["get_collection_stats"];
         put?: never;
@@ -3203,6 +3229,12 @@ export interface components {
             estimated_duration_ms: number;
             /**
              * Format: int32
+             * @description Recommended delay in milliseconds before re-requesting this quote; absent when there is no actionable route
+             * @example 2000
+             */
+            refresh_after_ms?: number;
+            /**
+             * Format: int32
              * @description Marketplace fee in basis points
              * @example 50
              */
@@ -4237,6 +4269,11 @@ export interface components {
             max_supply?: string;
             /** @description Creator payout address */
             creator_payout_address?: string;
+            /**
+             * @description Set when saving a configuration the creator has not chosen a launch date for. Stage start and end times are still required, but they are held as a placeholder rather than a schedule: the whole stage set is shifted so the earliest stage opens at the Unix epoch, preserving each stage's duration and the gaps between them, and publishing the drop is refused until a launch date is set. Omit it to leave the drop scheduled; an explicit null is rejected.
+             * @default false
+             */
+            launch_date_pending: boolean;
         };
         /** @description A drop stage for Creator Studio edits */
         SaveDropEditsStageRequest: {
@@ -4262,7 +4299,7 @@ export interface components {
             end_time: string;
             /** @description Stage price */
             price: components["schemas"]["SaveDropEditsPriceRequest"];
-            /** @description Maximum tokens mintable per wallet as a decimal string. Cumulative across stages rather than per stage, so this is a running total for the wallet. A wallet that already minted more than a later stage allows has no remaining allowance on it. */
+            /** @description Maximum tokens mintable per wallet as a decimal string. Cumulative across stages rather than per stage, so this is a running total for the wallet. A wallet that has already reached a later stage's cap cannot mint on it. */
             max_total_mintable_by_wallet: string;
             /** @description Maximum token supply for this stage as a decimal string */
             max_token_supply_for_stage?: string;
@@ -5002,6 +5039,27 @@ export interface components {
             /** @description Enable static video */
             enable_static_video?: boolean;
         };
+        /** @description Floor price for one trait value in one payment currency */
+        TraitFloorResponse: {
+            /** @description Trait category, for example Background */
+            trait_type: string;
+            /** @description Trait value, for example Purple */
+            value: string;
+            /**
+             * Format: double
+             * @description Price of the cheapest listing carrying this trait value, across every marketplace OpenSea aggregates. This matches the basis of the collection's floor_price and may be below the cheapest listing fulfillable through this API.
+             */
+            floor_price: number;
+            /** @description Payment token this floor is denominated in, on the response's chain. Floors are not converted to a common currency, so a trait value listed in more than one currency appears once per currency and prices are only comparable within the same symbol. */
+            payment_token_symbol: string;
+        };
+        /** @description Floor price per trait value for a collection */
+        TraitFloorsResponse: {
+            /** @description Chain every floor in this response is denominated on. A collection lives on one chain, so the payment token is identified by this plus 'payment_token_symbol'. */
+            chain: string;
+            /** @description One entry per text trait value and payment currency that has at least one active listing, ordered by trait type, then value, then price. Numeric traits are not enumerated here; see GET /api/v2/traits/{slug} for their min/max range. */
+            floors: components["schemas"]["TraitFloorResponse"][];
+        };
         ToolListItemResponse: {
             tool_id: string;
             registry_chain: string;
@@ -5646,7 +5704,7 @@ export interface components {
             start_time: string;
             /** @description Stage end time (ISO 8601) */
             end_time: string;
-            /** @description Max tokens mintable per wallet in this stage */
+            /** @description Ceiling on the wallet's mints for the whole drop, not this stage alone. Cumulative: SeaDrop checks it against the wallet's lifetime minted count on the contract, so caps on different stages do not add together. Matches max_total_mintable_by_wallet on the eligibility response. */
             max_per_wallet: string;
             /**
              * Format: int32
@@ -5712,9 +5770,9 @@ export interface components {
             is_eligible: boolean;
             /** @description Mint price per token in wei (decimal string) */
             price?: string;
-            /** @description Max tokens the wallet can mint in this stage across all tokens */
+            /** @description Ceiling on the wallet's mints for the whole drop, all token ids included, as a decimal string. Cumulative rather than per stage: SeaDrop checks it against the wallet's lifetime minted count on the contract, so caps on different stages do not add together, and a wallet that has already reached a later stage's cap cannot mint on it. */
             max_total_mintable_by_wallet?: string;
-            /** @description Max tokens the wallet can mint per token in this stage (ERC-1155) */
+            /** @description The same ceiling for a single token id (ERC-1155), as a decimal string. Also a lifetime total for that token id rather than a per-stage allowance. */
             max_total_mintable_by_wallet_per_token?: string;
         };
         /** @description Deploy contract receipt status */
@@ -5803,21 +5861,57 @@ export interface components {
             intervals: components["schemas"]["IntervalStat"][];
         };
         IntervalStat: {
+            /**
+             * @description Window the stats cover
+             * @example one_day
+             */
             interval: string;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Trading volume over the interval, denominated in the currency named by volume_symbol
+             */
             volume: number;
-            /** Format: int32 */
+            /**
+             * @description Currency that volume is denominated in. Empty when the conversion rate was unavailable and the unit could not be determined.
+             * @example ETH
+             */
+            volume_symbol: string;
+            /**
+             * Format: int32
+             * @description Number of sales over the interval
+             */
             sales: number;
         };
         Total: {
-            /** Format: double */
+            /**
+             * Format: double
+             * @description All-time trading volume, denominated in the currency named by volume_symbol. This is not necessarily the currency of floor_price.
+             */
             volume: number;
-            /** Format: int32 */
+            /**
+             * @description Currency that volume is denominated in. Empty when the conversion rate was unavailable and the unit could not be determined.
+             * @example ETH
+             */
+            volume_symbol: string;
+            /**
+             * Format: int32
+             * @description All-time number of sales
+             */
             sales: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Number of distinct addresses holding an item in the collection
+             */
             num_owners: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Price of the cheapest current listing, denominated in the currency named by floor_price_symbol. 0 when the collection has no listing.
+             */
             floor_price: number;
+            /**
+             * @description Currency that floor_price is denominated in. Empty when there is no listing.
+             * @example ETH
+             */
             floor_price_symbol: string;
         };
         /** @description A bidder in an offer aggregate */
@@ -9224,6 +9318,44 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
+        };
+    };
+    get_collection_trait_floors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Unique identifier for the specific collection
+                 * @example doodles-official
+                 */
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TraitFloorsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+            /** @description Aggregation timed out; the collection is too large to serve */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     list_tools: {

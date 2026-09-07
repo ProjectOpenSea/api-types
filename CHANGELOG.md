@@ -1,5 +1,12 @@
 # @opensea/api-types
 
+## 0.9.2
+
+### Patch Changes
+
+- 59b7337: Export `opensea-api.json` as a package subpath. The spec was already listed in `files` and shipped in the tarball, but an `exports` map makes every path it does not name private, so `require("@opensea/api-types/opensea-api.json")` failed with `ERR_PACKAGE_PATH_NOT_EXPORTED`. `package.json` is exported too, so consumers can read the version.
+- 9baf162: Sync OpenAPI spec: add `GET /api/v2/traits/{slug}/floors` (`get_collection_trait_floors`) with `TraitFloorsResponse`/`TraitFloorResponse` schemas, add required `volume_symbol` to collection stats `Interval` and `Total`, add `SwapQuoteResponse.refresh_after_ms` and drop config `launch_date_pending`.
+
 ## 0.9.1
 
 ### Patch Changes
