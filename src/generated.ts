@@ -6480,25 +6480,6 @@ export interface components {
              */
             quote_token_liquidity_usd?: string;
         };
-        BitcoinAddress: {
-            "@type": "BitcoinAddress";
-        } & (Omit<WithRequired<components["schemas"]["BlockchainAddress"], "value">, "@type"> & {
-            validate?: boolean;
-        });
-        BlockchainAddress: {
-            value: string;
-            "@type": string;
-        };
-        EvmAddress: {
-            "@type": "EvmAddress";
-        } & (Omit<WithRequired<components["schemas"]["BlockchainAddress"], "value">, "@type"> & {
-            validate?: boolean;
-        });
-        SolanaAddress: {
-            "@type": "SolanaAddress";
-        } & (Omit<WithRequired<components["schemas"]["BlockchainAddress"], "value">, "@type"> & {
-            validate?: boolean;
-        });
         /** @description Paginated list of account token activity events */
         TokenAccountActivityPaginatedResponse: {
             /** @description List of token activity events */
@@ -11700,7 +11681,7 @@ export interface operations {
                  * @description Token contract address(es) to filter by. Repeat for multiple tokens. Omit to include all tokens.
                  * @example 0x0000000000000000000000000000000000000000
                  */
-                tokens?: (components["schemas"]["BitcoinAddress"] | components["schemas"]["EvmAddress"] | components["schemas"]["SolanaAddress"])[];
+                tokens?: string[];
                 /** @description Activity types to include (send, receive, swap, wrap, unwrap). Repeat for multiple types. Omit to include all. Note: swap also includes wrap and unwrap activities. */
                 type?: string[];
                 /**
@@ -12280,6 +12261,3 @@ export interface operations {
         };
     };
 }
-type WithRequired<T, K extends keyof T> = T & {
-    [P in K]-?: T[P];
-};

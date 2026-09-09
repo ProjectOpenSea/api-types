@@ -1,5 +1,17 @@
 # @opensea/api-types
 
+## 0.10.0
+
+### Minor Changes
+
+- 3bca418: Sync OpenAPI spec: blockchain addresses publish as strings. The `tokens` query parameter on `GET /api/v2/account/{address}/token-activity` is now `string[]`, carrying the per-chain formats in its description, and four type exports are removed: `BitcoinAddress`, `BlockchainAddress`, `EvmAddress` and `SolanaAddress`.
+
+  Those schemas described a JSON object with a `@type` discriminator and a `value` field, for a query parameter that takes a bare address string. `EvmAddress` and `SolanaAddress` were also byte-identical, so the spec drew a distinction it did not encode. Only the EVM form is expressible as a regex, and it would be looser than the server, so the formats are documented on the field rather than implied by a pattern.
+
+  No request that worked before stops working. The object shape was never accepted: the API answers it with a 400, `Unrecognized address {"@type": "EvmAddress", ...}`, where the bare string returns 200. The break is at the type level only, for code importing one of the four names or reaching for `components["schemas"]["EvmAddress"]`. Use `string`.
+
+  Minor rather than major, per the sync-openapi skill putting removals and renames at minor. Nothing in this repo referenced the four names outside the generated files, so no SDK or CLI change is needed.
+
 ## 0.9.3
 
 ### Patch Changes

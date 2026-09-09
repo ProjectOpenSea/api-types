@@ -8125,17 +8125,9 @@
             "schema": {
               "type": "array",
               "items": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/BitcoinAddress"
-                  },
-                  {
-                    "$ref": "#/components/schemas/EvmAddress"
-                  },
-                  {
-                    "$ref": "#/components/schemas/SolanaAddress"
-                  }
-                ]
+                "type": "string",
+                "description": "A blockchain address in its chain's native format. EVM: `0x` or `0X` followed by 40 hex digits, matching `^0[xX][0-9a-fA-F]{40}$`, and not checksum-verified. Solana: a base58-encoded 32-byte public key, 32 to 44 characters, which must decode to exactly 32 bytes. Bitcoin: base58check or bech32, checksum-verified. Only the EVM form is a pure pattern, so this field publishes none.",
+                "example": "0x0000000000000000000000000000000000000000"
               }
             },
             "example": "0x0000000000000000000000000000000000000000"
@@ -17815,72 +17807,6 @@
           "usd_price",
           "usd_value"
         ]
-      },
-      "BitcoinAddress": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/BlockchainAddress"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "validate": {
-                "type": "boolean",
-                "writeOnly": true
-              }
-            }
-          }
-        ],
-        "required": ["value"]
-      },
-      "BlockchainAddress": {
-        "type": "object",
-        "discriminator": {
-          "propertyName": "@type"
-        },
-        "properties": {
-          "value": {
-            "type": "string"
-          },
-          "@type": {
-            "type": "string"
-          }
-        },
-        "required": ["@type", "value"]
-      },
-      "EvmAddress": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/BlockchainAddress"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "validate": {
-                "type": "boolean",
-                "writeOnly": true
-              }
-            }
-          }
-        ],
-        "required": ["value"]
-      },
-      "SolanaAddress": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/BlockchainAddress"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "validate": {
-                "type": "boolean",
-                "writeOnly": true
-              }
-            }
-          }
-        ],
-        "required": ["value"]
       },
       "TokenAccountActivityPaginatedResponse": {
         "type": "object",
