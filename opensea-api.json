@@ -4226,7 +4226,7 @@
       "get": {
         "tags": ["Token Endpoints"],
         "summary": "Get trending tokens",
-        "description": "Get trending tokens based on OpenSea's trending score algorithm. Returns tokens with high momentum including memecoins and newly popular assets.",
+        "description": "Get trending tokens based on OpenSea's trending score algorithm. Returns tokens with high momentum including memecoins and newly popular assets. Pass `sort_by` and `sort_direction` to order the same set of tokens differently.",
         "operationId": "get_trending_tokens",
         "parameters": [
           {
@@ -4255,9 +4255,46 @@
             "example": "ethereum"
           },
           {
+            "name": "sort_by",
+            "in": "query",
+            "description": "Sort field (default: score)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Sort field for the token ranking endpoints",
+              "enum": [
+                "market_cap",
+                "one_hour_volume",
+                "one_day_volume",
+                "one_hour_price_change",
+                "one_day_price_change",
+                "seven_day_price_change",
+                "fourteen_day_price_change",
+                "thirty_day_price_change",
+                "two_hundred_day_price_change",
+                "one_year_price_change",
+                "price",
+                "genesis_date",
+                "score"
+              ]
+            },
+            "example": "score"
+          },
+          {
+            "name": "sort_direction",
+            "in": "query",
+            "description": "Sort direction (default: desc)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["asc", "desc"]
+            },
+            "example": "desc"
+          },
+          {
             "name": "cursor",
             "in": "query",
-            "description": "Pagination cursor for next page",
+            "description": "Pagination cursor for next page. A cursor is only valid for the query that produced it: keep `sort_by`, `sort_direction` and `chains` identical across pages, and start a new page-one request when any of them changes.",
             "required": false,
             "schema": {
               "type": "string"
@@ -4288,7 +4325,7 @@
       "get": {
         "tags": ["Token Endpoints"],
         "summary": "Get top tokens",
-        "description": "Get top tokens ranked by 24-hour trading volume. Returns established tokens with high market activity.",
+        "description": "Get top tokens ranked by 24-hour trading volume. Returns established tokens with high market activity. Pass `sort_by` and `sort_direction` to order the same set of tokens differently.",
         "operationId": "get_top_tokens",
         "parameters": [
           {
@@ -4317,9 +4354,46 @@
             "example": "ethereum"
           },
           {
+            "name": "sort_by",
+            "in": "query",
+            "description": "Sort field (default: one_day_volume)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Sort field for the token ranking endpoints",
+              "enum": [
+                "market_cap",
+                "one_hour_volume",
+                "one_day_volume",
+                "one_hour_price_change",
+                "one_day_price_change",
+                "seven_day_price_change",
+                "fourteen_day_price_change",
+                "thirty_day_price_change",
+                "two_hundred_day_price_change",
+                "one_year_price_change",
+                "price",
+                "genesis_date",
+                "score"
+              ]
+            },
+            "example": "one_day_volume"
+          },
+          {
+            "name": "sort_direction",
+            "in": "query",
+            "description": "Sort direction (default: desc)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["asc", "desc"]
+            },
+            "example": "desc"
+          },
+          {
             "name": "cursor",
             "in": "query",
-            "description": "Pagination cursor for next page",
+            "description": "Pagination cursor for next page. A cursor is only valid for the query that produced it: keep `sort_by`, `sort_direction` and `chains` identical across pages, and start a new page-one request when any of them changes.",
             "required": false,
             "schema": {
               "type": "string"
@@ -7581,6 +7655,16 @@
             }
           },
           {
+            "name": "include_auto_hidden",
+            "in": "query",
+            "description": "Include NFTs that were hidden automatically because a third party minted or sent them to this account. NFTs the account holder hid themselves are not returned, and this does not surface NFTs removed for policy violations.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "description": "Number of items to return per page",
@@ -7963,12 +8047,12 @@
             "schema": {
               "type": "string",
               "enum": [
-                "USD_VALUE",
-                "MARKET_CAP",
-                "ONE_DAY_VOLUME",
-                "PRICE",
-                "ONE_DAY_PRICE_CHANGE",
-                "SEVEN_DAY_PRICE_CHANGE"
+                "usd_value",
+                "market_cap",
+                "one_day_volume",
+                "price",
+                "one_day_price_change",
+                "seven_day_price_change"
               ]
             },
             "example": "usd_value"
@@ -11211,7 +11295,8 @@
         "type": "object",
         "properties": {
           "current": {
-            "$ref": "#/components/schemas/Price"
+            "$ref": "#/components/schemas/Price",
+            "description": "What a buyer pays to fill this listing through OpenSea. For most listings this equals the sum of the consideration items in protocolData. A listing ingested from another marketplace may additionally include OpenSea's marketplace fee, which is applied to the transaction at fulfillment rather than being part of the order the seller signed; where that applies, the consideration in protocolData sums to less than this value."
           }
         },
         "required": ["current"]

@@ -1,5 +1,25 @@
 # @opensea/api-types
 
+## 0.11.1
+
+### Patch Changes
+
+- a2e2cfa: Re-sync the spec after the sort enum casing fix upstream.
+
+  os2-core#56756 changed the published `sort_by` enum on `/tokens/top`, `/tokens/trending` and `/account/{address}/tokens` from `MARKET_CAP` to `market_cap`, so the values match the examples those parameters already carried. The previous sync captured the spec before that landed, so `TokenRankingSortBy` was a union of uppercase values the published spec no longer lists.
+
+  Both spellings work against the API either way. The parameter is parsed through a converter that uppercases before `valueOf`, so casing has never affected the request; what was wrong was the SDK type and the spec disagreeing with each other.
+
+  No consumer is affected: `TokenRankingSortBy` was added in the previous sync and has not been released.
+
+- e1f390c: Sync the OpenAPI spec and expose the token ranking sort.
+
+  `GET /api/v2/tokens/top` and `GET /api/v2/tokens/trending` now document `sort_by` and `sort_direction`, so `GetTokensArgs` gains `sortBy` and `sortDirection`. Both endpoints previously hardcoded their ordering, one-day volume for top and the trending score for trending, and those remain the defaults when a caller sends neither, so nothing changes for existing callers.
+
+  `sortBy` is typed as `TokenRankingSortBy`, derived from the spec rather than written out, so a key added or removed upstream reaches the union in the same regeneration instead of drifting.
+
+  The sync also documents `include_auto_hidden` on `GET /api/v2/chain/{chain}/account/{address}/nfts`, which includes NFTs hidden automatically because a third party minted or sent them. The SDK and CLI expose it in this same release, so see that entry for the shape.
+
 ## 0.11.0
 
 ### Minor Changes

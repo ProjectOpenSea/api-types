@@ -1284,7 +1284,7 @@ export interface paths {
         };
         /**
          * Get trending tokens
-         * @description Get trending tokens based on OpenSea's trending score algorithm. Returns tokens with high momentum including memecoins and newly popular assets.
+         * @description Get trending tokens based on OpenSea's trending score algorithm. Returns tokens with high momentum including memecoins and newly popular assets. Pass `sort_by` and `sort_direction` to order the same set of tokens differently.
          */
         get: operations["get_trending_tokens"];
         put?: never;
@@ -1304,7 +1304,7 @@ export interface paths {
         };
         /**
          * Get top tokens
-         * @description Get top tokens ranked by 24-hour trading volume. Returns established tokens with high market activity.
+         * @description Get top tokens ranked by 24-hour trading volume. Returns established tokens with high market activity. Pass `sort_by` and `sort_direction` to order the same set of tokens differently.
          */
         get: operations["get_top_tokens"];
         put?: never;
@@ -3640,6 +3640,7 @@ export interface components {
             status: "ACTIVE" | "INACTIVE" | "FULFILLED" | "EXPIRED" | "CANCELLED";
         };
         ListingPrice: {
+            /** @description What a buyer pays to fill this listing through OpenSea. For most listings this equals the sum of the consideration items in protocolData. A listing ingested from another marketplace may additionally include OpenSea's marketplace fee, which is applied to the transaction at fulfillment rather than being part of the order the seller signed; where that applies, the consideration in protocolData sums to less than this value. */
             current: components["schemas"]["Price"];
         };
         CancelRequest: {
@@ -9569,7 +9570,17 @@ export interface operations {
                  * @example ethereum
                  */
                 chains?: components["schemas"]["ChainIdentifier"][];
-                /** @description Pagination cursor for next page */
+                /**
+                 * @description Sort field (default: score)
+                 * @example score
+                 */
+                sort_by?: "market_cap" | "one_hour_volume" | "one_day_volume" | "one_hour_price_change" | "one_day_price_change" | "seven_day_price_change" | "fourteen_day_price_change" | "thirty_day_price_change" | "two_hundred_day_price_change" | "one_year_price_change" | "price" | "genesis_date" | "score";
+                /**
+                 * @description Sort direction (default: desc)
+                 * @example desc
+                 */
+                sort_direction?: "asc" | "desc";
+                /** @description Pagination cursor for next page. A cursor is only valid for the query that produced it: keep `sort_by`, `sort_direction` and `chains` identical across pages, and start a new page-one request when any of them changes. */
                 cursor?: string;
             };
             header?: never;
@@ -9604,7 +9615,17 @@ export interface operations {
                  * @example ethereum
                  */
                 chains?: components["schemas"]["ChainIdentifier"][];
-                /** @description Pagination cursor for next page */
+                /**
+                 * @description Sort field (default: one_day_volume)
+                 * @example one_day_volume
+                 */
+                sort_by?: "market_cap" | "one_hour_volume" | "one_day_volume" | "one_hour_price_change" | "one_day_price_change" | "seven_day_price_change" | "fourteen_day_price_change" | "thirty_day_price_change" | "two_hundred_day_price_change" | "one_year_price_change" | "price" | "genesis_date" | "score";
+                /**
+                 * @description Sort direction (default: desc)
+                 * @example desc
+                 */
+                sort_direction?: "asc" | "desc";
+                /** @description Pagination cursor for next page. A cursor is only valid for the query that produced it: keep `sort_by`, `sort_direction` and `chains` identical across pages, and start a new page-one request when any of them changes. */
                 cursor?: string;
             };
             header?: never;
@@ -11375,6 +11396,8 @@ export interface operations {
         parameters: {
             query?: {
                 collection?: string;
+                /** @description Include NFTs that were hidden automatically because a third party minted or sent them to this account. NFTs the account holder hid themselves are not returned, and this does not surface NFTs removed for policy violations. */
+                include_auto_hidden?: boolean;
                 /**
                  * @description Number of items to return per page
                  * @example 20
@@ -11591,7 +11614,7 @@ export interface operations {
                  * @description Sort field (default: usd_value)
                  * @example usd_value
                  */
-                sort_by?: "USD_VALUE" | "MARKET_CAP" | "ONE_DAY_VOLUME" | "PRICE" | "ONE_DAY_PRICE_CHANGE" | "SEVEN_DAY_PRICE_CHANGE";
+                sort_by?: "usd_value" | "market_cap" | "one_day_volume" | "price" | "one_day_price_change" | "seven_day_price_change";
                 /**
                  * @description Sort direction (default: desc)
                  * @example desc
