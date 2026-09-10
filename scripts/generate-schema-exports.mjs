@@ -8,6 +8,15 @@
  * This eliminates the manual-curation gap in `src/index.ts` that previously
  * caused downstream consumers (SDK, CLI) to break when a new schema was
  * added to the spec but not re-exported by hand.
+ *
+ * Every export carries a doc comment saying it is the snake_case wire shape
+ * and that `@opensea/sdk` hands back the camelCase view. That text is the one
+ * thing an editor shows at the moment the mistake is made: a consumer who
+ * annotates an SDK return value with a raw type here compiles cleanly and then
+ * reads `undefined` out of every renamed field, because those runtime keys are
+ * camelCase. Single-word keys survive the rewrite and still read correctly.
+ * Generating the comment rather than writing it once in the README means a
+ * schema added to the spec next month carries the warning too.
  */
 
 import { readFileSync, writeFileSync } from "node:fs"
@@ -37,6 +46,10 @@ const header = `/* eslint-disable */
 // Re-exports every \`components.schemas.*\` entry from the OpenAPI spec as a
 // named type so downstream consumers (SDK, CLI, stream, etc.) never hit a
 // missing-export when the spec gains a new schema.
+//
+// These are wire shapes: snake_case, exactly as the API sends and accepts
+// them. \`@opensea/sdk\` rewrites response keys to camelCase, so an SDK return
+// value does not match the type of the same name here.
 
 import type { components } from "./generated.js"
 
@@ -44,8 +57,17 @@ type Schemas = components["schemas"]
 `
 
 const exports = names
-  .map(name => `export type ${name} = Schemas["${name}"]`)
-  .join("\n")
+  .map(
+    name => `/**
+ * Wire shape, snake_case as the API sends and accepts it. \`@opensea/sdk\`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with \`Camelize<${name}>\` (exported by
+ * \`@opensea/sdk\`) or the matching \`@opensea/sdk\` type rather than with
+ * \`${name}\`.
+ */
+export type ${name} = Schemas["${name}"]`,
+  )
+  .join("\n\n")
 
 const content = `${header}\n${exports}\n`
 

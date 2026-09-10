@@ -1,6 +1,6 @@
 {
   "name": "@opensea/api-types",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Auto-generated TypeScript types from the OpenSea API OpenAPI spec",
   "license": "MIT",
   "author": "OpenSea Developers",
@@ -31,7 +31,7 @@
     "opensea-api.json"
   ],
   "scripts": {
-    "generate": "openapi-typescript opensea-api.json -o src/generated.ts && node scripts/generate-schema-exports.mjs && node scripts/generate-auth-scopes.mjs",
+    "generate": "openapi-typescript opensea-api.json -o src/generated.ts && node scripts/generate-schema-exports.mjs && node scripts/generate-auth-scopes.mjs && node scripts/generate-chains.mjs",
     "build": "npm run generate && tsup",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

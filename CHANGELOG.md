@@ -1,5 +1,21 @@
 # @opensea/api-types
 
+## 0.11.0
+
+### Minor Changes
+
+- 3a2ff37: Add `CHAIN_IDENTIFIERS`, a readonly array of every chain slug the OpenSea API accepts, and `isChainIdentifier(value)`, a type guard that narrows a `string` to `ChainIdentifier`.
+
+  `ChainIdentifier` is a type-only union, so nothing about the chain list reached the JavaScript output. Anything that had to iterate the chains or validate a slug at runtime rebuilt the list by hand and then had to prove by hand that its copy still matched the spec. `scripts/generate-chains.mjs` now emits the array from the same `ChainIdentifier` enum in `opensea-api.json` that the type comes from, so a chain added upstream reaches both in one regeneration.
+
+  The generated file carries assertions in both directions: `satisfies readonly ChainIdentifier[]` rejects an array member the union does not have, and a conditional-type assert rejects a union member the array is missing. A test compares the array against the spec enum directly, in order, so a stale generated file fails rather than ships.
+
+### Patch Changes
+
+- 77206d0: Every generated schema export now carries a doc comment saying it is the snake_case wire shape and that `@opensea/sdk` hands back the camelCase view. The comment reaches the published `.d.ts`, so an editor shows it on hover at the moment a consumer reaches for a raw type to annotate an SDK return value. The generator emits it, so a schema added to the spec later carries it too.
+
+  No type changes. The README gained a section saying the same thing for anyone reading the package rather than hovering it.
+
 ## 0.10.0
 
 ### Minor Changes
