@@ -24,7 +24,7 @@ The `opensea-api.json` file is committed to git intentionally — it's the versi
 import type { Schemas, OperationResponse, OperationQueryParams } from "@opensea/api-types";
 
 type Collection = Schemas["CollectionResponse"];
-type ListingsResult = OperationResponse<"get_listings_1">;
+type ListingsResult = OperationResponse<"list_listings_collection_all">;
 type ListParams = OperationQueryParams<"list_collections">;
 ```
 
