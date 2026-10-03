@@ -8,7 +8,7 @@
  *   node scripts/update-spec.mjs
  */
 
-import { execFileSync } from "node:child_process";
+import { execSync } from "node:child_process";
 import { existsSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,7 +36,7 @@ try {
   // Match the repo's JSON formatting (biome inlines short arrays at lineWidth
   // 80) so diffs reflect real spec changes, not formatter drift.
   try {
-    execFileSync("pnpm", ["exec", "biome", "format", "--write", outPath], {
+    execSync(`npm exec -- biome format --write "${outPath}"`, {
       stdio: "inherit",
     });
   } catch (err) {
