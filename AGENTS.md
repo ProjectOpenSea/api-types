@@ -30,6 +30,6 @@ pnpm run lint
 
 ## Conventions
 
-- ESM-only, dual CJS/ESM output via tsup.
+- ESM package (`"type": "module"`) that ships dual ESM (`dist/index.js`) and CJS (`dist/index.cjs`) builds via the shared `tsup.config.base.ts`.
 - `pnpm run update-spec` is idempotent and falls back to the local file on network errors.
 - Use `/sync-openapi` for the full fetch → regenerate → PR flow.

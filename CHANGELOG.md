@@ -1,5 +1,15 @@
 # @opensea/api-types
 
+## 0.16.0
+
+### Minor Changes
+
+- 6b30bd0: Sync OpenAPI spec. `DropDeployResponse.to` is now `string | null`: it is null for an `erc721_standard` deploy, which is a contract-creation transaction sent with no `to`. `DropDeployRequest.drop_type` and `token_type`, `UploadProfileImageRequest.imageType` and `NarrativeModuleRequest.variant` are now typed as the enums the API accepts. `DropDetailedResponse` adds the required `fee_bps`. The drop and drop-item endpoints' 403 responses now use the shared `Forbidden` error response instead of the success schema, and the transaction `value` fields document decimal (not hex) wei.
+
+### Patch Changes
+
+- e83546e: `update-spec` runs Biome through Node module resolution instead of `pnpm exec`, so the spec is formatted in an npm checkout as well. The README example uses an operationId that exists (`list_listings_collection_all`).
+
 ## 0.15.1
 
 ### Patch Changes

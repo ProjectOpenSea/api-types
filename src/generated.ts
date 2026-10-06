@@ -296,7 +296,7 @@ export interface paths {
         put?: never;
         /**
          * Upload a profile image
-         * @description Set contentType in the context request to the exact MIME type of the image bytes. This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds. Pass the token as the matching profile image field in PATCH /api/v2/profile.
+         * @description Set imageType to profile_picture for the avatar or banner_image for the profile banner. Set contentType to the exact MIME type of the image bytes; it must be an image type such as image/png, image/jpeg, image/gif or image/webp. Files can be up to 50 MB; the storage upload rejects a larger file or a non-image Content-Type field. This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds. Pass the token in PATCH /api/v2/profile as profileImageToken for profile_picture or bannerImageToken for banner_image. Requires the write:profile scope.
          */
         post: operations["upload_profile_image"];
         delete?: never;
@@ -696,6 +696,8 @@ export interface paths {
          *     A 400 carries the reason the drop cannot be published, for example that it is disabled, its launch date is still pending, it has no saved edits to apply, or a stage has a price while neither the saved edits nor the contract has a creator payout address (every paid mint would revert). After a first publish, the drop is live once GET /api/v2/drops/{slug} returns it, which happens after the transaction is mined and indexed.
          *
          *     To reveal, run POST /api/v2/drops/{slug}/metadata/ipfs, wait for it to complete, then call this endpoint again to put the new base URI onchain.
+         *
+         *     The transaction does not set a provenance hash or change contractURI(). SeaDrop only accepts setProvenanceHash() before the first token is minted, so a drop that wants one must send that call from the owner itself before minting starts; after the first mint it reverts.
          */
         post: operations["build_drop_publish_transaction"];
         delete?: never;
@@ -971,6 +973,8 @@ export interface paths {
          *
          *     Every other combination returns 400.
          *
+         *     For the clone types, `to` is OpenSea's clone factory. For `erc721_standard`, `to` is null: it is a contract-creation transaction, so send it without a `to` field.
+         *
          *     Next, poll GET /api/v2/drops/deploy/{chain}/{tx_hash}/receipt with the hash of the sent transaction until `status` is `success`. The receipt carries the contract address and, once the new collection is indexed, the `collection_slug` every other drop endpoint takes.
          */
         post: operations["deploy_drop_contract"];
@@ -992,6 +996,8 @@ export interface paths {
         /**
          * Refresh collection metadata
          * @description Queue a re-read of the collection's contract-level metadata, such as the name, description and image from contractURI(). Items with missing metadata are refetched too; to refresh one item use POST /api/v2/chain/{chain}/contract/{address}/nfts/{identifier}/refresh. The refresh runs in the background, so GET /api/v2/collections/{slug} shows the result after it finishes. Only the collection owner or an authorized editor can request it.
+         *
+         *     The contract-level metadata (contractURI() for most EVM contracts) wins for the fields it sets: a name, description, image or banner in it replaces the value saved with PATCH /api/v2/collections/{slug}, while a field it leaves out or blank keeps the saved value. Page content saved with PATCH /api/v2/collections/{slug}/metadata is kept the same way: the overview and about sections are kept, and hero and preview media are kept unless the refresh fetched its own for that slot, which then replaces the saved one.
          */
         post: operations["refresh_collection_metadata"];
         delete?: never;
@@ -2951,7 +2957,10 @@ export interface components {
             from: string;
             /** @description Encoded transaction data (hex) */
             data: string;
-            /** @description Transaction value in wei */
+            /**
+             * @description Native currency to send with the transaction, in wei, as a decimal string (not hex)
+             * @example 0
+             */
             value: string;
             /** @description Chain identifier */
             chain: string;
@@ -2964,7 +2973,10 @@ export interface components {
             from: string;
             /** @description Encoded transaction data (hex) */
             data: string;
-            /** @description Transaction value in wei */
+            /**
+             * @description Native currency to send with the transaction, in wei, as a decimal string (not hex)
+             * @example 0
+             */
             value: string;
             /** @description Chain identifier */
             chain: string;
@@ -3776,10 +3788,14 @@ export interface components {
         };
         /** @description Request body for uploading a profile image */
         UploadProfileImageRequest: {
-            /** @description Image type to upload */
-            imageType: string;
             /**
-             * @description Exact MIME type of the image bytes
+             * @description Which profile image to upload: profile_picture (avatar) or banner_image. Case insensitive; any other value returns a 400.
+             * @example profile_picture
+             * @enum {string}
+             */
+            imageType: "profile_picture" | "banner_image";
+            /**
+             * @description Exact MIME type of the image bytes. Must be an image/ type; anything else returns a 400.
              * @example image/png
              */
             contentType: string;
@@ -4629,7 +4645,7 @@ export interface components {
         };
         /** @description A drop stage for Creator Studio edits */
         SaveDropEditsStageRequest: {
-            /** @description Stage UUID. Reuse an existing stage UUID to update that stage, or supply a new one to add a stage. Because `stages` replaces the whole set, omitting a stage deletes it. */
+            /** @description Stage UUID. Reuse an existing stage UUID to update that stage, or supply a new one to add a stage. Because `stages` replaces the whole set, omitting a stage deletes it. Send an existing uuid exactly as GET /api/v2/drops/{slug} returns it: stages match by exact string, so the same UUID with dashes added or removed is treated as a new stage. */
             uuid: string;
             /**
              * @description Stage type. `public_sale` for the open stage, `signed_presale` for an allowlist stage. `merkle_presale` exists in the underlying enum but is rejected: no drop has ever used one and mints against such a stage fail.
@@ -4695,7 +4711,10 @@ export interface components {
             to: string;
             /** @description Encoded transaction data (hex) */
             data: string;
-            /** @description Transaction value in wei (hex) */
+            /**
+             * @description Native currency to send with the transaction, in wei, as a decimal string (not hex)
+             * @example 10000000000000000
+             */
             value: string;
             /** @description Chain identifier */
             chain: string;
@@ -4820,13 +4839,16 @@ export interface components {
         };
         /** @description Ready-to-sign deploy contract transaction data */
         DropDeployResponse: {
-            /** @description Transaction target contract address */
-            to: string;
+            /** @description Transaction target. The clone factory for `erc721_clone` and `erc1155_clone`. Null for `erc721_standard`, which is a contract-creation transaction: send it with no `to` at all. Sending it to the zero address does not deploy anything. */
+            to: string | null;
             /** @description Address the transaction must be sent from: the request's `sender`, which becomes the contract owner. */
             from: string;
             /** @description Encoded transaction data (hex) */
             data: string;
-            /** @description Transaction value in wei (hex) */
+            /**
+             * @description Native currency to send with the transaction, in wei, as a decimal string (not hex)
+             * @example 0
+             */
             value: string;
             /** @description Chain identifier */
             chain: string;
@@ -4851,13 +4873,15 @@ export interface components {
             /**
              * @description Drop type. Deployable values are `seadrop_v1_erc721` (with token_type `erc721_clone` or `erc721_standard`) and `seadrop_v2_erc1155_self_mint` (with token_type `erc1155_clone`). Other combinations return 400.
              * @example seadrop_v1_erc721
+             * @enum {string}
              */
-            drop_type: string;
+            drop_type: "seadrop_v1_erc721" | "seadrop_v2_erc1155_self_mint";
             /**
              * @description Contract token type. `erc721_clone` or `erc721_standard` for drop_type `seadrop_v1_erc721`; `erc1155_clone` for drop_type `seadrop_v2_erc1155_self_mint`.
              * @example erc721_clone
+             * @enum {string}
              */
-            token_type: string;
+            token_type: "erc721_clone" | "erc721_standard" | "erc1155_clone";
             /**
              * @description Deployer wallet address. The transaction must be sent from it, and it becomes the contract owner that publishes the drop and creates self-mint items.
              * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
@@ -5232,7 +5256,7 @@ export interface components {
             banner_image_token?: string | null;
             /** @description Collection category. Creators can no longer set or change it: any value other than the current one is rejected with 400, and OpenSea support handles category changes. */
             category?: string | null;
-            /** @description New collection slug */
+            /** @description New collection slug: 1 to 50 lowercase letters, numbers and hyphens. Renaming releases the old slug at once. It does not redirect: requests for it return 404 once cached responses expire (a few minutes), and any other collection can claim it, after which it serves that collection. Update links that use the old slug. Verified collections cannot change their slug. */
             slug?: string | null;
             /** @description Whether the collection is NSFW */
             is_nsfw?: boolean | null;
@@ -5277,7 +5301,7 @@ export interface components {
         };
         /** @description Collection about content */
         AboutMetadataRequest: {
-            /** @description Preview media, at most 10. A non-empty list replaces the saved preview media; an empty list removes it; leave preview_media out to keep it. */
+            /** @description Preview media, at most 10: the square media in the drop page's mint box, shown at about 410x410. Image or video/mp4; the first item is shown. A non-empty list replaces the saved preview media; an empty list [] removes it; leave preview_media out or send null to keep it. */
             preview_media?: components["schemas"]["MediaInputRequest"][] | null;
             /** @description About sections, at most 10. A non-empty list replaces the saved sections: a saved section you leave out is removed. A section whose id matches a saved one keeps that section's media when you leave media out. An empty list removes every saved section; leave sections out to keep them. */
             sections?: components["schemas"]["AboutSectionRequest"][] | null;
@@ -5360,9 +5384,9 @@ export interface components {
         };
         /** @description Collection hero content */
         HeroMetadataRequest: {
-            /** @description Desktop hero media, 8:3. Sending it replaces the saved desktop hero; an empty object {} clears it. Leave it out to keep the saved one. */
+            /** @description Desktop hero media, 8:3, image or video/mp4. Sending it replaces the saved desktop hero; an empty object {} clears it. Leave it out to keep the saved one. */
             desktop_hero_media?: components["schemas"]["MediaInputRequest"] | null;
-            /** @description Mobile hero media, 16:9. Sending it replaces the saved mobile hero; an empty object {} clears it. Leave it out to keep the saved one. */
+            /** @description Mobile hero media, 16:9, image or video/mp4. Sending it replaces the saved mobile hero; an empty object {} clears it. Leave it out to keep the saved one. */
             mobile_hero_media?: components["schemas"]["MediaInputRequest"] | null;
         };
         /** @description An image media input */
@@ -5397,18 +5421,21 @@ export interface components {
             title: string;
             /** @description Module description, up to 1000 characters. Rendered as Markdown on the page: links are clickable and raw HTML is dropped. */
             description: string;
-            /** @description Module media, at most 20 */
+            /** @description Module media, at most 20. The text_and_media variant shows the first item in a 16:9 frame beside the text, about 550x310 on desktop; image or video/mp4. */
             media?: components["schemas"]["MediaInputRequest"][] | null;
-            /** @description Horizontal text position */
+            /** @description Horizontal text position. For text_and_background it places the text over the background. For text_and_media, left puts the text left of the media; any other value puts it on the right. Alternate it between modules to alternate sides. */
             horizontal_text_position?: string | null;
-            /** @description Vertical text position */
+            /** @description Vertical text position over the background for text_and_background */
             vertical_text_position?: string | null;
-            /** @description Desktop background media */
+            /** @description Desktop background media for the background and text_and_background variants. Image or video/mp4, shown full width in a 16:9 frame at most 480px tall. */
             desktop_background_media?: components["schemas"]["MediaInputRequest"] | null;
-            /** @description Mobile background media */
+            /** @description Mobile background media for the background and text_and_background variants. Image or video/mp4. Without it, the mobile page shows no background. */
             mobile_background_media?: components["schemas"]["MediaInputRequest"] | null;
-            /** @description Module variant */
-            variant?: string | null;
+            /**
+             * @description Layout of the module. text: title and description only. text_and_media: text beside media. text_and_background: text over full-width background media, placed by horizontal_text_position and vertical_text_position; a last module of this variant makes a full-bleed closing section. background: background media only, without the title and description. Leave it out to derive it from the media that is saved: text_and_background when a background media is saved, text_and_media when media is saved, text otherwise. A token that is not saved does not count. The saved variant is returned by GET /api/v2/collections/{slug}/metadata.
+             * @enum {string|null}
+             */
+            variant?: "text" | "background" | "text_and_background" | "text_and_media" | null;
             /** @description Accepted for compatibility but not saved. Use desktop_background_media and mobile_background_media. */
             background_image?: components["schemas"]["ImageMediaRequest"] | null;
             /** @description Accepted for compatibility but not saved. Use desktop_background_media and mobile_background_media. */
@@ -6156,7 +6183,10 @@ export interface components {
         };
         /** @description A mint stage within a drop */
         DropStageResponse: {
-            /** @description Stage UUID */
+            /**
+             * @description Stage id. Treat it as opaque and send it back exactly as returned to update the stage in POST /api/v2/drops/{slug}: stages are matched by exact string, so the same UUID with or without dashes counts as a different stage.
+             * @example 5f0c6f7e2b8a4c1d9e3f6a7b8c9d0e1f
+             */
             uuid: string;
             /**
              * @description Stage type
@@ -6222,6 +6252,12 @@ export interface components {
             total_supply?: string | null;
             /** @description Maximum supply */
             max_supply?: string | null;
+            /**
+             * Format: int32
+             * @description OpenSea's fee on primary sales, in basis points: the share of each mint's price that goes to OpenSea. Publish sets it onchain; it is not configurable through the API. 1000 is 10%.
+             * @example 1000
+             */
+            fee_bps: number;
         };
         /** @description Progress of a drop's IPFS metadata upload */
         DropMetadataUploadProgressResponse: {
@@ -7714,15 +7750,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["SelfMintDropItemResponse"];
-                };
-            };
+            403: components["responses"]["Forbidden"];
             /** @description Not Found */
             404: {
                 headers: {
@@ -7779,15 +7807,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["DropItemResponse"];
-                };
-            };
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
         };
@@ -8880,15 +8900,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["SaveDropResponse"];
-                };
-            };
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
         };
@@ -8985,15 +8997,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["PrerevealDropItemResponse"];
-                };
-            };
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
         };
@@ -9183,15 +9187,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["SelfMintDropItemResponse"];
-                };
-            };
+            403: components["responses"]["Forbidden"];
             /** @description Not Found */
             404: {
                 headers: {
@@ -9243,15 +9239,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["UploadContext"][];
-                };
-            };
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
         };
@@ -9286,15 +9274,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["SaveDropItemMediaResponse"];
-                };
-            };
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
         };
@@ -9476,15 +9456,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["UploadContext"];
-                };
-            };
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
         };
@@ -9519,15 +9491,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ValidateDropAllowlistResponse"];
-                };
-            };
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
         };
@@ -11584,15 +11548,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["DropEligibilityResponse"];
-                };
-            };
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
         };

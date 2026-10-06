@@ -10,6 +10,7 @@
 
 import { execFileSync } from "node:child_process";
 import { existsSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -34,9 +35,14 @@ try {
   );
 
   // Match the repo's JSON formatting (biome inlines short arrays at lineWidth
-  // 80) so diffs reflect real spec changes, not formatter drift.
+  // 80) so diffs reflect real spec changes, not formatter drift. Biome is
+  // resolved as a module rather than through a package manager because the
+  // public mirror installs with npm and the monorepo with pnpm.
   try {
-    execFileSync("pnpm", ["exec", "biome", "format", "--write", outPath], {
+    const biome = createRequire(import.meta.url).resolve(
+      "@biomejs/biome/bin/biome",
+    );
+    execFileSync(process.execPath, [biome, "format", "--write", outPath], {
       stdio: "inherit",
     });
   } catch (err) {
