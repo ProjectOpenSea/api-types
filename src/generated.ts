@@ -356,7 +356,7 @@ export interface paths {
         put?: never;
         /**
          * Cancel an order
-         * @description Offchain cancel a single order, offer or listing, by its order hash when protected by the SignedZone. Protocol and Chain are required to prevent hash collisions. An offchain cancel stops OpenSea from issuing new fulfillment signatures for the order, but a fulfillment signature issued before the cancel stays valid until it expires (up to 5 minutes after it was issued), and a buyer holding one can still fill the order until then. The response field last_signature_issued_valid_until reports when the last issued signature expires. To stop fills without waiting for that signature to expire, cancel the order onchain; use the get order cancellation actions endpoint to build that transaction. The order stays fillable until the onchain cancel transaction is confirmed.
+         * @description Offchain cancel a single order, offer or listing, by its order hash when protected by the SignedZone. Protocol and Chain are required to prevent hash collisions. An offchain cancel stops OpenSea from issuing new fulfillment signatures for the order, but a fulfillment signature issued before the cancel stays valid until it expires (up to 5 minutes after it was issued), and a buyer holding one can still fill the order until then. The response field last_signature_issued_valid_until reports when the last issued signature expires. To stop fills without waiting for that signature to expire, cancel the order onchain; use the get order cancellation actions endpoint to build that transaction. The order stays fillable until the onchain cancel transaction is confirmed. A recently created listing or offer may need to be cancelled onchain; if this endpoint rejects it, use the get order cancellation actions endpoint to build the onchain transaction.
          */
         post: operations["cancel_order"];
         delete?: never;
@@ -1037,7 +1037,7 @@ export interface paths {
         put?: never;
         /**
          * Upload collection page media
-         * @description Upload an image or an MP4 video for the collection page: the hero (8:3 on desktop, 16:9 on mobile), about, narrative, content block and team sections. Set the content_type query parameter to the exact MIME type of the file. Video must be video/mp4. Files can be up to 50 MB. This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds. Pass the token in PATCH /api/v2/collections/{slug}/metadata as { image: { token } } for an image or { video: { token } } for a video. The media type must match the upload: a video token sent as image, or the reverse, does not resolve and that media item is left out of the update. The placement picks where the file is stored, but the token is accepted in any media field of the metadata update. The presigned upload expires about a minute after it is issued.
+         * @description Upload an image or an MP4 video for the collection page: the hero (8:3 on desktop, 16:9 on mobile), about, narrative, content block and team sections. Set the content_type query parameter to the exact MIME type of the file. Video must be video/mp4. Files can be up to 50 MB. This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds. Pass the token in PATCH /api/v2/collections/{slug}/metadata as { image: { token } } for an image or { video: { token } } for a video. The media type must match the upload: a video token sent as image, or the reverse, does not resolve and the metadata update fails with 400 without saving anything. The placement picks where the file is stored, but the token is accepted in any media field of the metadata update. The presigned upload expires about a minute after it is issued.
          */
         post: operations["upload_collection_page_media"];
         delete?: never;
@@ -1401,7 +1401,7 @@ export interface paths {
         head?: never;
         /**
          * Update collection metadata
-         * @description Update collection about, hero, overview, and logo image metadata.
+         * @description Update collection about, hero, overview, and logo image metadata. Only the collection owner or an authorized editor can update it; anyone else gets 403. The update applies in full or not at all: a media token that does not resolve fails the request with 400 and nothing is saved.
          */
         patch: operations["update_collection_metadata"];
         trace?: never;
@@ -1772,6 +1772,46 @@ export interface paths {
          * @description Get all offers for a collection.
          */
         get: operations["list_offers_collection_all"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/nfts/group/{group}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search NFTs across a collection group
+         * @description Search NFTs across every collection in a group, such as `trading_cards`, using normalized attributes that are consistent across issuers. Each attribute (franchise, grader, grade, subject, year, set, language, edition, product_type) is a repeatable query parameter, for example `?franchise=Pokemon&grader=PSA&grader=CGC&grade=10`. Use `/nfts/group/{group}/facets` to discover values and counts.
+         */
+        get: operations["list_nfts_by_group"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/nfts/group/{group}/facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get filter facets for a collection group
+         * @description Get the values of each normalized attribute in a collection group with the number of matching NFTs. Each facet is narrowed by the filters of the other types, so a facet keeps listing all of its own values.
+         */
+        get: operations["list_nft_group_facets"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2489,7 +2529,7 @@ export interface paths {
         };
         /**
          * Get NFTs by account
-         * @description Get all NFTs owned by a specific account on a blockchain, with optional collection filtering.
+         * @description Get all NFTs owned by a specific account on a blockchain, with optional collection filtering. Each NFT includes the quantity the account holds, which can exceed 1 for ERC-1155.
          */
         get: operations["get_nfts_by_account"];
         put?: never;
@@ -4376,10 +4416,42 @@ export interface components {
             agent: components["schemas"]["AgentNftResponse"];
             registered_by?: string | null;
         };
+        /** @description The ERC-8004 registration file of an agent identity NFT, as parsed from its token URI. Self-reported by the agent's registrant and not verified by OpenSea. */
+        AgentMetadataResponse: {
+            /** @description The wallet the registration file names for the agent */
+            agent_wallet?: string | null;
+            x402_support: boolean;
+            /** @description Whether the agent declares itself active. ERC-8004 defaults this to true, so a registration file that omits it reads as true. */
+            active?: boolean | null;
+            supported_trust: string[];
+            services: components["schemas"]["AgentServiceResponse"][];
+            registrations: components["schemas"]["AgentRegistrationResponse"][];
+            /**
+             * Format: date-time
+             * @description When OpenSea last successfully read this registration file from the token URI, whether or not its content changed. A failed read does not advance it. Null when the file has not been read since OpenSea started recording this.
+             */
+            fetched_at?: string | null;
+        };
         AgentNftResponse: {
             chain: string;
             token_id: string;
             contract_address: string;
+        };
+        /** @description A registry entry an ERC-8004 registration file declares for the agent */
+        AgentRegistrationResponse: {
+            agent_id: string;
+            agent_registry: string;
+        };
+        /** @description A service endpoint declared in an ERC-8004 registration file */
+        AgentServiceResponse: {
+            name: string;
+            endpoint: string;
+            version?: string | null;
+            skills: string[];
+            domains: string[];
+            tools: string[];
+            prompts: string[];
+            capabilities: string[];
         };
         Nft: {
             identifier: string;
@@ -4436,6 +4508,7 @@ export interface components {
             rarity?: components["schemas"]["Rarity"] | null;
             subscription?: components["schemas"]["SubscriptionInfoResponse"] | null;
             agent_binding?: components["schemas"]["AgentBindingResponse"] | null;
+            agent_metadata?: components["schemas"]["AgentMetadataResponse"] | null;
         };
         Owner: {
             address: string;
@@ -5391,7 +5464,7 @@ export interface components {
         };
         /** @description An image media input */
         ImageMediaRequest: {
-            /** @description Token of an uploaded image, the url of an image already saved on this page to keep it, or an https url on the OpenSea CDN (seadn.io). Any other value is not saved: the media item is left out of the update. */
+            /** @description Token of an uploaded image, the url of an image already saved on this page to keep it, or an https url on the OpenSea CDN (seadn.io). Any other value, or an upload that is missing or has expired, fails the whole update with 400 and saves nothing. */
             token: string;
         };
         /** @description A link input */
@@ -5432,7 +5505,7 @@ export interface components {
             /** @description Mobile background media for the background and text_and_background variants. Image or video/mp4. Without it, the mobile page shows no background. */
             mobile_background_media?: components["schemas"]["MediaInputRequest"] | null;
             /**
-             * @description Layout of the module. text: title and description only. text_and_media: text beside media. text_and_background: text over full-width background media, placed by horizontal_text_position and vertical_text_position; a last module of this variant makes a full-bleed closing section. background: background media only, without the title and description. Leave it out to derive it from the media that is saved: text_and_background when a background media is saved, text_and_media when media is saved, text otherwise. A token that is not saved does not count. The saved variant is returned by GET /api/v2/collections/{slug}/metadata.
+             * @description Layout of the module. text: title and description only. text_and_media: text beside media. text_and_background: text over full-width background media, placed by horizontal_text_position and vertical_text_position; a last module of this variant makes a full-bleed closing section. background: background media only, without the title and description. Leave it out to derive it from the media that is saved: text_and_background when a background media is saved, text_and_media when media is saved, text otherwise. The saved variant is returned by GET /api/v2/collections/{slug}/metadata.
              * @enum {string|null}
              */
             variant?: "text" | "background" | "text_and_background" | "text_and_media" | null;
@@ -5505,7 +5578,7 @@ export interface components {
         };
         /** @description A video media input */
         VideoMediaRequest: {
-            /** @description Token of an uploaded video/mp4, the url of a video already saved on this page to keep it, or an https url on the OpenSea CDN (seadn.io). Any other value is not saved: the media item is left out of the update. */
+            /** @description Token of an uploaded video/mp4, the url of a video already saved on this page to keep it, or an https url on the OpenSea CDN (seadn.io). Any other value, or an upload that is missing or has expired, fails the whole update with 400 and saves nothing. */
             token: string;
             /** @description Accepted for compatibility but not saved */
             enable_static_video?: boolean | null;
@@ -6047,6 +6120,76 @@ export interface components {
         OffersResponse: {
             offers: components["schemas"]["Offer"][];
             next?: string | null;
+        };
+        /** @description Price of a listing in its payment token, with its USD equivalent */
+        ListingPriceResponse: {
+            /**
+             * @description Amount in the payment token's units
+             * @example 120.5
+             */
+            amount: string;
+            /**
+             * @description Payment token symbol
+             * @example POL
+             */
+            currency?: string | null;
+            /**
+             * @description USD equivalent. Null when no USD price is available for the token.
+             * @example 40.12
+             */
+            usd?: string | null;
+        };
+        /** @description An NFT from a cross-collection group, with its current best listing price */
+        StandardizedNft: {
+            identifier: string;
+            collection: string;
+            contract: string;
+            token_standard: string;
+            name?: string | null;
+            description?: string | null;
+            image_url?: string | null;
+            display_image_url?: string | null;
+            display_animation_url?: string | null;
+            metadata_url?: string | null;
+            opensea_url: string;
+            updated_at: string;
+            is_disabled: boolean;
+            is_nsfw: boolean;
+            original_image_url?: string | null;
+            original_animation_url?: string | null;
+            traits: components["schemas"]["Trait"][];
+            /**
+             * @description Estimated value in USD
+             * @example 250.5
+             */
+            estimated_value_usd?: string | null;
+            /** Format: int32 */
+            decimals?: number | null;
+            /** @description Price of the lowest active listing. Null when the NFT is not listed. */
+            best_listing_price?: components["schemas"]["ListingPriceResponse"] | null;
+        };
+        StandardizedNftListResponse: {
+            nfts: components["schemas"]["StandardizedNft"][];
+            /** @description Cursor for the next page of results */
+            next?: string | null;
+        };
+        /** @description Values and counts for one facet type */
+        FacetGroupResponse: {
+            /**
+             * @description Facet type, also the query parameter that filters on it
+             * @example grader
+             */
+            type: string;
+            values: components["schemas"]["FacetValueResponse"][];
+        };
+        /** @description Count of matching NFTs for one facet value */
+        FacetValueResponse: {
+            value: string;
+            /** Format: int64 */
+            count: number;
+        };
+        StandardizedNftFacetsResponse: {
+            facets: components["schemas"]["FacetGroupResponse"][];
         };
         AssetMetadataResponse: {
             name?: string | null;
@@ -7018,6 +7161,40 @@ export interface components {
             symbol?: string | null;
             /** @description Blockchain chain */
             chain: string;
+        };
+        AccountNft: {
+            identifier: string;
+            collection: string;
+            contract: string;
+            token_standard: string;
+            name?: string | null;
+            description?: string | null;
+            image_url?: string | null;
+            display_image_url?: string | null;
+            display_animation_url?: string | null;
+            metadata_url?: string | null;
+            opensea_url: string;
+            updated_at: string;
+            is_disabled: boolean;
+            is_nsfw: boolean;
+            original_image_url?: string | null;
+            original_animation_url?: string | null;
+            traits: components["schemas"]["Trait"][];
+            /** Format: double */
+            estimated_value_usd?: number | null;
+            /** Format: int32 */
+            decimals?: number | null;
+            /**
+             * Format: int32
+             * @description Units of this NFT the account holds, in raw base units. Always 1 for ERC-721. Capped at 2147483647; read quantity_string for the exact value.
+             */
+            quantity: number;
+            /** @description Exact units held, as a decimal string. */
+            quantity_string: string;
+        };
+        AccountNftListResponse: {
+            nfts: components["schemas"]["AccountNft"][];
+            next?: string | null;
         };
         AccountResponse: {
             address: string;
@@ -9676,15 +9853,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["UploadContext"];
-                };
-            };
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
         };
@@ -10299,15 +10468,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ModifyCollectionResponse"];
-                };
-            };
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
         };
@@ -10408,15 +10569,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["UpdateCollectionMetadataResponse"];
-                };
-            };
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
         };
@@ -11096,6 +11249,126 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["OffersResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    list_nfts_by_group: {
+        parameters: {
+            query?: {
+                /** @description Restrict results to these collections in the group (max 10). Defaults to the whole group. */
+                collection_slugs?: string[];
+                /** @description Full-text match on NFT name, up to 100 characters */
+                query?: string;
+                /** @description Only return NFTs that are listed (true) or unlisted (false) */
+                is_listed?: boolean;
+                /** @description Minimum estimated value in USD, inclusive */
+                min_estimated_value_usd?: number;
+                /** @description Maximum estimated value in USD, inclusive */
+                max_estimated_value_usd?: number;
+                /** @description Sort field: price, top_offer, last_sale, last_sale_date, created_date, received_date, listing_created_date, best_deal, or estimated_value */
+                sort_by?: string;
+                /** @description Sort direction: asc or desc */
+                sort_direction?: string;
+                /**
+                 * @description Number of items to return per page
+                 * @example 20
+                 */
+                limit?: number;
+                next?: string;
+                /** @description Only return NFTs whose normalized franchise is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values. */
+                franchise?: string[];
+                /** @description Only return NFTs whose normalized grader is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values. */
+                grader?: string[];
+                /** @description Only return NFTs whose normalized grade is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values. */
+                grade?: string[];
+                /** @description Only return NFTs whose normalized subject is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values. */
+                subject?: string[];
+                /** @description Only return NFTs whose normalized year is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values. */
+                year?: string[];
+                /** @description Only return NFTs whose normalized set is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values. */
+                set?: string[];
+                /** @description Only return NFTs whose normalized language is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values. */
+                language?: string[];
+                /** @description Only return NFTs whose normalized edition is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values. */
+                edition?: string[];
+                /** @description Only return NFTs whose normalized product type is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values. */
+                product_type?: string[];
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description Collection group
+                 * @example trading_cards
+                 */
+                group: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StandardizedNftListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    list_nft_group_facets: {
+        parameters: {
+            query?: {
+                /** @description Facet types to return. Defaults to all: franchise, grader, grade, subject, year, set, language, edition, product_type */
+                facet_types?: string[];
+                /** @description Restrict results to these collections in the group (max 10). Defaults to the whole group. */
+                collection_slugs?: string[];
+                /** @description Only return NFTs whose normalized franchise is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values. */
+                franchise?: string[];
+                /** @description Only return NFTs whose normalized grader is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values. */
+                grader?: string[];
+                /** @description Only return NFTs whose normalized grade is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values. */
+                grade?: string[];
+                /** @description Only return NFTs whose normalized subject is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values. */
+                subject?: string[];
+                /** @description Only return NFTs whose normalized year is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values. */
+                year?: string[];
+                /** @description Only return NFTs whose normalized set is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values. */
+                set?: string[];
+                /** @description Only return NFTs whose normalized language is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values. */
+                language?: string[];
+                /** @description Only return NFTs whose normalized edition is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values. */
+                edition?: string[];
+                /** @description Only return NFTs whose normalized product type is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values. */
+                product_type?: string[];
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description Collection group
+                 * @example trading_cards
+                 */
+                group: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StandardizedNftFacetsResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -12530,7 +12803,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["NftListResponse"];
+                    "*/*": components["schemas"]["AccountNftListResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];

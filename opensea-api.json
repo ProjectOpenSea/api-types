@@ -1271,7 +1271,7 @@
       "post": {
         "tags": ["Order Endpoints"],
         "summary": "Cancel an order",
-        "description": "Offchain cancel a single order, offer or listing, by its order hash when protected by the SignedZone. Protocol and Chain are required to prevent hash collisions. An offchain cancel stops OpenSea from issuing new fulfillment signatures for the order, but a fulfillment signature issued before the cancel stays valid until it expires (up to 5 minutes after it was issued), and a buyer holding one can still fill the order until then. The response field last_signature_issued_valid_until reports when the last issued signature expires. To stop fills without waiting for that signature to expire, cancel the order onchain; use the get order cancellation actions endpoint to build that transaction. The order stays fillable until the onchain cancel transaction is confirmed.",
+        "description": "Offchain cancel a single order, offer or listing, by its order hash when protected by the SignedZone. Protocol and Chain are required to prevent hash collisions. An offchain cancel stops OpenSea from issuing new fulfillment signatures for the order, but a fulfillment signature issued before the cancel stays valid until it expires (up to 5 minutes after it was issued), and a buyer holding one can still fill the order until then. The response field last_signature_issued_valid_until reports when the last issued signature expires. To stop fills without waiting for that signature to expire, cancel the order onchain; use the get order cancellation actions endpoint to build that transaction. The order stays fillable until the onchain cancel transaction is confirmed. A recently created listing or offer may need to be cancelled onchain; if this endpoint rejects it, use the get order cancellation actions endpoint to build the onchain transaction.",
         "operationId": "cancel_order",
         "parameters": [
           {
@@ -3122,7 +3122,7 @@
       "post": {
         "tags": ["Collection Endpoints"],
         "summary": "Upload collection page media",
-        "description": "Upload an image or an MP4 video for the collection page: the hero (8:3 on desktop, 16:9 on mobile), about, narrative, content block and team sections. Set the content_type query parameter to the exact MIME type of the file. Video must be video/mp4. Files can be up to 50 MB. This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds. Pass the token in PATCH /api/v2/collections/{slug}/metadata as { image: { token } } for an image or { video: { token } } for a video. The media type must match the upload: a video token sent as image, or the reverse, does not resolve and that media item is left out of the update. The placement picks where the file is stored, but the token is accepted in any media field of the metadata update. The presigned upload expires about a minute after it is issued.",
+        "description": "Upload an image or an MP4 video for the collection page: the hero (8:3 on desktop, 16:9 on mobile), about, narrative, content block and team sections. Set the content_type query parameter to the exact MIME type of the file. Video must be video/mp4. Files can be up to 50 MB. This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds. Pass the token in PATCH /api/v2/collections/{slug}/metadata as { image: { token } } for an image or { video: { token } } for a video. The media type must match the upload: a video token sent as image, or the reverse, does not resolve and the metadata update fails with 400 without saving anything. The placement picks where the file is stored, but the token is accepted in any media field of the metadata update. The presigned upload expires about a minute after it is issued.",
         "operationId": "upload_collection_page_media",
         "parameters": [
           {
@@ -3250,14 +3250,7 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Forbidden",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/UploadContext"
-                }
-              }
-            }
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -4255,14 +4248,7 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Forbidden",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ModifyCollectionResponse"
-                }
-              }
-            }
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -4403,7 +4389,7 @@
       "patch": {
         "tags": ["Collection Endpoints"],
         "summary": "Update collection metadata",
-        "description": "Update collection about, hero, overview, and logo image metadata.",
+        "description": "Update collection about, hero, overview, and logo image metadata. Only the collection owner or an authorized editor can update it; anyone else gets 403. The update applies in full or not at all: a media token that does not resolve fails the request with 400 and nothing is saved.",
         "operationId": "update_collection_metadata",
         "parameters": [
           {
@@ -4445,14 +4431,7 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Forbidden",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/UpdateCollectionMetadataResponse"
-                }
-              }
-            }
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -5864,6 +5843,422 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/OffersResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/nfts/group/{group}": {
+      "get": {
+        "tags": ["NFT Endpoints"],
+        "summary": "Search NFTs across a collection group",
+        "description": "Search NFTs across every collection in a group, such as `trading_cards`, using normalized attributes that are consistent across issuers. Each attribute (franchise, grader, grade, subject, year, set, language, edition, product_type) is a repeatable query parameter, for example `?franchise=Pokemon&grader=PSA&grader=CGC&grade=10`. Use `/nfts/group/{group}/facets` to discover values and counts.",
+        "operationId": "list_nfts_by_group",
+        "parameters": [
+          {
+            "name": "group",
+            "in": "path",
+            "description": "Collection group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "trading_cards"
+          },
+          {
+            "name": "collection_slugs",
+            "in": "query",
+            "description": "Restrict results to these collections in the group (max 10). Defaults to the whole group.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "description": "Full-text match on NFT name, up to 100 characters",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "is_listed",
+            "in": "query",
+            "description": "Only return NFTs that are listed (true) or unlisted (false)",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "min_estimated_value_usd",
+            "in": "query",
+            "description": "Minimum estimated value in USD, inclusive",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "max_estimated_value_usd",
+            "in": "query",
+            "description": "Maximum estimated value in USD, inclusive",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "description": "Sort field: price, top_offer, last_sale, last_sale_date, created_date, received_date, listing_created_date, best_deal, or estimated_value",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "best_deal"
+            }
+          },
+          {
+            "name": "sort_direction",
+            "in": "query",
+            "description": "Sort direction: asc or desc",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "desc"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items to return per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50,
+              "description": "Number of items to return per page",
+              "example": 20,
+              "maximum": 100,
+              "minimum": 1
+            },
+            "example": 20
+          },
+          {
+            "name": "next",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "franchise",
+            "in": "query",
+            "description": "Only return NFTs whose normalized franchise is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values.",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "grader",
+            "in": "query",
+            "description": "Only return NFTs whose normalized grader is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values.",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "grade",
+            "in": "query",
+            "description": "Only return NFTs whose normalized grade is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values.",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "subject",
+            "in": "query",
+            "description": "Only return NFTs whose normalized subject is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values.",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "description": "Only return NFTs whose normalized year is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values.",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "set",
+            "in": "query",
+            "description": "Only return NFTs whose normalized set is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values.",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "description": "Only return NFTs whose normalized language is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values.",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "edition",
+            "in": "query",
+            "description": "Only return NFTs whose normalized edition is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values.",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "product_type",
+            "in": "query",
+            "description": "Only return NFTs whose normalized product type is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values.",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardizedNftListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/nfts/group/{group}/facets": {
+      "get": {
+        "tags": ["NFT Endpoints"],
+        "summary": "Get filter facets for a collection group",
+        "description": "Get the values of each normalized attribute in a collection group with the number of matching NFTs. Each facet is narrowed by the filters of the other types, so a facet keeps listing all of its own values.",
+        "operationId": "list_nft_group_facets",
+        "parameters": [
+          {
+            "name": "group",
+            "in": "path",
+            "description": "Collection group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "trading_cards"
+          },
+          {
+            "name": "facet_types",
+            "in": "query",
+            "description": "Facet types to return. Defaults to all: franchise, grader, grade, subject, year, set, language, edition, product_type",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "collection_slugs",
+            "in": "query",
+            "description": "Restrict results to these collections in the group (max 10). Defaults to the whole group.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "franchise",
+            "in": "query",
+            "description": "Only return NFTs whose normalized franchise is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values.",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "grader",
+            "in": "query",
+            "description": "Only return NFTs whose normalized grader is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values.",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "grade",
+            "in": "query",
+            "description": "Only return NFTs whose normalized grade is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values.",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "subject",
+            "in": "query",
+            "description": "Only return NFTs whose normalized subject is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values.",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "description": "Only return NFTs whose normalized year is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values.",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "set",
+            "in": "query",
+            "description": "Only return NFTs whose normalized set is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values.",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "description": "Only return NFTs whose normalized language is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values.",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "edition",
+            "in": "query",
+            "description": "Only return NFTs whose normalized edition is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values.",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "product_type",
+            "in": "query",
+            "description": "Only return NFTs whose normalized product type is one of these values, as returned by the facets endpoint. Repeat the parameter to match any of several values.",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardizedNftFacetsResponse"
                 }
               }
             }
@@ -8410,7 +8805,7 @@
       "get": {
         "tags": ["NFT Endpoints"],
         "summary": "Get NFTs by account",
-        "description": "Get all NFTs owned by a specific account on a blockchain, with optional collection filtering.",
+        "description": "Get all NFTs owned by a specific account on a blockchain, with optional collection filtering. Each NFT includes the quantity the account holds, which can exceed 1 for ERC-1155.",
         "operationId": "get_nfts_by_account",
         "parameters": [
           {
@@ -8480,7 +8875,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/NftListResponse"
+                  "$ref": "#/components/schemas/AccountNftListResponse"
                 }
               }
             }
@@ -13415,6 +13810,52 @@
         },
         "required": ["agent", "agent_id", "binding_contract"]
       },
+      "AgentMetadataResponse": {
+        "type": "object",
+        "description": "The ERC-8004 registration file of an agent identity NFT, as parsed from its token URI. Self-reported by the agent's registrant and not verified by OpenSea.",
+        "properties": {
+          "agent_wallet": {
+            "type": ["string", "null"],
+            "description": "The wallet the registration file names for the agent"
+          },
+          "x402_support": {
+            "type": "boolean"
+          },
+          "active": {
+            "type": ["boolean", "null"],
+            "description": "Whether the agent declares itself active. ERC-8004 defaults this to true, so a registration file that omits it reads as true."
+          },
+          "supported_trust": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentServiceResponse"
+            }
+          },
+          "registrations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentRegistrationResponse"
+            }
+          },
+          "fetched_at": {
+            "type": ["string", "null"],
+            "format": "date-time",
+            "description": "When OpenSea last successfully read this registration file from the token URI, whether or not its content changed. A failed read does not advance it. Null when the file has not been read since OpenSea started recording this."
+          }
+        },
+        "required": [
+          "registrations",
+          "services",
+          "supported_trust",
+          "x402_support"
+        ]
+      },
       "AgentNftResponse": {
         "type": "object",
         "properties": {
@@ -13429,6 +13870,73 @@
           }
         },
         "required": ["chain", "contract_address", "token_id"]
+      },
+      "AgentRegistrationResponse": {
+        "type": "object",
+        "description": "A registry entry an ERC-8004 registration file declares for the agent",
+        "properties": {
+          "agent_id": {
+            "type": "string"
+          },
+          "agent_registry": {
+            "type": "string"
+          }
+        },
+        "required": ["agent_id", "agent_registry"]
+      },
+      "AgentServiceResponse": {
+        "type": "object",
+        "description": "A service endpoint declared in an ERC-8004 registration file",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "version": {
+            "type": ["string", "null"]
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "prompts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "capabilities",
+          "domains",
+          "endpoint",
+          "name",
+          "prompts",
+          "skills",
+          "tools"
+        ]
       },
       "Nft": {
         "type": "object",
@@ -13624,6 +14132,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/AgentBindingResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "agent_metadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentMetadataResponse"
               },
               {
                 "type": "null"
@@ -15706,7 +16224,7 @@
         "properties": {
           "token": {
             "type": "string",
-            "description": "Token of an uploaded image, the url of an image already saved on this page to keep it, or an https url on the OpenSea CDN (seadn.io). Any other value is not saved: the media item is left out of the update.",
+            "description": "Token of an uploaded image, the url of an image already saved on this page to keep it, or an https url on the OpenSea CDN (seadn.io). Any other value, or an upload that is missing or has expired, fails the whole update with 400 and saves nothing.",
             "maxLength": 1000,
             "minLength": 0
           }
@@ -15830,7 +16348,7 @@
           },
           "variant": {
             "type": ["string", "null"],
-            "description": "Layout of the module. text: title and description only. text_and_media: text beside media. text_and_background: text over full-width background media, placed by horizontal_text_position and vertical_text_position; a last module of this variant makes a full-bleed closing section. background: background media only, without the title and description. Leave it out to derive it from the media that is saved: text_and_background when a background media is saved, text_and_media when media is saved, text otherwise. A token that is not saved does not count. The saved variant is returned by GET /api/v2/collections/{slug}/metadata.",
+            "description": "Layout of the module. text: title and description only. text_and_media: text beside media. text_and_background: text over full-width background media, placed by horizontal_text_position and vertical_text_position; a last module of this variant makes a full-bleed closing section. background: background media only, without the title and description. Leave it out to derive it from the media that is saved: text_and_background when a background media is saved, text_and_media when media is saved, text otherwise. The saved variant is returned by GET /api/v2/collections/{slug}/metadata.",
             "enum": [
               "text",
               "background",
@@ -16061,7 +16579,7 @@
         "properties": {
           "token": {
             "type": "string",
-            "description": "Token of an uploaded video/mp4, the url of a video already saved on this page to keep it, or an https url on the OpenSea CDN (seadn.io). Any other value is not saved: the media item is left out of the update.",
+            "description": "Token of an uploaded video/mp4, the url of a video already saved on this page to keep it, or an https url on the OpenSea CDN (seadn.io). Any other value, or an upload that is missing or has expired, fails the whole update with 400 and saves nothing.",
             "maxLength": 1000,
             "minLength": 0
           },
@@ -17268,6 +17786,179 @@
           }
         },
         "required": ["offers"]
+      },
+      "ListingPriceResponse": {
+        "type": "object",
+        "description": "Price of a listing in its payment token, with its USD equivalent",
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Amount in the payment token's units",
+            "example": "120.5"
+          },
+          "currency": {
+            "type": ["string", "null"],
+            "description": "Payment token symbol",
+            "example": "POL"
+          },
+          "usd": {
+            "type": ["string", "null"],
+            "description": "USD equivalent. Null when no USD price is available for the token.",
+            "example": "40.12"
+          }
+        },
+        "required": ["amount"]
+      },
+      "StandardizedNft": {
+        "type": "object",
+        "description": "An NFT from a cross-collection group, with its current best listing price",
+        "properties": {
+          "identifier": {
+            "type": "string"
+          },
+          "collection": {
+            "type": "string"
+          },
+          "contract": {
+            "type": "string"
+          },
+          "token_standard": {
+            "type": "string"
+          },
+          "name": {
+            "type": ["string", "null"]
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "image_url": {
+            "type": ["string", "null"]
+          },
+          "display_image_url": {
+            "type": ["string", "null"]
+          },
+          "display_animation_url": {
+            "type": ["string", "null"]
+          },
+          "metadata_url": {
+            "type": ["string", "null"]
+          },
+          "opensea_url": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "is_disabled": {
+            "type": "boolean"
+          },
+          "is_nsfw": {
+            "type": "boolean"
+          },
+          "original_image_url": {
+            "type": ["string", "null"]
+          },
+          "original_animation_url": {
+            "type": ["string", "null"]
+          },
+          "traits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Trait"
+            }
+          },
+          "estimated_value_usd": {
+            "type": ["string", "null"],
+            "description": "Estimated value in USD",
+            "example": "250.5"
+          },
+          "decimals": {
+            "type": ["integer", "null"],
+            "format": "int32"
+          },
+          "best_listing_price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ListingPriceResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Price of the lowest active listing. Null when the NFT is not listed."
+          }
+        },
+        "required": [
+          "collection",
+          "contract",
+          "identifier",
+          "is_disabled",
+          "is_nsfw",
+          "opensea_url",
+          "token_standard",
+          "traits",
+          "updated_at"
+        ]
+      },
+      "StandardizedNftListResponse": {
+        "type": "object",
+        "properties": {
+          "nfts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StandardizedNft"
+            }
+          },
+          "next": {
+            "type": ["string", "null"],
+            "description": "Cursor for the next page of results"
+          }
+        },
+        "required": ["nfts"]
+      },
+      "FacetGroupResponse": {
+        "type": "object",
+        "description": "Values and counts for one facet type",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Facet type, also the query parameter that filters on it",
+            "example": "grader"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FacetValueResponse"
+            }
+          }
+        },
+        "required": ["type", "values"]
+      },
+      "FacetValueResponse": {
+        "type": "object",
+        "description": "Count of matching NFTs for one facet value",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": ["count", "value"]
+      },
+      "StandardizedNftFacetsResponse": {
+        "type": "object",
+        "properties": {
+          "facets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FacetGroupResponse"
+            }
+          }
+        },
+        "required": ["facets"]
       },
       "AssetMetadataResponse": {
         "type": "object",
@@ -19531,6 +20222,110 @@
           }
         },
         "required": ["chain", "time", "token_unit", "usd_price"]
+      },
+      "AccountNft": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string"
+          },
+          "collection": {
+            "type": "string"
+          },
+          "contract": {
+            "type": "string"
+          },
+          "token_standard": {
+            "type": "string"
+          },
+          "name": {
+            "type": ["string", "null"]
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "image_url": {
+            "type": ["string", "null"]
+          },
+          "display_image_url": {
+            "type": ["string", "null"]
+          },
+          "display_animation_url": {
+            "type": ["string", "null"]
+          },
+          "metadata_url": {
+            "type": ["string", "null"]
+          },
+          "opensea_url": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "is_disabled": {
+            "type": "boolean"
+          },
+          "is_nsfw": {
+            "type": "boolean"
+          },
+          "original_image_url": {
+            "type": ["string", "null"]
+          },
+          "original_animation_url": {
+            "type": ["string", "null"]
+          },
+          "traits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Trait"
+            }
+          },
+          "estimated_value_usd": {
+            "type": ["number", "null"],
+            "format": "double"
+          },
+          "decimals": {
+            "type": ["integer", "null"],
+            "format": "int32"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Units of this NFT the account holds, in raw base units. Always 1 for ERC-721. Capped at 2147483647; read quantity_string for the exact value."
+          },
+          "quantity_string": {
+            "type": "string",
+            "description": "Exact units held, as a decimal string."
+          }
+        },
+        "required": [
+          "collection",
+          "contract",
+          "identifier",
+          "is_disabled",
+          "is_nsfw",
+          "opensea_url",
+          "quantity",
+          "quantity_string",
+          "token_standard",
+          "traits",
+          "updated_at"
+        ]
+      },
+      "AccountNftListResponse": {
+        "type": "object",
+        "properties": {
+          "nfts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountNft"
+            }
+          },
+          "next": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["nfts"]
       },
       "AccountResponse": {
         "type": "object",

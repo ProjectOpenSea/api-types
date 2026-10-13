@@ -53,6 +53,24 @@ export type AboutSectionResponse = Schemas["AboutSectionResponse"]
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
  * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<AccountNft>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `AccountNft`.
+ */
+export type AccountNft = Schemas["AccountNft"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<AccountNftListResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `AccountNftListResponse`.
+ */
+export type AccountNftListResponse = Schemas["AccountNftListResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
  * SDK-facing value with `Camelize<AccountResolveResponse>` (exported by
  * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
  * `AccountResolveResponse`.
@@ -125,6 +143,15 @@ export type AgentBindingResponse = Schemas["AgentBindingResponse"]
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
  * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<AgentMetadataResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `AgentMetadataResponse`.
+ */
+export type AgentMetadataResponse = Schemas["AgentMetadataResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
  * SDK-facing value with `Camelize<AgentNftResponse>` (exported by
  * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
  * `AgentNftResponse`.
@@ -148,6 +175,15 @@ export type AgentProfileRelationshipsResponse = Schemas["AgentProfileRelationshi
  * `AgentProfileSummaryResponse`.
  */
 export type AgentProfileSummaryResponse = Schemas["AgentProfileSummaryResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<AgentRegistrationResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `AgentRegistrationResponse`.
+ */
+export type AgentRegistrationResponse = Schemas["AgentRegistrationResponse"]
 
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
@@ -184,6 +220,15 @@ export type AgentRelationshipRemovalResponse = Schemas["AgentRelationshipRemoval
  * `AgentRelationshipResponse`.
  */
 export type AgentRelationshipResponse = Schemas["AgentRelationshipResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<AgentServiceResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `AgentServiceResponse`.
+ */
+export type AgentServiceResponse = Schemas["AgentServiceResponse"]
 
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
@@ -1016,6 +1061,24 @@ export type EventBase = Schemas["EventBase"]
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
  * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<FacetGroupResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `FacetGroupResponse`.
+ */
+export type FacetGroupResponse = Schemas["FacetGroupResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<FacetValueResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `FacetValueResponse`.
+ */
+export type FacetValueResponse = Schemas["FacetValueResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
  * SDK-facing value with `Camelize<FaqBlockModuleRequest>` (exported by
  * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
  * `FaqBlockModuleRequest`.
@@ -1354,6 +1417,15 @@ export type ListingPrice = Schemas["ListingPrice"]
  * `ListingPriceInput`.
  */
 export type ListingPriceInput = Schemas["ListingPriceInput"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<ListingPriceResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `ListingPriceResponse`.
+ */
+export type ListingPriceResponse = Schemas["ListingPriceResponse"]
 
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
@@ -2362,6 +2434,33 @@ export type SocialProfilePageResponse = Schemas["SocialProfilePageResponse"]
  * `SocialProfileSummaryResponse`.
  */
 export type SocialProfileSummaryResponse = Schemas["SocialProfileSummaryResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<StandardizedNft>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `StandardizedNft`.
+ */
+export type StandardizedNft = Schemas["StandardizedNft"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<StandardizedNftFacetsResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `StandardizedNftFacetsResponse`.
+ */
+export type StandardizedNftFacetsResponse = Schemas["StandardizedNftFacetsResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<StandardizedNftListResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `StandardizedNftListResponse`.
+ */
+export type StandardizedNftListResponse = Schemas["StandardizedNftListResponse"]
 
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`

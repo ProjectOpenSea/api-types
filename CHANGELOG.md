@@ -1,5 +1,11 @@
 # @opensea/api-types
 
+## 0.16.1
+
+### Patch Changes
+
+- 8daac26: Sync OpenAPI spec. Adds `list_nfts_by_group` (`GET /api/v2/nfts/group/{group}`) and `list_nft_group_facets` (`GET /api/v2/nfts/group/{group}/facets`) with the `StandardizedNft`, `StandardizedNftListResponse`, `ListingPriceResponse`, `StandardizedNftFacetsResponse`, `FacetGroupResponse` and `FacetValueResponse` schemas. `get_nfts_by_account` now returns `AccountNftListResponse`, whose `AccountNft` items add the required `quantity` and `quantity_string` held by the account. `NftDetailed` adds the optional `agent_metadata` (`AgentMetadataResponse`, `AgentServiceResponse`, `AgentRegistrationResponse`), the parsed ERC-8004 registration file of an agent identity NFT. The collection image upload, modify collection and update collection metadata 403 responses now use the shared `Forbidden` error response instead of the success schema, and media tokens that do not resolve now fail a metadata update with 400 instead of being dropped.
+
 ## 0.16.0
 
 ### Minor Changes
