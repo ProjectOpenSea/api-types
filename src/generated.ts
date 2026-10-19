@@ -1652,6 +1652,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/pfp/top-collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get top NFT collections by profile-picture wearer count
+         * @description NFT collections ranked by how many accounts use a verified (currently-owned) NFT from the collection as their profile picture, most first. Only active, non-hidden collections are ranked; ties are ordered by collection slug ascending. Shared-storefront contracts contribute only the tokens that belong to a given collection.
+         */
+        get: operations["get_top_pfp_collections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/orders/chain/{chain}/protocol/{protocol_address}/{order_hash}": {
         parameters: {
             query?: never;
@@ -2092,6 +2112,26 @@ export interface paths {
          * @description Get statistics for a collection including volume, floor price, and trading metrics. Each currency-denominated figure carries its own symbol: volume is reported in the currency named by volume_symbol, and the floor in the currency named by floor_price_symbol. The two can differ, so read each number against its own symbol.
          */
         get: operations["get_collection_stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/collections/{slug}/pfp-profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get profiles using a collection NFT as their profile picture
+         * @description Only profiles with a verified (currently-owned) NFT profile picture from this collection are returned. Results are grouped by contract, then ordered by token ID as a string.
+         */
+        get: operations["get_collection_pfp_profiles"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3922,7 +3962,10 @@ export interface components {
             /** @description Identity of a Solana order, present in place of `order_hash`. A client that assumes `order_hash` is always set should read this field first and fall back to `order_hash`. */
             svm_order?: components["schemas"]["SvmOrderIdentity"];
             criteria?: components["schemas"]["Criteria"] | null;
+            /** @description Total consideration for the whole order (price per item multiplied by the order's item quantity). For a single-item order this equals `price_per_item`. */
             price: components["schemas"]["Price"];
+            /** @description Price of a single item in this order. For multi-quantity orders, `price` is the total for all items; divide by the item quantity or use this field for the per-item amount. */
+            price_per_item: components["schemas"]["Price"];
             /** @enum {string} */
             status: "ACTIVE" | "INACTIVE" | "FULFILLED" | "EXPIRED" | "CANCELLED";
         };
@@ -3962,6 +4005,7 @@ export interface components {
             totalOriginalConsiderationItems: number;
             counter: number;
         };
+        /** @description An amount of a payment currency. `value` is expressed in the currency's base units (e.g. wei), i.e. the human-readable amount multiplied by 10^`decimals`. */
         Price: {
             currency: string;
             /** Format: int32 */
@@ -4008,6 +4052,8 @@ export interface components {
             /** @description Identity of a Solana order, present in place of `order_hash`. A client that assumes `order_hash` is always set should read this field first and fall back to `order_hash`. */
             svm_order?: components["schemas"]["SvmOrderIdentity"];
             price: components["schemas"]["ListingPrice"];
+            /** @description Price of a single item in this order. For multi-quantity orders, `price` is the total for all items; divide by the item quantity or use this field for the per-item amount. */
+            price_per_item: components["schemas"]["Price"];
             type: string;
             /** @enum {string} */
             status: "ACTIVE" | "INACTIVE" | "FULFILLED" | "EXPIRED" | "CANCELLED";
@@ -6113,6 +6159,21 @@ export interface components {
             /** @description Cursor for the next page, or null when this is the last page */
             next?: string | null;
         };
+        /** @description A collection ranked by verified NFT profile-picture wearer count */
+        TopPfpCollectionResponse: {
+            /** Format: int32 */
+            rank: number;
+            collection: components["schemas"]["CollectionResponse"];
+            /**
+             * Format: int64
+             * @description Number of accounts whose verified NFT profile picture is from this collection; shared-storefront contracts count only tokens that belong to it
+             */
+            pfp_wearer_count: number;
+        };
+        /** @description NFT collections ranked by verified NFT profile-picture wearer count */
+        TopPfpCollectionsResponse: {
+            collections: components["schemas"]["TopPfpCollectionResponse"][];
+        };
         GetOrderResponse: {
             order: components["schemas"]["Listing"] | components["schemas"]["Offer"];
         };
@@ -6592,6 +6653,20 @@ export interface components {
              * @example ETH
              */
             floor_price_symbol: string;
+        };
+        /** @description A profile using a verified NFT from the collection as its profile picture */
+        CollectionPfpProfileResponse: {
+            address: string;
+            username?: string | null;
+            display_name?: string | null;
+            profile_image_url?: string | null;
+            is_verified: boolean;
+            nft_pfp: components["schemas"]["NftPfpResponse"];
+        };
+        /** @description Profiles using a verified NFT from the collection as their profile picture */
+        CollectionPfpProfilesResponse: {
+            profiles: components["schemas"]["CollectionPfpProfileResponse"][];
+            next?: string | null;
         };
         /** @description A bidder in an offer aggregate */
         BidderResponse: {
@@ -11036,6 +11111,39 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    get_top_pfp_collections: {
+        parameters: {
+            query: {
+                /**
+                 * @description Maximum number of collections to return (1-50).
+                 * @example 25
+                 */
+                limit: number;
+                /**
+                 * @description Chain to filter results by. Omit to rank across all chains.
+                 * @example ethereum
+                 */
+                chain?: components["schemas"]["ChainIdentifier"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Top PFP collections list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TopPfpCollectionsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalError"];
+        };
+    };
     get_order: {
         parameters: {
             query?: never;
@@ -11925,6 +12033,42 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CollectionStatsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_collection_pfp_profiles: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Number of items to return per page
+                 * @example 20
+                 */
+                limit?: number;
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description Unique identifier for the specific collection
+                 * @example doodles-official
+                 */
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CollectionPfpProfilesResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];

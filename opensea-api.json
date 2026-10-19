@@ -5401,6 +5401,55 @@
         }
       }
     },
+    "/api/v2/pfp/top-collections": {
+      "get": {
+        "tags": ["Collection Endpoints"],
+        "summary": "Get top NFT collections by profile-picture wearer count",
+        "description": "NFT collections ranked by how many accounts use a verified (currently-owned) NFT from the collection as their profile picture, most first. Only active, non-hidden collections are ranked; ties are ordered by collection slug ascending. Shared-storefront contracts contribute only the tokens that belong to a given collection.",
+        "operationId": "get_top_pfp_collections",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of collections to return (1-50).",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 25
+          },
+          {
+            "name": "chain",
+            "in": "query",
+            "description": "Chain to filter results by. Omit to rank across all chains.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ChainIdentifier"
+            },
+            "example": "ethereum"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Top PFP collections list",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopPfpCollectionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/api/v2/orders/chain/{chain}/protocol/{protocol_address}/{order_hash}": {
       "get": {
         "tags": ["Order Endpoints"],
@@ -7379,6 +7428,71 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/CollectionStatsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v2/collections/{slug}/pfp-profiles": {
+      "get": {
+        "tags": ["Collection Endpoints"],
+        "summary": "Get profiles using a collection NFT as their profile picture",
+        "description": "Only profiles with a verified (currently-owned) NFT profile picture from this collection are returned. Results are grouped by contract, then ordered by token ID as a string.",
+        "operationId": "get_collection_pfp_profiles",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Unique identifier for the specific collection",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "doodles-official"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items to return per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50,
+              "description": "Number of items to return per page",
+              "example": 20,
+              "maximum": 100,
+              "minimum": 1
+            },
+            "example": 20
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionPfpProfilesResponse"
                 }
               }
             }
@@ -12347,7 +12461,12 @@
                 ]
               },
               "price": {
-                "$ref": "#/components/schemas/Price"
+                "$ref": "#/components/schemas/Price",
+                "description": "Total consideration for the whole order (price per item multiplied by the order's item quantity). For a single-item order this equals `price_per_item`."
+              },
+              "price_per_item": {
+                "$ref": "#/components/schemas/Price",
+                "description": "Price of a single item in this order. For multi-quantity orders, `price` is the total for all items; divide by the item quantity or use this field for the per-item amount."
               },
               "status": {
                 "type": "string",
@@ -12362,7 +12481,13 @@
             }
           }
         ],
-        "required": ["chain", "price", "remaining_quantity", "status"]
+        "required": [
+          "chain",
+          "price",
+          "price_per_item",
+          "remaining_quantity",
+          "status"
+        ]
       },
       "Order": {
         "type": "object",
@@ -12486,6 +12611,7 @@
       },
       "Price": {
         "type": "object",
+        "description": "An amount of a payment currency. `value` is expressed in the currency's base units (e.g. wei), i.e. the human-readable amount multiplied by 10^`decimals`.",
         "properties": {
           "currency": {
             "type": "string"
@@ -12602,6 +12728,10 @@
               "price": {
                 "$ref": "#/components/schemas/ListingPrice"
               },
+              "price_per_item": {
+                "$ref": "#/components/schemas/Price",
+                "description": "Price of a single item in this order. For multi-quantity orders, `price` is the total for all items; divide by the item quantity or use this field for the per-item amount."
+              },
               "type": {
                 "type": "string"
               },
@@ -12618,7 +12748,14 @@
             }
           }
         ],
-        "required": ["chain", "price", "remaining_quantity", "status", "type"]
+        "required": [
+          "chain",
+          "price",
+          "price_per_item",
+          "remaining_quantity",
+          "status",
+          "type"
+        ]
       },
       "ListingPrice": {
         "type": "object",
@@ -17755,6 +17892,38 @@
         },
         "required": ["tools"]
       },
+      "TopPfpCollectionResponse": {
+        "type": "object",
+        "description": "A collection ranked by verified NFT profile-picture wearer count",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "collection": {
+            "$ref": "#/components/schemas/CollectionResponse"
+          },
+          "pfp_wearer_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of accounts whose verified NFT profile picture is from this collection; shared-storefront contracts count only tokens that belong to it"
+          }
+        },
+        "required": ["collection", "pfp_wearer_count", "rank"]
+      },
+      "TopPfpCollectionsResponse": {
+        "type": "object",
+        "description": "NFT collections ranked by verified NFT profile-picture wearer count",
+        "properties": {
+          "collections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopPfpCollectionResponse"
+            }
+          }
+        },
+        "required": ["collections"]
+      },
       "GetOrderResponse": {
         "type": "object",
         "properties": {
@@ -18965,6 +19134,47 @@
           "volume",
           "volume_symbol"
         ]
+      },
+      "CollectionPfpProfileResponse": {
+        "type": "object",
+        "description": "A profile using a verified NFT from the collection as its profile picture",
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "username": {
+            "type": ["string", "null"]
+          },
+          "display_name": {
+            "type": ["string", "null"]
+          },
+          "profile_image_url": {
+            "type": ["string", "null"]
+          },
+          "is_verified": {
+            "type": "boolean"
+          },
+          "nft_pfp": {
+            "$ref": "#/components/schemas/NftPfpResponse"
+          }
+        },
+        "required": ["address", "is_verified", "nft_pfp"]
+      },
+      "CollectionPfpProfilesResponse": {
+        "type": "object",
+        "description": "Profiles using a verified NFT from the collection as their profile picture",
+        "properties": {
+          "profiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CollectionPfpProfileResponse"
+            }
+          },
+          "next": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["profiles"]
       },
       "BidderResponse": {
         "type": "object",

@@ -566,6 +566,24 @@ export type CollectionPaginatedResponse = Schemas["CollectionPaginatedResponse"]
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
  * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<CollectionPfpProfileResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `CollectionPfpProfileResponse`.
+ */
+export type CollectionPfpProfileResponse = Schemas["CollectionPfpProfileResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<CollectionPfpProfilesResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `CollectionPfpProfilesResponse`.
+ */
+export type CollectionPfpProfilesResponse = Schemas["CollectionPfpProfilesResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
  * SDK-facing value with `Camelize<CollectionRarity>` (exported by
  * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
  * `CollectionRarity`.
@@ -3064,6 +3082,24 @@ export type ToolUsageRequest = Schemas["ToolUsageRequest"]
  * `ToolUsageResponse`.
  */
 export type ToolUsageResponse = Schemas["ToolUsageResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<TopPfpCollectionResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `TopPfpCollectionResponse`.
+ */
+export type TopPfpCollectionResponse = Schemas["TopPfpCollectionResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<TopPfpCollectionsResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `TopPfpCollectionsResponse`.
+ */
+export type TopPfpCollectionsResponse = Schemas["TopPfpCollectionsResponse"]
 
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`

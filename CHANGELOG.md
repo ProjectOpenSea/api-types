@@ -1,5 +1,11 @@
 # @opensea/api-types
 
+## 0.17.0
+
+### Minor Changes
+
+- df922bd: Sync OpenAPI spec: add `get_top_pfp_collections` (`GET /api/v2/pfp/top-collections`) and `get_collection_pfp_profiles` (`GET /api/v2/collections/{slug}/pfp-profiles`) with their response schemas, and add required `price_per_item` to `Offer` and `Listing`. Minor bump: the new required field breaks code that constructs `Offer`/`Listing` object literals without it.
+
 ## 0.16.1
 
 ### Patch Changes
