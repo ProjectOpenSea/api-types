@@ -1,5 +1,11 @@
 # @opensea/api-types
 
+## 0.17.1
+
+### Patch Changes
+
+- 002e5ae: Sync OpenAPI spec: `get_top_pfp_collections` gains `chains`, `categories`, `min_floor_price_usd` and `max_floor_price_usd` query params (`chain` is deprecated) and documents `limit` bounds (1-50); `TokenDetailedResponse` gains `description_provider`; updated PFP endpoint descriptions.
+
 ## 0.17.0
 
 ### Minor Changes

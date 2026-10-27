@@ -1661,7 +1661,7 @@ export interface paths {
         };
         /**
          * Get top NFT collections by profile-picture wearer count
-         * @description NFT collections ranked by how many accounts use a verified (currently-owned) NFT from the collection as their profile picture, most first. Only active, non-hidden collections are ranked; ties are ordered by collection slug ascending. Shared-storefront contracts contribute only the tokens that belong to a given collection.
+         * @description NFT collections ranked by how many accounts use a verified (currently-owned) NFT from the collection as their profile picture, most first. Only verified collections are ranked. A verified collection is still not ranked when it is blacklisted or trust and safety has delisted, disabled, marked it as spam, or excluded it from promotion, top and trending lists, or discovery. Name registries (ENS and Basenames) and collections with no verified wearers are never ranked. Ties are ordered by collection slug ascending. Each wearer counts for the collection their NFT belongs to, so a contract shared by several collections is split per item, and wearers are counted as get_collection_pfp_profiles lists them. The chain, category and floor price filters narrow the board, and ranks stay contiguous from 1 within it.
          */
         get: operations["get_top_pfp_collections"];
         put?: never;
@@ -2129,7 +2129,7 @@ export interface paths {
         };
         /**
          * Get profiles using a collection NFT as their profile picture
-         * @description Only profiles with a verified (currently-owned) NFT profile picture from this collection are returned. Results are grouped by contract, then ordered by token ID as a string.
+         * @description Only profiles with a verified (currently-owned) NFT profile picture from this collection are returned, and only public ones: accounts that are banned, suspended, disabled, deleted, or have no public wallet are left out. Results are grouped by chain and contract, then ordered by token ID as a string.
          */
         get: operations["get_collection_pfp_profiles"];
         put?: never;
@@ -3396,6 +3396,8 @@ export interface components {
              * @enum {string|null}
              */
             description_source?: "TOKEN_METADATA" | "AI_GENERATED" | null;
+            /** @description Provider of the token metadata description. Known values: `COINGECKO`, `GECKOTERMINAL`, `DEXSCREENER`. Null for AI-generated descriptions or when the provider is unknown. This is an open enum: new values may be added; clients must tolerate unrecognized values. */
+            description_provider?: string | null;
             /**
              * Format: double
              * @description When an AI-generated description was generated
@@ -6166,7 +6168,7 @@ export interface components {
             collection: components["schemas"]["CollectionResponse"];
             /**
              * Format: int64
-             * @description Number of accounts whose verified NFT profile picture is from this collection; shared-storefront contracts count only tokens that belong to it
+             * @description Number of public profiles whose verified NFT profile picture belongs to this collection, counted as get_collection_pfp_profiles lists them
              */
             pfp_wearer_count: number;
         };
@@ -11120,10 +11122,25 @@ export interface operations {
                  */
                 limit: number;
                 /**
-                 * @description Chain to filter results by. Omit to rank across all chains.
+                 * @deprecated
+                 * @description Deprecated: use chains. Same as chains with this one chain; when both are given, wearers on any of them count.
                  * @example ethereum
                  */
                 chain?: components["schemas"]["ChainIdentifier"];
+                /**
+                 * @description Chains whose wearers count, as a comma-separated list or a repeated parameter. Omit to rank across all chains. A chain that is not supported matches no wearers.
+                 * @example ethereum,base
+                 */
+                chains?: components["schemas"]["ChainIdentifier"][];
+                /**
+                 * @description Categories to rank, as a comma-separated list or a repeated parameter (e.g. art, gaming, memberships, music, pfps, photography, domain-names, virtual-worlds, sports-collectibles, physical-collectibles). Omit to rank every category.
+                 * @example pfps,art
+                 */
+                categories?: string[];
+                /** @description Minimum floor (best listing) price in USD, inclusive; must not exceed max_floor_price_usd. Collections with no listing priced in USD are left out when either floor price bound is given. Rounded down to two significant digits. */
+                min_floor_price_usd?: number;
+                /** @description Maximum floor (best listing) price in USD, inclusive. Collections with no listing priced in USD are left out when either floor price bound is given. Rounded up to two significant digits. */
+                max_floor_price_usd?: number;
             };
             header?: never;
             path?: never;

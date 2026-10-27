@@ -5405,7 +5405,7 @@
       "get": {
         "tags": ["Collection Endpoints"],
         "summary": "Get top NFT collections by profile-picture wearer count",
-        "description": "NFT collections ranked by how many accounts use a verified (currently-owned) NFT from the collection as their profile picture, most first. Only active, non-hidden collections are ranked; ties are ordered by collection slug ascending. Shared-storefront contracts contribute only the tokens that belong to a given collection.",
+        "description": "NFT collections ranked by how many accounts use a verified (currently-owned) NFT from the collection as their profile picture, most first. Only verified collections are ranked. A verified collection is still not ranked when it is blacklisted or trust and safety has delisted, disabled, marked it as spam, or excluded it from promotion, top and trending lists, or discovery. Name registries (ENS and Basenames) and collections with no verified wearers are never ranked. Ties are ordered by collection slug ascending. Each wearer counts for the collection their NFT belongs to, so a contract shared by several collections is split per item, and wearers are counted as get_collection_pfp_profiles lists them. The chain, category and floor price filters narrow the board, and ranks stay contiguous from 1 within it.",
         "operationId": "get_top_pfp_collections",
         "parameters": [
           {
@@ -5415,19 +5415,68 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int32"
+              "format": "int32",
+              "maximum": 50,
+              "minimum": 1
             },
             "example": 25
           },
           {
             "name": "chain",
             "in": "query",
-            "description": "Chain to filter results by. Omit to rank across all chains.",
+            "description": "Deprecated: use chains. Same as chains with this one chain; when both are given, wearers on any of them count.",
             "required": false,
+            "deprecated": true,
             "schema": {
               "$ref": "#/components/schemas/ChainIdentifier"
             },
             "example": "ethereum"
+          },
+          {
+            "name": "chains",
+            "in": "query",
+            "description": "Chains whose wearers count, as a comma-separated list or a repeated parameter. Omit to rank across all chains. A chain that is not supported matches no wearers.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ChainIdentifier"
+              }
+            },
+            "example": "ethereum,base"
+          },
+          {
+            "name": "categories",
+            "in": "query",
+            "description": "Categories to rank, as a comma-separated list or a repeated parameter (e.g. art, gaming, memberships, music, pfps, photography, domain-names, virtual-worlds, sports-collectibles, physical-collectibles). Omit to rank every category.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "example": "pfps,art"
+          },
+          {
+            "name": "min_floor_price_usd",
+            "in": "query",
+            "description": "Minimum floor (best listing) price in USD, inclusive; must not exceed max_floor_price_usd. Collections with no listing priced in USD are left out when either floor price bound is given. Rounded down to two significant digits.",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "max_floor_price_usd",
+            "in": "query",
+            "description": "Maximum floor (best listing) price in USD, inclusive. Collections with no listing priced in USD are left out when either floor price bound is given. Rounded up to two significant digits.",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
           }
         ],
         "responses": {
@@ -7448,7 +7497,7 @@
       "get": {
         "tags": ["Collection Endpoints"],
         "summary": "Get profiles using a collection NFT as their profile picture",
-        "description": "Only profiles with a verified (currently-owned) NFT profile picture from this collection are returned. Results are grouped by contract, then ordered by token ID as a string.",
+        "description": "Only profiles with a verified (currently-owned) NFT profile picture from this collection are returned, and only public ones: accounts that are banned, suspended, disabled, deleted, or have no public wallet are left out. Results are grouped by chain and contract, then ordered by token ID as a string.",
         "operationId": "get_collection_pfp_profiles",
         "parameters": [
           {
@@ -11313,6 +11362,10 @@
             "type": ["string", "null"],
             "description": "Source of the description. `TOKEN_METADATA` is supplied by token metadata; `AI_GENERATED` is OpenSea's generated token-page description.",
             "enum": ["TOKEN_METADATA", "AI_GENERATED", null]
+          },
+          "description_provider": {
+            "type": ["string", "null"],
+            "description": "Provider of the token metadata description. Known values: `COINGECKO`, `GECKOTERMINAL`, `DEXSCREENER`. Null for AI-generated descriptions or when the provider is unknown. This is an open enum: new values may be added; clients must tolerate unrecognized values."
           },
           "description_generated_at": {
             "type": ["number", "null"],
@@ -17906,7 +17959,7 @@
           "pfp_wearer_count": {
             "type": "integer",
             "format": "int64",
-            "description": "Number of accounts whose verified NFT profile picture is from this collection; shared-storefront contracts count only tokens that belong to it"
+            "description": "Number of public profiles whose verified NFT profile picture belongs to this collection, counted as get_collection_pfp_profiles lists them"
           }
         },
         "required": ["collection", "pfp_wearer_count", "rank"]
