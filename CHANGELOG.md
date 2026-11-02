@@ -1,5 +1,11 @@
 # @opensea/api-types
 
+## 0.17.2
+
+### Patch Changes
+
+- e661c1e: Sync OpenAPI spec: add `get_wallet_link_nonce` (`POST /api/v2/accounts/wallets/siwx/nonce`, `write:wallets`) and the `WalletLinkNonceResponse` schema; `link_wallet_with_siwx` now documents the purpose-bound nonce step.
+
 ## 0.17.1
 
 ### Patch Changes

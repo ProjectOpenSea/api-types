@@ -1237,7 +1237,7 @@ export interface paths {
         put?: never;
         /**
          * Link a wallet to the authenticated account
-         * @description Verify control of a wallet using a SIWX signature and link it to the authenticated account.
+         * @description Verify control of a wallet using a SIWX signature and link it to the authenticated account. First call get_wallet_link_nonce and build the SIWX message with the returned nonce and statement verbatim, then sign it with the wallet being linked. Messages signed over a sign-in nonce (/api/v2/auth/siwe/nonce) are deprecated for linking and will be rejected.
          */
         post: operations["link_wallet_with_siwx"];
         delete?: never;
@@ -3012,6 +3012,26 @@ export interface paths {
          *     Failures are deliberately opaque. An unknown, revoked, rotated, or non-scoped subject token and a disabled integration all return the same 403 `Token exchange is not available`, so a 403 is not by itself evidence that the endpoint is unavailable.
          */
         post: operations["exchange_scoped_token"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/accounts/wallets/siwx/nonce": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get a nonce for linking a wallet
+         * @description Issue a single-use nonce for linking a wallet to the authenticated account, with the statement to sign. Build the SIWX message with this nonce and this statement verbatim, sign it with the wallet, and submit it to link_wallet_with_siwx. The nonce is valid for 10 minutes and only for this account.
+         */
+        post: operations["get_wallet_link_nonce"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7883,6 +7903,10 @@ export interface components {
                  */
                 code?: number;
             };
+        };
+        WalletLinkNonceResponse: {
+            nonce: string;
+            statement: string;
         };
     };
     responses: {
@@ -13820,6 +13844,62 @@ export interface operations {
                     "application/json": components["schemas"]["AuthErrorResponse"];
                 };
             };
+        };
+    };
+    get_wallet_link_nonce: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Nonce issued */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletLinkNonceResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            500: components["responses"]["InternalError"];
         };
     };
 }

@@ -3801,7 +3801,7 @@
       "post": {
         "tags": ["Account Endpoints"],
         "summary": "Link a wallet to the authenticated account",
-        "description": "Verify control of a wallet using a SIWX signature and link it to the authenticated account.",
+        "description": "Verify control of a wallet using a SIWX signature and link it to the authenticated account. First call get_wallet_link_nonce and build the SIWX message with the returned nonce and statement verbatim, then sign it with the wallet being linked. Messages signed over a sign-in nonce (/api/v2/auth/siwe/nonce) are deprecated for linking and will be rejected.",
         "operationId": "link_wallet_with_siwx",
         "requestBody": {
           "content": {
@@ -10643,6 +10643,73 @@
           }
         },
         "security": []
+      }
+    },
+    "/api/v2/accounts/wallets/siwx/nonce": {
+      "post": {
+        "tags": ["Account Endpoints"],
+        "summary": "Get a nonce for linking a wallet",
+        "description": "Issue a single-use nonce for linking a wallet to the authenticated account, with the statement to sign. Build the SIWX message with this nonce and this statement verbatim, sign it with the wallet, and submit it to link_wallet_with_siwx. The nonce is valid for 10 minutes and only for this account.",
+        "operationId": "get_wallet_link_nonce",
+        "responses": {
+          "200": {
+            "description": "Nonce issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletLinkNonceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1ErrorWrapper"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1ErrorWrapper"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1ErrorWrapper"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:wallets"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:wallets"]
       }
     }
   },
@@ -21830,6 +21897,7 @@
             "/api/v2/accounts/agent-relationships",
             "/api/v2/accounts/agent-relationships/confirm",
             "/api/v2/accounts/wallets/siwx",
+            "/api/v2/accounts/wallets/siwx/nonce",
             "/api/v2/accounts/wallets/{wallet}",
             "/api/v2/accounts/wallets/{wallet}/private"
           ]
@@ -21931,6 +21999,18 @@
             }
           }
         }
+      },
+      "WalletLinkNonceResponse": {
+        "type": "object",
+        "properties": {
+          "nonce": {
+            "type": "string"
+          },
+          "statement": {
+            "type": "string"
+          }
+        },
+        "required": ["nonce", "statement"]
       }
     },
     "responses": {

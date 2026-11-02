@@ -3428,6 +3428,15 @@ export type VideoMediaRequest = Schemas["VideoMediaRequest"]
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
  * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<WalletLinkNonceResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `WalletLinkNonceResponse`.
+ */
+export type WalletLinkNonceResponse = Schemas["WalletLinkNonceResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
  * SDK-facing value with `Camelize<WalletLinkResponse>` (exported by
  * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
  * `WalletLinkResponse`.
