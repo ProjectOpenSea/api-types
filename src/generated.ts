@@ -185,6 +185,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/signals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List public OpenSea signals
+         * @description Select exactly one subject: currency (chain and contract), item (chain, contract and token_id), or collection (slug only). Results are newest first and exclude private, removed, external and pending or unconfirmed NFT buy signals and hidden chains. An unknown or inactive collection returns an empty list. A page can be empty after visibility filtering; continue using next until it is null. Pass next unchanged as cursor. Responses must not be cached.
+         */
+        get: operations["list_signals"];
+        put?: never;
+        /**
+         * Create an OpenSea signal
+         * @description Create a signal for the authenticated account. Requires an API key and a bearer token with write:posts consent. author_address defaults to the wallet the token signed in with; the author must be a public registered wallet on the account that holds the subject. Subject eligibility, content rules, and a per-account, per-subject cooldown apply. Creation is not idempotent: retrying after an unknown outcome can create a second signal once the cooldown allows. The public GET may return 404 when privacy settings or moderation hide the signal.
+         */
+        post: operations["create_signal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/saved-tools": {
         parameters: {
             query?: never;
@@ -719,6 +743,8 @@ export interface paths {
          * Save prereveal drop item
          * @description Sets the placeholder every token shows until the drop is revealed: one name, description, and image, from a media_token issued by POST /api/v2/drops/{slug}/items/media. It saves a placeholder base URI to the draft, so publish afterwards to put it onchain. Running POST /api/v2/drops/{slug}/metadata/ipfs later replaces it with the real metadata.
          *
+         *     Saving it on a revealed drop changes only the stored item and leaves the drop revealed. To put the placeholder back over a revealed drop on purpose, send unreveal=true: the placeholder is written to the draft, and the next publish un-reveals the drop.
+         *
          *     Only ERC-721 SeaDrop V1 drops have a prereveal item; any other drop type returns 400.
          */
         post: operations["save_prereveal_drop_item"];
@@ -739,9 +765,11 @@ export interface paths {
         put?: never;
         /**
          * Build mint transaction data for a drop
-         * @description Returns ready-to-sign transaction data for minting tokens from a drop. The caller is responsible for signing and submitting the transaction. No wallet authentication is required, only an API key. The minter address in the request body determines who will receive the tokens. Stage selection is handled automatically by the backend: if multiple stages are active, the first eligible stage is used.
+         * @description Returns ready-to-sign transaction data for minting tokens from a drop. The caller is responsible for signing and submitting the transaction. No wallet authentication is required, only an API key. The minter address in the request body determines who will receive the tokens. The transaction is built for the stage whose window contains the current time, and the response names it in `stage_uuid`, `stage_type`, `stage_start_time` and `stage_end_time`.
          *
          *     Supports ERC-721 SeaDrop V1 drops only; an ERC-1155 drop returns 400.
+         *
+         *     Error bodies for the drop, stage and minter conditions below carry a stable `code` alongside `errors`. Branch on `code`, not on the message text.
          *
          *     A 422 means the drop is mintable but this mint is not: the minter is not on the active presale's allowlist (the message names the stage and when the public stage opens), the quantity is over the wallet's limit or the remaining supply (the message says how many remain), the minter cannot pay the price and gas, or the active stage has a price and the drop has no creator payout address, so every paid mint would revert until the creator sets one.
          */
@@ -763,7 +791,7 @@ export interface paths {
         put?: never;
         /**
          * Upload drop metadata to IPFS
-         * @description Uploads every saved item's media and metadata to IPFS, then saves the resulting folder as the drop's draft base URI. Run it after POST /api/v2/drops/{slug}/items/media/save; the drop needs at least one item. It does not change the contract: call POST /api/v2/drops/{slug}/publish once it completes.
+         * @description Uploads every saved item's media and metadata to IPFS, then saves the resulting folder as the drop's draft base URI. Run it after POST /api/v2/drops/{slug}/items/media/save-batch; the drop needs at least one item. It does not change the contract: call POST /api/v2/drops/{slug}/publish once it completes.
          *
          *     This is the reveal. The base URI it writes points at the real item metadata, so a drop published after it has completed is revealed as soon as it is live. To reveal later, publish without running it (showing the prereveal item from POST /api/v2/drops/{slug}/prereveal-item), then run it and publish again when ready.
          *
@@ -817,34 +845,9 @@ export interface paths {
         put?: never;
         /**
          * Upload drop item media
-         * @description This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds. Pass each token as media_token to POST /api/v2/drops/{slug}/items or POST /api/v2/drops/{slug}/prereveal-item, as media_tokens to POST /api/v2/drops/{slug}/items/media/save, or as media_token to PUT /api/v2/drops/{slug}/items/{token_id}. To save a drop's items in bulk, pass an upload_batch_id on the upload requests and save with POST /api/v2/drops/{slug}/items/media/save-batch, which takes filenames rather than tokens. Passing media_tokens to POST /api/v2/drops/{slug}/items/media/save is deprecated.
+         * @description This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds. Pass each token as media_token to POST /api/v2/drops/{slug}/items, POST /api/v2/drops/{slug}/prereveal-item, or PUT /api/v2/drops/{slug}/items/{token_id}. To save a drop's items in bulk, pass an upload_batch_id on the upload requests and save with POST /api/v2/drops/{slug}/items/media/save-batch, which takes filenames rather than tokens.
          */
         post: operations["upload_drop_item_media"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v2/drops/{slug}/items/media/save": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Save drop item media
-         * @deprecated
-         * @description Deprecated: use POST /api/v2/drops/{slug}/items/media/save-batch, which saves the same items by upload_batch_id and filename. This operation keeps working, but sends every media token back and checks each file separately, so it slows down with drop size.
-         *
-         *     Saves the drop's items from media tokens issued by POST /api/v2/drops/{slug}/items/media and uploaded to storage. Each save replaces the drop's items rather than adding to them. With a manifest from POST /api/v2/drops/{slug}/items/manifest, items take their token ids and metadata from it; without one they are numbered 1 to n in the order given.
-         *
-         *     Not available on ERC-1155 self-mint drops, which return 400: create each of their items with POST /api/v2/drops/{slug}/items.
-         */
-        post: operations["save_drop_item_media"];
         delete?: never;
         options?: never;
         head?: never;
@@ -862,7 +865,7 @@ export interface paths {
         put?: never;
         /**
          * Save drop item media from an upload batch
-         * @description Saves the drop's items from files uploaded with one upload_batch_id through POST /api/v2/drops/{slug}/items/media, naming them by filename instead of by media token. The request stays small for large drops: a 15,000-item save is about a tenth of the size of the same save by media token, and it is validated with one storage listing instead of one lookup per file. It behaves exactly like POST /api/v2/drops/{slug}/items/media/save otherwise: each save replaces the drop's items, a manifest from POST /api/v2/drops/{slug}/items/manifest supplies token ids and metadata, and without one items are numbered 1 to n in the order of filenames.
+         * @description Saves the drop's items from files uploaded with one upload_batch_id through POST /api/v2/drops/{slug}/items/media, naming them by filename instead of by media token. The request stays small for large drops, and it is validated with one storage listing instead of one lookup per file. Each save replaces the drop's items, a manifest from POST /api/v2/drops/{slug}/items/manifest supplies token ids and metadata, and without one items are numbered 1 to n in the order of filenames.
          *
          *     Returns 400 when a filename is listed twice or was not uploaded in the batch, naming the files concerned. If a file was uploaded more than once in the batch, the most recent upload is saved. Not available on ERC-1155 self-mint drops.
          */
@@ -995,7 +998,7 @@ export interface paths {
         put?: never;
         /**
          * Refresh collection metadata
-         * @description Queue a re-read of the collection's contract-level metadata, such as the name, description and image from contractURI(). Items with missing metadata are refetched too; to refresh one item use POST /api/v2/chain/{chain}/contract/{address}/nfts/{identifier}/refresh. The refresh runs in the background, so GET /api/v2/collections/{slug} shows the result after it finishes. Only the collection owner or an authorized editor can request it.
+         * @description Queue a re-read of the collection's contract-level metadata, such as the name, description and image from contractURI(). Items with missing metadata are refetched too; to refresh one item use POST /api/v2/chain/{chain}/contract/{address}/nfts/{identifier}/refresh. The refresh runs in the background, so GET /api/v2/collections/{slug} shows the result after it finishes. Only the collection owner or an authorized editor can request it, once every 3 hours per collection; an earlier repeat returns 429.
          *
          *     The contract-level metadata (contractURI() for most EVM contracts) wins for the fields it sets: a name, description, image or banner in it replaces the value saved with PATCH /api/v2/collections/{slug}, while a field it leaves out or blank keeps the saved value. Page content saved with PATCH /api/v2/collections/{slug}/metadata is kept the same way: the overview and about sections are kept, and hero and preview media are kept unless the refresh fetched its own for that slot, which then replaces the saved one.
          */
@@ -1082,6 +1085,8 @@ export interface paths {
         /**
          * Build creator fee enforcement transactions
          * @description Build the transactions that turn creator fee enforcement on or off for a collection, for the owner to sign and send. Turning it on sets OpenSea's transfer validator on the contract (the Creator earnings tab in Studio); turning it off removes it. Nothing changes until the transactions are mined. Only the collection owner can call this, and the contract must be owned onchain by that wallet. When enforcement is already in the requested state, transactions is empty and there is nothing to send. Check the result with GET /api/v2/collections/{slug}/creator_fee_enforcement.
+         *
+         *     On chains that use the Limit Break V5 validator, set allow_eip7702_transfers, allow_smart_wallet_transfers or both to also get the policy update that lets those wallets send the collection's NFTs directly. It is one separate transaction to the transfer validator, sent after the one that sets it. For a collection that is already enforced, it is the only transaction returned. It rewrites the collection's whole policy as read when it was built, so request it right before signing.
          */
         post: operations["build_creator_fee_enforcement_transactions"];
         delete?: never;
@@ -1240,6 +1245,26 @@ export interface paths {
          * @description Verify control of a wallet using a SIWX signature and link it to the authenticated account. First call get_wallet_link_nonce and build the SIWX message with the returned nonce and statement verbatim, then sign it with the wallet being linked. Messages signed over a sign-in nonce (/api/v2/auth/siwe/nonce) are deprecated for linking and will be rejected.
          */
         post: operations["link_wallet_with_siwx"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/accounts/wallets/siwx/nonce": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get a nonce for linking a wallet
+         * @description Issue a single-use nonce for linking a wallet to the authenticated account, with the statement to sign. Build the SIWX message with this nonce and this statement verbatim, sign it with the wallet, and submit it to link_wallet_with_siwx. The nonce is valid for 10 minutes and only for this account.
+         */
+        post: operations["get_wallet_link_nonce"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1627,6 +1652,30 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/signals/{signal_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a public OpenSea signal
+         * @description Returns only public OpenSea-authored signals on publicly available chains. Removed, private and pending or unconfirmed NFT buys return 404. Responses must not be cached.
+         */
+        get: operations["get_signal"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete an OpenSea signal
+         * @description Delete an OpenSea signal owned by the authenticated account. Requires an API key and a bearer token with write:posts consent. Signals that are missing, already deleted, from another platform, or owned by another account return 404.
+         */
+        delete: operations["delete_signal"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3018,26 +3067,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v2/accounts/wallets/siwx/nonce": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Get a nonce for linking a wallet
-         * @description Issue a single-use nonce for linking a wallet to the authenticated account, with the statement to sign. Build the SIWX message with this nonce and this statement verbatim, sign it with the wallet, and submit it to link_wallet_with_siwx. The nonce is valid for 10 minutes and only for this account.
-         */
-        post: operations["get_wallet_link_nonce"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3048,46 +3077,51 @@ export interface components {
          * @example ethereum
          * @enum {string}
          */
-        ChainIdentifier: "blast" | "base" | "ethereum" | "zora" | "arbitrum" | "sei" | "avalanche" | "polygon" | "optimism" | "ape_chain" | "flow" | "soneium" | "ronin" | "bera_chain" | "solana" | "shape" | "unichain" | "gunzilla" | "abstract" | "animechain" | "hyperevm" | "somnia" | "monad" | "hyperliquid" | "megaeth" | "ink" | "robinhood" | "stablechain" | "arc";
+        ChainIdentifier: "base" | "ethereum" | "zora" | "arbitrum" | "sei" | "avalanche" | "polygon" | "optimism" | "ape_chain" | "flow" | "soneium" | "ronin" | "bera_chain" | "solana" | "shape" | "unichain" | "gunzilla" | "abstract" | "animechain" | "hyperevm" | "somnia" | "monad" | "hyperliquid" | "megaeth" | "ink" | "robinhood";
+        V1ErrorWrapper: {
+            /**
+             * @description Stable machine-readable error code, on the errors that have one. Branch on it rather than on the message text, which may change.
+             * @example MINTER_NOT_ELIGIBLE
+             */
+            code?: string;
+            errors: string[];
+        };
         /** @description Ready-to-sign drop transaction */
         DropTransactionResponse: {
-            /** @description Transaction target contract address */
-            to: string;
-            /** @description Address the transaction must be sent from: the contract's onchain owner. Sent from any other address it reverts. */
-            from: string;
+            /** @description Chain identifier */
+            chain: string;
             /** @description Encoded transaction data (hex) */
             data: string;
+            /** @description Address the transaction must be sent from: the contract's onchain owner. Sent from any other address it reverts. */
+            from: string;
+            /** @description Transaction target contract address */
+            to: string;
             /**
              * @description Native currency to send with the transaction, in wei, as a decimal string (not hex)
              * @example 0
              */
             value: string;
-            /** @description Chain identifier */
-            chain: string;
         };
         /** @description Ready-to-sign SelfMint drop item transaction data */
         SelfMintDropItemResponse: {
-            /** @description Transaction target contract address */
-            to: string;
-            /** @description Address the transaction must be sent from: the contract's onchain owner. Sent from any other address it reverts. */
-            from: string;
-            /** @description Encoded transaction data (hex) */
-            data: string;
-            /**
-             * @description Native currency to send with the transaction, in wei, as a decimal string (not hex)
-             * @example 0
-             */
-            value: string;
             /** @description Chain identifier */
             chain: string;
+            /** @description Encoded transaction data (hex) */
+            data: string;
+            /** @description Address the transaction must be sent from: the contract's onchain owner. Sent from any other address it reverts. */
+            from: string;
+            /** @description Transaction target contract address */
+            to: string;
             /**
              * @description Token id of the item. On a create it is the id OpenSea assigned; the item mints under it once the transaction is mined.
              * @example 1
              */
             token_id: string;
-        };
-        V1ErrorWrapper: {
-            errors: string[];
+            /**
+             * @description Native currency to send with the transaction, in wei, as a decimal string (not hex)
+             * @example 0
+             */
+            value: string;
         };
         /** @description Trait identifier for a SelfMint drop item */
         SelfMintDropItemTraitRequest: {
@@ -3098,16 +3132,16 @@ export interface components {
         };
         /** @description Request to update a SelfMint drop item */
         UpdateSelfMintDropItemRequest: {
-            /** @description Media token reference */
-            media_token: string;
-            /** @description Item name */
-            name: string;
+            /** @description Animated media for the item, alongside its image. Omit to leave the stored value alone; send an empty string to remove it. */
+            animation_url?: string | null;
             /** @description Item description */
             description?: string | null;
             /** @description External URL */
             external_url?: string | null;
-            /** @description Animated media for the item, alongside its image. Omit to leave the stored value alone; send an empty string to remove it. */
-            animation_url?: string | null;
+            /** @description Media token reference */
+            media_token: string;
+            /** @description Item name */
+            name: string;
             /** @description Item traits */
             traits?: components["schemas"]["SelfMintDropItemTraitRequest"][] | null;
         };
@@ -3116,16 +3150,11 @@ export interface components {
             is_private: boolean;
         };
         AgentAccountStatusResponse: {
-            is_agent: boolean;
             changed: boolean;
+            is_agent: boolean;
         };
         /** @description Request body for managing a watchlist entry */
         WatchlistRequest: {
-            /**
-             * @description Watchlist entity type
-             * @enum {string}
-             */
-            type: "ITEM" | "TOKEN" | "COLLECTION" | "PERPETUAL";
             /**
              * @description Blockchain chain slug
              * @example ethereum
@@ -3133,12 +3162,17 @@ export interface components {
             chain?: string | null;
             /** @description Contract address */
             contract_address?: string | null;
-            /** @description Token ID */
-            token_id?: string | null;
-            /** @description Collection slug */
-            slug?: string | null;
             /** @description Perpetual ID */
             id?: string | null;
+            /** @description Collection slug */
+            slug?: string | null;
+            /** @description Token ID */
+            token_id?: string | null;
+            /**
+             * @description Watchlist entity type
+             * @enum {string}
+             */
+            type: "ITEM" | "TOKEN" | "COLLECTION" | "PERPETUAL";
         };
         /** @description Response for a favorites write operation */
         FavoriteResponse: {
@@ -3147,6 +3181,11 @@ export interface components {
         };
         /** @description An asset with quantity in base units */
         AssetQuantityInput: {
+            /**
+             * @description Amount in base units (wei/lamports)
+             * @example 1000000000000000000
+             */
+            amount: string;
             /**
              * @description The blockchain chain
              * @example ethereum
@@ -3162,11 +3201,6 @@ export interface components {
              * @example 1234
              */
             token_id?: string | null;
-            /**
-             * @description Amount in base units (wei/lamports)
-             * @example 1000000000000000000
-             */
-            amount: string;
         };
         /** @description The original swap quote assets */
         SwapQuoteInput: {
@@ -3178,11 +3212,6 @@ export interface components {
         /** @description A transaction identifier with optional swap provider */
         TransactionIdentifierInput: {
             /**
-             * @description The transaction hash
-             * @example 0xabc123...
-             */
-            transaction_hash: string;
-            /**
              * @description The blockchain chain
              * @example ethereum
              */
@@ -3192,17 +3221,22 @@ export interface components {
              * @example RELAY
              */
             swap_provider?: string | null;
+            /**
+             * @description The transaction hash
+             * @example 0xabc123...
+             */
+            transaction_hash: string;
         };
         /** @description Request to get a transaction receipt/status */
         TransactionReceiptRequest: {
-            /** @description Transaction identifiers to look up */
-            transaction_identifiers?: components["schemas"]["TransactionIdentifierInput"][] | null;
-            /** @description The swap quote that was originally submitted */
-            swap_quote: components["schemas"]["SwapQuoteInput"];
             /** @description Relay request ID for cross-chain tracking */
             relay_request_id?: string | null;
             /** @description Request ID for workflow tracking */
             request_id?: string | null;
+            /** @description The swap quote that was originally submitted */
+            swap_quote: components["schemas"]["SwapQuoteInput"];
+            /** @description Transaction identifiers to look up */
+            transaction_identifiers?: components["schemas"]["TransactionIdentifierInput"][] | null;
         };
         /** @description Asset identifier with chain, contract address, and optional token ID */
         AssetIdentifierResponse: {
@@ -3226,13 +3260,13 @@ export interface components {
         AssetReceiptResponse: {
             /** @description The asset received */
             asset: components["schemas"]["AssetIdentifierResponse"];
+            /** @description Price paid per item */
+            price: components["schemas"]["PriceResponse"];
             /**
              * @description Quantity received in base units
              * @example 1
              */
             quantity: string;
-            /** @description Price paid per item */
-            price: components["schemas"]["PriceResponse"];
         };
         /** @description Price information for an asset */
         PriceResponse: {
@@ -3259,59 +3293,59 @@ export interface components {
         };
         /** @description Transaction receipt with status and asset details */
         TransactionReceiptResponse: {
+            /** @description Successfully received assets */
+            asset_receipts: components["schemas"]["AssetReceiptResponse"][];
+            /** @description Whether a cross-chain refund was issued */
+            cross_chain_refunded?: boolean | null;
+            /** @description Reason for failure, if applicable */
+            fail_reason?: string | null;
+            /** @description Assets that failed to be received */
+            failed_asset_receipts: components["schemas"]["AssetReceiptResponse"][];
+            /** @description Assets that are missing from the receipt */
+            missing_assets: components["schemas"]["AssetIdentifierResponse"][];
             /**
              * @description Transaction status: PENDING, SUCCESS, PARTIAL_SUCCESS, or FAILED
              * @example SUCCESS
              */
             status: string;
-            /** @description Reason for failure, if applicable */
-            fail_reason?: string | null;
-            /** @description Successfully received assets */
-            asset_receipts: components["schemas"]["AssetReceiptResponse"][];
-            /** @description Assets that failed to be received */
-            failed_asset_receipts: components["schemas"]["AssetReceiptResponse"][];
             /** @description Total amount spent across all assets */
             total_spent: components["schemas"]["TotalSpentResponse"];
-            /** @description Assets that are missing from the receipt */
-            missing_assets: components["schemas"]["AssetIdentifierResponse"][];
-            /** @description Whether a cross-chain refund was issued */
-            cross_chain_refunded?: boolean | null;
         };
         Eip3009Fields: {
             caller_address?: string;
-            signature?: string;
             /** Format: int64 */
             chain_id?: number;
             from?: string;
+            nonce?: string;
+            signature?: string;
             to?: string;
-            value?: number;
             valid_after?: number;
             valid_before?: number;
-            nonce?: string;
+            value?: number;
         };
         ToolUsageRequest: {
-            verification_type?: string;
-            /** Format: int64 */
-            tool_chain_id?: number;
-            tool_registry_address?: string;
-            /** Format: int64 */
-            tool_onchain_id?: number;
-            tool_endpoint?: string;
+            eip3009?: components["schemas"]["Eip3009Fields"];
             /** Format: int64 */
             latency_ms?: number;
-            eip3009?: components["schemas"]["Eip3009Fields"];
+            /** Format: int64 */
+            tool_chain_id?: number;
+            tool_endpoint?: string;
+            /** Format: int64 */
+            tool_onchain_id?: number;
+            tool_registry_address?: string;
+            verification_type?: string;
             x402?: components["schemas"]["X402SettlementFields"];
         };
         X402SettlementFields: {
             caller_address?: string;
-            tx_hash?: string;
             /** Format: int64 */
             chain_id?: number;
+            tx_hash?: string;
         };
         ToolUsageResponse: {
             id: string;
-            verified: boolean;
             verification_type: string;
+            verified: boolean;
         };
         /** @description Request body for batch token retrieval by contract identifiers */
         BatchTokensRequest: {
@@ -3321,15 +3355,15 @@ export interface components {
         /** @description A token contract identifier consisting of chain and address */
         TokenContractInput: {
             /**
-             * @description The blockchain the token is on
-             * @example ethereum
-             */
-            chain: string;
-            /**
              * @description The contract address of the token
              * @example 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
              */
             address: string;
+            /**
+             * @description The blockchain the token is on
+             * @example ethereum
+             */
+            chain: string;
         };
         /** @description Common token identity fields shared across token responses */
         TokenBaseResponse: {
@@ -3344,30 +3378,30 @@ export interface components {
              */
             chain: string;
             /**
-             * @description The display name of the token
-             * @example USDC
-             */
-            name: string;
-            /**
-             * @description The ticker symbol of the token
-             * @example USDC
-             */
-            symbol: string;
-            /** @description URL of the token's image */
-            image_url?: string | null;
-            /**
-             * @description Current price in USD
-             * @example 1.0
-             */
-            usd_price: string;
-            /**
              * Format: int32
              * @description Number of decimal places
              * @example 6
              */
             decimals: number;
+            /** @description URL of the token's image */
+            image_url?: string | null;
+            /**
+             * @description The display name of the token
+             * @example USDC
+             */
+            name: string;
             /** @description URL to the token page on OpenSea */
             opensea_url: string;
+            /**
+             * @description The ticker symbol of the token
+             * @example USDC
+             */
+            symbol: string;
+            /**
+             * @description Current price in USD
+             * @example 1.0
+             */
+            usd_price: string;
         };
         TokenBatchResponse: {
             tokens: components["schemas"]["TokenDetailedResponse"][];
@@ -3385,82 +3419,78 @@ export interface components {
              */
             chain: string;
             /**
-             * @description The display name of the token
-             * @example USDC
+             * Format: double
+             * @description When OpenSea first recorded the token
              */
-            name: string;
-            /**
-             * @description The ticker symbol of the token
-             * @example USDC
-             */
-            symbol: string;
-            /** @description URL of the token's image */
-            image_url?: string | null;
-            /**
-             * @description Current price in USD
-             * @example 1.0
-             */
-            usd_price: string;
+            created_at?: number | null;
             /**
              * Format: int32
              * @description Number of decimal places
              * @example 6
              */
             decimals: number;
-            /** @description URL to the token page on OpenSea */
-            opensea_url: string;
             /** @description A description of the token */
             description?: string | null;
-            /**
-             * @description Source of the description. `TOKEN_METADATA` is supplied by token metadata; `AI_GENERATED` is OpenSea's generated token-page description.
-             * @enum {string|null}
-             */
-            description_source?: "TOKEN_METADATA" | "AI_GENERATED" | null;
-            /** @description Provider of the token metadata description. Known values: `COINGECKO`, `GECKOTERMINAL`, `DEXSCREENER`. Null for AI-generated descriptions or when the provider is unknown. This is an open enum: new values may be added; clients must tolerate unrecognized values. */
-            description_provider?: string | null;
             /**
              * Format: double
              * @description When an AI-generated description was generated
              */
             description_generated_at?: number | null;
+            /** @description Provider of the token metadata description. Known values: `COINGECKO`, `GECKOTERMINAL`, `DEXSCREENER`. Null for AI-generated descriptions or when the provider is unknown. This is an open enum: new values may be added; clients must tolerate unrecognized values. */
+            description_provider?: string | null;
+            /**
+             * @description Source of the description. `TOKEN_METADATA` is supplied by token metadata; `AI_GENERATED` is OpenSea's generated token-page description.
+             * @enum {string|null}
+             */
+            description_source?: "TOKEN_METADATA" | "AI_GENERATED" | null;
             /** @description Sources used for an AI-generated description */
             description_sources?: string[] | null;
-            /** @description Market statistics for the token */
-            stats?: components["schemas"]["TokenStatsResponse"] | null;
-            /** @description Social media links for the token */
-            socials?: components["schemas"]["TokenSocialsResponse"] | null;
-            /**
-             * Format: int64
-             * @description Number of token holders
-             */
-            holders_count?: number | null;
-            /** @description Whether OpenSea has verified the token */
-            is_verified: boolean;
-            /**
-             * Format: double
-             * @description When OpenSea first recorded the token
-             */
-            created_at?: number | null;
             /**
              * Format: double
              * @description Earliest known onchain activity for the token
              */
             genesis_date?: number | null;
             /**
+             * Format: int64
+             * @description Number of token holders
+             */
+            holders_count?: number | null;
+            /** @description URL of the token's image */
+            image_url?: string | null;
+            /** @description Whether OpenSea has verified the token */
+            is_verified: boolean;
+            /**
+             * @description The display name of the token
+             * @example USDC
+             */
+            name: string;
+            /** @description URL to the token page on OpenSea */
+            opensea_url: string;
+            /** @description Social media links for the token */
+            socials?: components["schemas"]["TokenSocialsResponse"] | null;
+            /** @description Market statistics for the token */
+            stats?: components["schemas"]["TokenStatsResponse"] | null;
+            /**
              * @description Token safety status based on OpenSea's spam-classification rules. `OK` for tokens that pass all safety checks (the normal case). Categories are intentionally broad and may evolve. Possible values, in decreasing severity: `WARNING` (flagged as risky/suspicious — caution advised), `SPAM` (flagged as spam), `LOW_LIQUIDITY` (insufficient liquidity pool reserves), `OK` (passes all checks).
              * @default OK
              * @enum {string}
              */
-            status: "OK" | "WARNING" | "SPAM" | "LOW_LIQUIDITY";
+            status?: "OK" | "WARNING" | "SPAM" | "LOW_LIQUIDITY";
+            /**
+             * @description The ticker symbol of the token
+             * @example USDC
+             */
+            symbol: string;
+            /**
+             * @description Current price in USD
+             * @example 1.0
+             */
+            usd_price: string;
         };
         /** @description Social media links for a token */
         TokenSocialsResponse: {
-            /** @description The token's website URL */
-            website?: string | null;
             /** @description The token's subreddit identifier */
             subreddit_identifier?: string | null;
-            /** @description The token's Twitter/X handle */
-            twitter_handle?: string | null;
             /** @description The token's Telegram identifier */
             telegram_identifier?: string | null;
             /**
@@ -3468,19 +3498,13 @@ export interface components {
              * @description Twitter/X follower count
              */
             twitter_follower_count?: number | null;
+            /** @description The token's Twitter/X handle */
+            twitter_handle?: string | null;
+            /** @description The token's website URL */
+            website?: string | null;
         };
         /** @description Market statistics for a token */
         TokenStatsResponse: {
-            /**
-             * Format: double
-             * @description Market capitalization in USD
-             */
-            market_cap_usd?: number | null;
-            /**
-             * Format: double
-             * @description Fully diluted valuation in USD
-             */
-            fdv_usd?: number | null;
             /**
              * Format: double
              * @description Circulating supply of the token
@@ -3488,19 +3512,19 @@ export interface components {
             circulating_supply?: number | null;
             /**
              * Format: double
+             * @description Fully diluted valuation in USD
+             */
+            fdv_usd?: number | null;
+            /**
+             * Format: double
+             * @description Market capitalization in USD
+             */
+            market_cap_usd?: number | null;
+            /**
+             * Format: double
              * @description Maximum supply of the token
              */
             max_supply?: number | null;
-            /**
-             * Format: double
-             * @description Total supply of the token
-             */
-            total_supply?: number | null;
-            /**
-             * Format: double
-             * @description 24-hour trading volume in USD
-             */
-            volume_24h?: number | null;
             /**
              * Format: double
              * @description Price change percentage over the last hour
@@ -3513,17 +3537,32 @@ export interface components {
             price_change_24h?: number | null;
             /**
              * Format: double
+             * @description Price change percentage over the last 30 days
+             */
+            price_change_30d?: number | null;
+            /**
+             * Format: double
              * @description Price change percentage over the last 7 days
              */
             price_change_7d?: number | null;
             /**
              * Format: double
-             * @description Price change percentage over the last 30 days
+             * @description Total supply of the token
              */
-            price_change_30d?: number | null;
+            total_supply?: number | null;
+            /**
+             * Format: double
+             * @description 24-hour trading volume in USD
+             */
+            volume_24h?: number | null;
         };
         /** @description An asset to swap with chain, contract address, and amount */
         SwapAssetInput: {
+            /**
+             * @description Amount in the smallest unit of the token (e.g. wei for ETH). Use "0" for to_assets to receive the market rate.
+             * @example 1000000000000000000
+             */
+            amount: string;
             /**
              * @description Chain slug (e.g. ethereum, base, solana)
              * @example ethereum
@@ -3534,23 +3573,16 @@ export interface components {
              * @example 0x0000000000000000000000000000000000000000
              */
             contract: string;
-            /**
-             * @description Amount in the smallest unit of the token (e.g. wei for ETH). Use "0" for to_assets to receive the market rate.
-             * @example 1000000000000000000
-             */
-            amount: string;
         };
         /** @description Request body for executing a token swap */
         SwapExecuteRequest: {
-            /** @description Tokens to swap from (at least one required) */
-            from_assets: components["schemas"]["SwapAssetInput"][];
-            /** @description Tokens to swap to (at least one required) */
-            to_assets: components["schemas"]["SwapAssetInput"][];
             /**
              * @description Wallet address executing the swap
              * @example 0x1234567890abcdef1234567890abcdef12345678
              */
             address: string;
+            /** @description Tokens to swap from (at least one required) */
+            from_assets: components["schemas"]["SwapAssetInput"][];
             /** @description Recipient address (defaults to sender address) */
             recipient?: string | null;
             /**
@@ -3559,6 +3591,8 @@ export interface components {
              * @example 0.01
              */
             slippage_tolerance?: number | null;
+            /** @description Tokens to swap to (at least one required) */
+            to_assets: components["schemas"]["SwapAssetInput"][];
         };
         /** @description An account referenced by a Solana instruction */
         SvmInstructionAccountResponse: {
@@ -3574,11 +3608,6 @@ export interface components {
         };
         /** @description A Solana instruction to include in the transaction */
         SvmInstructionResponse: {
-            /**
-             * @description Base58-encoded program address the instruction invokes
-             * @example JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4
-             */
-            program_id: string;
             /** @description Accounts the instruction reads or writes, in order */
             accounts: components["schemas"]["SvmInstructionAccountResponse"][];
             /**
@@ -3586,14 +3615,14 @@ export interface components {
              * @example 01020304
              */
             data?: string | null;
+            /**
+             * @description Base58-encoded program address the instruction invokes
+             * @example JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4
+             */
+            program_id: string;
         };
         /** @description Compute budget a v1 Solana message carries inline instead of as instructions */
         SvmTransactionConfigResponse: {
-            /**
-             * @description Total priority fee in lamports, as a decimal string
-             * @example 5000
-             */
-            priority_fee_lamports?: string | null;
             /**
              * Format: int32
              * @description Compute unit limit
@@ -3602,23 +3631,28 @@ export interface components {
             compute_unit_limit?: number | null;
             /**
              * Format: int32
+             * @description Requested heap frame size in bytes
+             */
+            heap_size_bytes?: number | null;
+            /**
+             * Format: int32
              * @description Loaded accounts data size limit in bytes
              */
             loaded_accounts_data_size_limit?: number | null;
             /**
-             * Format: int32
-             * @description Requested heap frame size in bytes
+             * @description Total priority fee in lamports, as a decimal string
+             * @example 5000
              */
-            heap_size_bytes?: number | null;
+            priority_fee_lamports?: string | null;
         };
         /** @description Everything needed to compile and sign a Solana v0 transaction. The client supplies a recent blockhash. */
         SvmTransactionDetailsResponse: {
+            /** @description Base58-encoded address lookup tables the compiled message must reference to stay under the transaction size limit */
+            address_lookup_tables: string[];
             /** @description Base58-encoded address the transaction is built for */
             from: string;
             /** @description Instructions to include, in order */
             instructions: components["schemas"]["SvmInstructionResponse"][];
-            /** @description Base58-encoded address lookup tables the compiled message must reference to stay under the transaction size limit */
-            address_lookup_tables: string[];
             /** @description Present only when the transaction may be compiled as a v1 message. A v1 compiler drops the ComputeBudget instructions from `instructions` and places these values in the message header; legacy/v0 compilers ignore this field */
             transaction_config?: components["schemas"]["SvmTransactionConfigResponse"] | null;
         };
@@ -3646,48 +3680,26 @@ export interface components {
         /** @description Price impact of the swap */
         SwapPriceImpact: {
             /**
-             * @description Price impact in USD (negative means user loses value)
-             * @example -1.5
-             */
-            usd: string;
-            /**
              * @description Price impact as a percentage (negative means user loses value)
              * @example -0.08
              */
             percent: string;
+            /**
+             * @description Price impact in USD (negative means user loses value)
+             * @example -1.5
+             */
+            usd: string;
         };
         /** @description Price and fee details for a swap quote */
         SwapQuoteDetails: {
-            /**
-             * Format: double
-             * @description Total value of tokens received in USD
-             * @example 1850.5
-             */
-            total_price_usd: number;
-            /**
-             * Format: double
-             * @description Total cost of tokens sent in USD
-             * @example 1869
-             */
-            total_cost_usd: number;
-            /**
-             * Format: double
-             * @description Slippage tolerance as a decimal (e.g. 0.01 = 1%)
-             * @example 0.01
-             */
-            slippage_tolerance: number;
+            /** @description Breakdown of costs for the swap */
+            costs: components["schemas"]["SwapCostResponse"][];
             /**
              * Format: int64
              * @description Estimated swap duration in milliseconds
              * @example 30000
              */
             estimated_duration_ms: number;
-            /**
-             * Format: int32
-             * @description Recommended delay in milliseconds before re-requesting this quote; absent when there is no actionable route
-             * @example 2000
-             */
-            refresh_after_ms?: number | null;
             /**
              * Format: int32
              * @description Marketplace fee in basis points
@@ -3697,20 +3709,42 @@ export interface components {
             /** @description Price impact of the swap (null if unavailable) */
             price_impact?: components["schemas"]["SwapPriceImpact"] | null;
             /**
+             * Format: double
+             * @description Recommended slippage tolerance based on volatility analysis (null if unavailable)
+             * @example 2
+             */
+            recommended_slippage?: number | null;
+            /**
+             * Format: int32
+             * @description Recommended delay in milliseconds before re-requesting this quote; absent when there is no actionable route
+             * @example 2000
+             */
+            refresh_after_ms?: number | null;
+            /** @description Errors encountered for individual swap routes */
+            route_errors: components["schemas"]["SwapRouteErrorResponse"][];
+            /**
+             * Format: double
+             * @description Slippage tolerance as a decimal (e.g. 0.01 = 1%)
+             * @example 0.01
+             */
+            slippage_tolerance: number;
+            /**
              * @description The swap provider that fulfilled this quote (null if unavailable)
              * @example RELAY
              */
             swap_provider?: string | null;
             /**
              * Format: double
-             * @description Recommended slippage tolerance based on volatility analysis (null if unavailable)
-             * @example 2
+             * @description Total cost of tokens sent in USD
+             * @example 1869
              */
-            recommended_slippage?: number | null;
-            /** @description Breakdown of costs for the swap */
-            costs: components["schemas"]["SwapCostResponse"][];
-            /** @description Errors encountered for individual swap routes */
-            route_errors: components["schemas"]["SwapRouteErrorResponse"][];
+            total_cost_usd: number;
+            /**
+             * Format: double
+             * @description Total value of tokens received in USD
+             * @example 1850.5
+             */
+            total_price_usd: number;
         };
         /** @description An error encountered for a specific swap route */
         SwapRouteErrorResponse: {
@@ -3727,36 +3761,51 @@ export interface components {
              * @example ethereum
              */
             chain: string;
-            /** @description The destination address for the transaction */
-            to?: string | null;
             /** @description The transaction data. For EVM chains: hex-encoded calldata. For SVM chains: comma-separated instructions in programId:data format. */
             data: string;
+            /** @description Gas limit for the transaction, in gas units. Already includes a safety buffer over the estimate — use it as-is (or take the max of this and your own buffered estimate) and do not shrink it. Null when no reliable estimate is available. */
+            gas_limit?: string | null;
+            /** @description Structured Solana transaction contents. Set for SVM chains only; `data` is a lossy summary of the same instructions. */
+            svm?: components["schemas"]["SvmTransactionDetailsResponse"] | null;
+            /** @description The destination address for the transaction */
+            to?: string | null;
             /** @description The native token value to send with the transaction (decimal) */
             value?: string | null;
             /** @description The native token value to send with the transaction (hex, 0x-prefixed) */
             value_hex?: string | null;
-            /** @description Structured Solana transaction contents. Set for SVM chains only; `data` is a lossy summary of the same instructions. */
-            svm?: components["schemas"]["SvmTransactionDetailsResponse"] | null;
-            /** @description Gas limit for the transaction, in gas units. Already includes a safety buffer over the estimate — use it as-is (or take the max of this and your own buffered estimate) and do not shrink it. Null when no reliable estimate is available. */
-            gas_limit?: string | null;
+        };
+        /** @description Publish a signal about a currency, NFT, or collection. Select chain and contract, optionally token_id, or a collection slug. */
+        CreateSignalRequest: {
+            /** @description Wallet that authors the signal. Defaults to the wallet the bearer token signed in with. */
+            author_address?: string;
+            chain?: string;
+            collection?: string;
+            contract?: string;
+            text: string;
+            /** @description NFT token ID: a decimal integer on EVM chains, the mint address on Solana. */
+            token_id?: string;
+        };
+        /** @description Write acknowledgement. Use signal_id with the public signal GET endpoint. */
+        SignalMutationResponse: {
+            signal_id: string;
         };
         /** @description A registered tool to save or remove from saved tools */
         SavedToolRequest: {
             /**
-             * @description Numeric registered tool ID
-             * @example 42
+             * @description Registry contract address or supported x402 registry identifier
+             * @example 0x0000000000000000000000000000000000000000
              */
-            tool_id: string;
+            registry_addr: string;
             /**
              * @description Numeric registry chain ID
              * @example 8453
              */
             registry_chain: string;
             /**
-             * @description Registry contract address or supported x402 registry identifier
-             * @example 0x0000000000000000000000000000000000000000
+             * @description Numeric registered tool ID
+             * @example 42
              */
-            registry_addr: string;
+            tool_id: string;
             /**
              * @description Saved-tools toolkit name
              * @example All
@@ -3767,12 +3816,12 @@ export interface components {
         SavedToolResponse: {
             /** @description Saved-tool record ID */
             id: string;
-            /** @description Numeric registered tool ID */
-            tool_id: string;
-            /** @description Numeric registry chain ID */
-            registry_chain: string;
             /** @description Registry contract address or x402 registry identifier */
             registry_addr: string;
+            /** @description Numeric registry chain ID */
+            registry_chain: string;
+            /** @description Numeric registered tool ID */
+            tool_id: string;
         };
         /** @description Request body for claiming a profile username */
         ClaimAccountUsernameRequest: {
@@ -3796,53 +3845,58 @@ export interface components {
         };
         /** @description Profile shelf */
         ProfileShelfResponse: {
-            id: string;
             account_address?: string | null;
-            title: string;
             description?: string | null;
             /** Format: int32 */
             display_order: number;
-            items: components["schemas"]["ProfileShelfItemIdentifierResponse"][];
             icon?: string | null;
-            view?: string | null;
-            single_item_shelf_side?: string | null;
+            id: string;
+            items: components["schemas"]["ProfileShelfItemIdentifierResponse"][];
             shelf_item_metadata: {
                 [key: string]: components["schemas"]["ProfileShelfItemMetadataResponse"];
             };
+            single_item_shelf_side?: string | null;
+            title: string;
+            view?: string | null;
         };
         /** @description Request body for creating a profile shelf */
         CreateProfileShelfRequest: {
-            /** @description Shelf title */
-            title: string;
             /** @description Shelf description */
             description?: string | null;
-            items: components["schemas"]["ProfileShelfItemRequest"][];
             /** @description Shelf icon */
             icon?: string | null;
-            /** @description Shelf view */
-            view?: string | null;
+            items: components["schemas"]["ProfileShelfItemRequest"][];
             /** @description Single-item shelf side */
             single_item_shelf_side?: string | null;
+            /** @description Shelf title */
+            title: string;
+            /** @description Shelf view */
+            view?: string | null;
         };
         /** @description A shelf item identifier */
         ProfileShelfItemRequest: {
-            /** @description Item token ID */
-            token_id: string;
             /** @description Blockchain chain slug */
             chain: string;
             /** @description Contract address */
             contract_address: string;
+            /** @description Item token ID */
+            token_id: string;
         };
         NftPfpResponse: {
-            contract_address: string;
-            token_id: string;
             chain: string;
             collection_slug?: string | null;
+            contract_address: string;
             image_url: string;
             is_verified: boolean;
+            token_id: string;
         };
         /** @description Request body for setting an NFT as the profile picture */
         SetNftPfpRequest: {
+            /**
+             * @description Chain the NFT is on
+             * @example ethereum
+             */
+            chain: string;
             /**
              * @description Contract address of the NFT
              * @example 0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d
@@ -3853,25 +3907,9 @@ export interface components {
              * @example 1
              */
             tokenId: string;
-            /**
-             * @description Chain the NFT is on
-             * @example ethereum
-             */
-            chain: string;
         };
         /** @description This response starts a three-step upload flow. First, request this context from OpenSea. Second, call the returned method at the returned URL. For POST, add every fields entry unchanged as a multipart text field, then add a file part containing the bytes. The file part must be last. Let the HTTP library generate the multipart boundary; do not set the overall multipart Content-Type header yourself. POST storage uploads normally return 204. For PUT, upload the raw bytes, use only headers explicitly required by the endpoint, and expect 200. Treat any 2xx storage response as success. The URL and fields are short-lived sensitive credentials. Do not log, persist, alter, or put them in tickets. Third, after storage succeeds, pass the returned token to the documented OpenSea API endpoint. Do not use the token before the storage upload succeeds. */
         UploadContext: {
-            /**
-             * @description Short-lived storage URL. Use it exactly as returned and treat it as sensitive.
-             * @example https://uploads.example.com/
-             */
-            url: string;
-            /**
-             * @description HTTP method to use at url. Current upload contexts use POST.
-             * @example POST
-             * @enum {string}
-             */
-            method: "POST" | "PUT";
             /**
              * @description Short-lived sensitive multipart text fields for POST. Submit every entry unchanged before the file part. Content-Type contains the exact MIME type required by the signed policy. This map is empty for PUT.
              * @example {
@@ -3883,57 +3921,68 @@ export interface components {
                 [key: string]: string;
             };
             /**
+             * @description HTTP method to use at url. Current upload contexts use POST.
+             * @example POST
+             * @enum {string}
+             */
+            method: "POST" | "PUT";
+            /**
              * @description Reference for the next OpenSea API call. Use it only after storage returns 2xx.
              * @example upload-token-example
              */
             token: string;
+            /**
+             * @description Short-lived storage URL. Use it exactly as returned and treat it as sensitive.
+             * @example https://uploads.example.com/
+             */
+            url: string;
         };
         /** @description Request body for uploading a profile image */
         UploadProfileImageRequest: {
+            /**
+             * @description Exact MIME type of the image bytes. Must be an image/ type; anything else returns a 400.
+             * @example image/png
+             */
+            contentType: string;
             /**
              * @description Which profile image to upload: profile_picture (avatar) or banner_image. Case insensitive; any other value returns a 400.
              * @example profile_picture
              * @enum {string}
              */
             imageType: "profile_picture" | "banner_image";
-            /**
-             * @description Exact MIME type of the image bytes. Must be an image/ type; anything else returns a 400.
-             * @example image/png
-             */
-            contentType: string;
         };
         ConsiderationItem: {
+            endAmount: string;
+            identifierOrCriteria: string;
             /** Format: int32 */
             itemType: number;
-            token: string;
-            identifierOrCriteria: string;
-            startAmount: string;
-            endAmount: string;
             recipient: string;
+            startAmount: string;
+            token: string;
         };
         OfferItem: {
+            endAmount: string;
+            identifierOrCriteria: string;
             /** Format: int32 */
             itemType: number;
-            token: string;
-            identifierOrCriteria: string;
             startAmount: string;
-            endAmount: string;
+            token: string;
         };
         SeaportParameters: {
-            offerer: string;
-            zone?: string;
-            offer: components["schemas"]["OfferItem"][];
+            conduitKey: string;
             consideration: components["schemas"]["ConsiderationItem"][];
+            counter: string;
+            endTime: string;
+            offer: components["schemas"]["OfferItem"][];
+            offerer: string;
             /** Format: int32 */
             orderType: number;
-            startTime: string;
-            endTime: string;
-            zoneHash: string;
             salt: string;
-            conduitKey: string;
+            startTime: string;
             /** Format: int32 */
             totalOriginalConsiderationItems: number;
-            counter: string;
+            zone?: string;
+            zoneHash: string;
         };
         SeaportRequest: {
             parameters: components["schemas"]["SeaportParameters"];
@@ -3949,83 +3998,83 @@ export interface components {
         Criteria: {
             collection?: components["schemas"]["CollectionInner"] | null;
             contract?: components["schemas"]["ContractInner"] | null;
-            traits?: components["schemas"]["TraitData"][] | null;
-            numeric_traits?: components["schemas"]["NumericTraitData"][] | null;
             encoded_token_ids?: string | null;
+            numeric_traits?: components["schemas"]["NumericTraitData"][] | null;
+            traits?: components["schemas"]["TraitData"][] | null;
         };
         Item: {
+            endAmount: string;
+            identifierOrCriteria: string;
             /** Format: int32 */
             itemType: number;
-            token: string;
-            identifierOrCriteria: string;
             startAmount: string;
-            endAmount: string;
+            token: string;
         };
         NumericTraitData: {
-            type: string;
-            /** Format: float */
-            min?: number | null;
             /** Format: float */
             max?: number | null;
+            /** Format: float */
+            min?: number | null;
+            type: string;
         };
         Offer: components["schemas"]["ListingOrOffer"] & {
-            /** @description Seaport order hash, a 0x-prefixed 32-byte value. Absent on an order that settles through a Solana marketplace program, which has no Seaport identity and carries `svm_order` instead. Every EVM order has one. */
-            order_hash?: string;
-            chain: string;
-            protocol_data?: components["schemas"]["ProtocolData"];
-            protocol_address?: string;
             asset?: components["schemas"]["OrderAsset"] | null;
-            /** Format: int64 */
-            remaining_quantity: number;
+            chain: string;
+            criteria?: components["schemas"]["Criteria"] | null;
             /** Format: int64 */
             order_created_at?: number | null;
-            /** @description Marketplace protocol a Solana order settles through, which is what tells you which identity shape the order uses. Absent on a Seaport order, whose payload is unchanged. Only orders we can build fulfillment for carry a value here. */
-            protocol?: string;
-            /** @description Identity of a Solana order, present in place of `order_hash`. A client that assumes `order_hash` is always set should read this field first and fall back to `order_hash`. */
-            svm_order?: components["schemas"]["SvmOrderIdentity"];
-            criteria?: components["schemas"]["Criteria"] | null;
+            /** @description Seaport order hash, a 0x-prefixed 32-byte value. Absent on an order that settles through a Solana marketplace program, which has no Seaport identity and carries `svm_order` instead. Every EVM order has one. */
+            order_hash?: string;
             /** @description Total consideration for the whole order (price per item multiplied by the order's item quantity). For a single-item order this equals `price_per_item`. */
             price: components["schemas"]["Price"];
             /** @description Price of a single item in this order. For multi-quantity orders, `price` is the total for all items; divide by the item quantity or use this field for the per-item amount. */
             price_per_item: components["schemas"]["Price"];
-            /** @enum {string} */
-            status: "ACTIVE" | "INACTIVE" | "FULFILLED" | "EXPIRED" | "CANCELLED";
-        };
-        Order: {
-            /** @description Seaport order hash, a 0x-prefixed 32-byte value. Absent on an order that settles through a Solana marketplace program, which has no Seaport identity and carries `svm_order` instead. Every EVM order has one. */
-            order_hash?: string;
-            chain: string;
-            protocol_data?: components["schemas"]["ProtocolData"];
-            protocol_address?: string;
-            asset?: components["schemas"]["OrderAsset"] | null;
-            /** Format: int64 */
-            remaining_quantity: number;
-            /** Format: int64 */
-            order_created_at?: number | null;
             /** @description Marketplace protocol a Solana order settles through, which is what tells you which identity shape the order uses. Absent on a Seaport order, whose payload is unchanged. Only orders we can build fulfillment for carry a value here. */
             protocol?: string;
+            protocol_address?: string;
+            protocol_data?: components["schemas"]["ProtocolData"];
+            /** Format: int64 */
+            remaining_quantity: number;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE" | "FULFILLED" | "EXPIRED" | "CANCELLED";
+            /** @description Identity of a Solana order, present in place of `order_hash`. A client that assumes `order_hash` is always set should read this field first and fall back to `order_hash`. */
+            svm_order?: components["schemas"]["SvmOrderIdentity"];
+        };
+        Order: {
+            asset?: components["schemas"]["OrderAsset"] | null;
+            chain: string;
+            /** Format: int64 */
+            order_created_at?: number | null;
+            /** @description Seaport order hash, a 0x-prefixed 32-byte value. Absent on an order that settles through a Solana marketplace program, which has no Seaport identity and carries `svm_order` instead. Every EVM order has one. */
+            order_hash?: string;
+            /** @description Marketplace protocol a Solana order settles through, which is what tells you which identity shape the order uses. Absent on a Seaport order, whose payload is unchanged. Only orders we can build fulfillment for carry a value here. */
+            protocol?: string;
+            protocol_address?: string;
+            protocol_data?: components["schemas"]["ProtocolData"];
+            /** Format: int64 */
+            remaining_quantity: number;
             /** @description Identity of a Solana order, present in place of `order_hash`. A client that assumes `order_hash` is always set should read this field first and fall back to `order_hash`. */
             svm_order?: components["schemas"]["SvmOrderIdentity"];
         };
         OrderAsset: {
-            identifier?: string | null;
             contract: string;
+            identifier?: string | null;
         };
         Parameters: {
-            offerer: string;
-            offer: components["schemas"]["Item"][];
+            conduitKey: string;
             consideration: components["schemas"]["ConsiderationItem"][];
-            startTime: string;
+            counter: number;
             endTime: string;
+            offer: components["schemas"]["Item"][];
+            offerer: string;
             /** Format: int32 */
             orderType: number;
-            zone: string;
-            zoneHash: string;
             salt: string;
-            conduitKey: string;
+            startTime: string;
             /** Format: int32 */
             totalOriginalConsiderationItems: number;
-            counter: number;
+            zone: string;
+            zoneHash: string;
         };
         /** @description An amount of a payment currency. `value` is expressed in the currency's base units (e.g. wei), i.e. the human-readable amount multiplied by 10^`decimals`. */
         Price: {
@@ -4040,45 +4089,45 @@ export interface components {
         };
         /** @description Identity of an order that settles through a Solana marketplace program. Such an order has no Seaport order hash, so `order_hash` is absent from its payload and it is addressed instead by `id`, the transaction signature that created it joined to the onchain state account holding it. Pass that `id` wherever an endpoint takes an order hash. */
         SvmOrderIdentity: {
+            /** @description Mint of the asset the order is for, where the program records one. Absent otherwise. */
+            asset_id?: string;
+            /** @description Signature of the transaction that created the order. The first half of `id`. */
+            creation_signature: string;
             /**
              * @description `creation_signature:order_state`. This is what an endpoint expecting an order hash takes for a Solana order, for example `GET /api/v2/orders/chain/solana/protocol/{protocol_address}/{order_hash}`. Base58 and case-sensitive; do not lowercase it.
              * @example 5j7s1QzqC8sT4Kz1oB9dYnUZ4qHnKX6h9YmZ6Zt7Zb3Q:CvhyBLWDcNwMatkNvMYuHALvbG1NzYrGw32dGzREaQKc
              */
             id: string;
-            /** @description Address of the onchain account holding the order's state. The second half of `id`. */
-            order_state: string;
-            /** @description Signature of the transaction that created the order. The first half of `id`. */
-            creation_signature: string;
-            /** @description Mint of the asset the order is for, where the program records one. Absent otherwise. */
-            asset_id?: string;
             /** @description Wallet that created the order. */
             maker: string;
+            /** @description Address of the onchain account holding the order's state. The second half of `id`. */
+            order_state: string;
         };
         TraitData: {
             type: string;
             value: string;
         };
         Listing: components["schemas"]["ListingOrOffer"] & {
-            /** @description Seaport order hash, a 0x-prefixed 32-byte value. Absent on an order that settles through a Solana marketplace program, which has no Seaport identity and carries `svm_order` instead. Every EVM order has one. */
-            order_hash?: string;
-            chain: string;
-            protocol_data?: components["schemas"]["ProtocolData"];
-            protocol_address?: string;
             asset?: components["schemas"]["OrderAsset"] | null;
-            /** Format: int64 */
-            remaining_quantity: number;
+            chain: string;
             /** Format: int64 */
             order_created_at?: number | null;
-            /** @description Marketplace protocol a Solana order settles through, which is what tells you which identity shape the order uses. Absent on a Seaport order, whose payload is unchanged. Only orders we can build fulfillment for carry a value here. */
-            protocol?: string;
-            /** @description Identity of a Solana order, present in place of `order_hash`. A client that assumes `order_hash` is always set should read this field first and fall back to `order_hash`. */
-            svm_order?: components["schemas"]["SvmOrderIdentity"];
+            /** @description Seaport order hash, a 0x-prefixed 32-byte value. Absent on an order that settles through a Solana marketplace program, which has no Seaport identity and carries `svm_order` instead. Every EVM order has one. */
+            order_hash?: string;
             price: components["schemas"]["ListingPrice"];
             /** @description Price of a single item in this order. For multi-quantity orders, `price` is the total for all items; divide by the item quantity or use this field for the per-item amount. */
             price_per_item: components["schemas"]["Price"];
-            type: string;
+            /** @description Marketplace protocol a Solana order settles through, which is what tells you which identity shape the order uses. Absent on a Seaport order, whose payload is unchanged. Only orders we can build fulfillment for carry a value here. */
+            protocol?: string;
+            protocol_address?: string;
+            protocol_data?: components["schemas"]["ProtocolData"];
+            /** Format: int64 */
+            remaining_quantity: number;
             /** @enum {string} */
             status: "ACTIVE" | "INACTIVE" | "FULFILLED" | "EXPIRED" | "CANCELLED";
+            /** @description Identity of a Solana order, present in place of `order_hash`. A client that assumes `order_hash` is always set should read this field first and fall back to `order_hash`. */
+            svm_order?: components["schemas"]["SvmOrderIdentity"];
+            type: string;
         };
         ListingPrice: {
             /** @description What a buyer pays to fill this listing through OpenSea. For most listings this equals the sum of the consideration items in protocolData. A listing ingested from another marketplace may additionally include OpenSea's marketplace fee, which is applied to the transaction at fulfillment rather than being part of the order the seller signed; where that applies, the consideration in protocolData sums to less than this value. */
@@ -4115,6 +4164,8 @@ export interface components {
         CriteriaRequest: {
             collection: components["schemas"]["CollectionCriteria"];
             contract?: components["schemas"]["ContractCriteria"] | null;
+            /** @description Numeric trait criteria for the offer. Each entry specifies a trait type with optional min/max range bounds. Can be combined with categorical traits. */
+            numericTraits?: components["schemas"]["NumericTraitCriteria"][] | null;
             /**
              * @deprecated
              * @description Deprecated: Use 'traits' array instead which supports both single and multiple traits.
@@ -4122,20 +4173,18 @@ export interface components {
             trait?: components["schemas"]["TraitCriteria"] | null;
             /** @description Trait criteria for the offer. Each trait specifies a type and value that target NFTs must match. These traits are validated server-side at fulfillment time. */
             traits?: components["schemas"]["TraitCriteria"][] | null;
-            /** @description Numeric trait criteria for the offer. Each entry specifies a trait type with optional min/max range bounds. Can be combined with categorical traits. */
-            numericTraits?: components["schemas"]["NumericTraitCriteria"][] | null;
         };
         NumericTraitCriteria: {
-            type: string;
-            /** Format: double */
-            min?: number | null;
             /** Format: double */
             max?: number | null;
+            /** Format: double */
+            min?: number | null;
+            type: string;
         };
         OfferWithCriteriaRequest: {
-            protocol_data: components["schemas"]["SeaportProtocolDataModel"];
             criteria: components["schemas"]["CriteriaRequest"];
             protocol_address: string;
+            protocol_data: components["schemas"]["SeaportProtocolDataModel"];
         };
         SeaportProtocolDataModel: {
             parameters: components["schemas"]["SeaportParameters"];
@@ -4153,84 +4202,84 @@ export interface components {
             address: string;
         };
         FullfillmentDataRequest: {
-            offer: components["schemas"]["OfferObject"];
-            fulfiller: components["schemas"]["FulfillerObject"];
             consideration?: components["schemas"]["ConsiderationObject"];
+            fulfiller: components["schemas"]["FulfillerObject"];
+            /**
+             * @description Whether to include optional creator fees in the fulfillment. If creator fees are already required, this is a no-op. Defaults to false.
+             * @default false
+             */
+            include_optional_creator_fees?: boolean | null;
+            offer: components["schemas"]["OfferObject"];
             /**
              * Format: int64
              * @description Optional quantity of units to fulfill; defaults to 1 for offers
              */
             units_to_fill?: number | null;
-            /**
-             * @description Whether to include optional creator fees in the fulfillment. If creator fees are already required, this is a no-op. Defaults to false.
-             * @default false
-             */
-            include_optional_creator_fees: boolean | null;
         };
         OfferObject: {
-            hash: string;
             chain: string;
+            hash: string;
             protocol_address: string;
         };
         AdditionalRecipient: {
-            value?: components["schemas"]["Type"][];
             amount?: number;
+            nativeValueCopy?: unknown[];
             recipient?: string;
             typeAsString?: string;
-            nativeValueCopy?: unknown[];
+            value?: components["schemas"]["Type"][];
         };
         Address: {
-            value?: string;
             typeAsString?: string;
+            value?: string;
         };
         AdvancedOrder: {
-            value?: components["schemas"]["Type"][];
-            parameters?: components["schemas"]["OrderParameters"];
-            numerator?: number;
             denominator?: number;
             /** Format: byte */
-            signature?: string;
-            /** Format: byte */
             extraData?: string;
-            typeAsString?: string;
             nativeValueCopy?: unknown[];
+            numerator?: number;
+            parameters?: components["schemas"]["OrderParameters"];
+            /** Format: byte */
+            signature?: string;
+            typeAsString?: string;
+            value?: components["schemas"]["Type"][];
         };
         BasicOrderParameters: {
-            value?: components["schemas"]["Type"][];
-            considerationToken?: string;
-            considerationIdentifier?: number;
-            considerationAmount?: number;
-            offerer?: string;
-            zone?: string;
-            offerToken?: string;
-            offerIdentifier?: number;
-            offerAmount?: number;
+            additionalRecipients?: components["schemas"]["AdditionalRecipient"][];
             basicOrderType?: number;
-            startTime?: number;
+            considerationAmount?: number;
+            considerationIdentifier?: number;
+            considerationToken?: string;
             endTime?: number;
             /** Format: byte */
-            zoneHash?: string;
-            salt?: number;
+            fulfillerConduitKey?: string;
+            nativeValueCopy?: unknown[];
+            offerAmount?: number;
+            offerIdentifier?: number;
+            offerToken?: string;
+            offerer?: string;
             /** Format: byte */
             offererConduitKey?: string;
-            /** Format: byte */
-            fulfillerConduitKey?: string;
-            totalOriginalAdditionalRecipients?: number;
-            additionalRecipients?: components["schemas"]["AdditionalRecipient"][];
+            salt?: number;
             /** Format: byte */
             signature?: string;
+            startTime?: number;
+            totalOriginalAdditionalRecipients?: number;
             typeAsString?: string;
-            nativeValueCopy?: unknown[];
+            value?: components["schemas"]["Type"][];
+            zone?: string;
+            /** Format: byte */
+            zoneHash?: string;
         };
         CriteriaResolver: {
-            value?: components["schemas"]["Type"][];
+            criteriaProof?: string[];
+            identifier?: number;
+            index?: number;
+            nativeValueCopy?: unknown[];
             orderIndex?: number;
             side?: number;
-            index?: number;
-            identifier?: number;
-            criteriaProof?: string[];
             typeAsString?: string;
-            nativeValueCopy?: unknown[];
+            value?: components["schemas"]["Type"][];
         };
         FulfillAdvancedOrder: components["schemas"]["SeaportCall"] & {
             advancedOrder: components["schemas"]["AdvancedOrder"];
@@ -4239,103 +4288,103 @@ export interface components {
             recipient: components["schemas"]["Address"];
         };
         FulfillAvailableAdvancedOrders: components["schemas"]["SeaportCall"] & {
-            orders: components["schemas"]["AdvancedOrder"][];
-            criteriaResolvers: components["schemas"]["CriteriaResolver"][];
-            offerFulfillments: components["schemas"]["FulfillmentComponent"][][];
             considerationFulfillments: components["schemas"]["FulfillmentComponent"][][];
+            criteriaResolvers: components["schemas"]["CriteriaResolver"][];
             fulfillerConduitKey: string;
-            recipient: components["schemas"]["Address"];
             maximumFulfilled: components["schemas"]["Uint256"];
+            offerFulfillments: components["schemas"]["FulfillmentComponent"][][];
+            orders: components["schemas"]["AdvancedOrder"][];
+            recipient: components["schemas"]["Address"];
         };
         FulfillAvailableOrders: components["schemas"]["SeaportCall"] & {
-            orders: components["schemas"]["Order"][];
-            offerFulfillments: components["schemas"]["FulfillmentComponent"][][];
             considerationFulfillments: components["schemas"]["FulfillmentComponent"][][];
             fulfillerConduitKey: string;
             maximumFulfilled: components["schemas"]["Uint256"];
+            offerFulfillments: components["schemas"]["FulfillmentComponent"][][];
+            orders: components["schemas"]["Order"][];
         };
         FulfillBasicOrder: components["schemas"]["SeaportCall"] & {
             parameters: components["schemas"]["BasicOrderParameters"];
         };
         FulfillListingResponse: {
-            protocol: string;
             fulfillment_data: components["schemas"]["FulfillmentData"];
+            protocol: string;
         };
         FulfillOrder: components["schemas"]["SeaportCall"] & {
-            order: components["schemas"]["Order"];
             fulfillerConduitKey: string;
+            order: components["schemas"]["Order"];
         };
         Fulfillment: {
-            value?: components["schemas"]["Type"][];
-            offerComponents?: components["schemas"]["FulfillmentComponent"][];
             considerationComponents?: components["schemas"]["FulfillmentComponent"][];
-            typeAsString?: string;
             nativeValueCopy?: unknown[];
+            offerComponents?: components["schemas"]["FulfillmentComponent"][];
+            typeAsString?: string;
+            value?: components["schemas"]["Type"][];
         };
         FulfillmentComponent: {
-            value?: components["schemas"]["Type"][];
-            orderIndex?: number;
             itemIndex?: number;
-            typeAsString?: string;
             nativeValueCopy?: unknown[];
+            orderIndex?: number;
+            typeAsString?: string;
+            value?: components["schemas"]["Type"][];
         };
         FulfillmentData: {
-            transaction: components["schemas"]["TransactionData"];
             orders: components["schemas"]["OrderData"][];
+            transaction: components["schemas"]["TransactionData"];
         };
         MatchAdvancedOrders: components["schemas"]["SeaportCall"] & {
-            orders: components["schemas"]["AdvancedOrder"][];
             criteriaResolvers: components["schemas"]["CriteriaResolver"][];
             fulfillments: components["schemas"]["Fulfillment"][];
+            orders: components["schemas"]["AdvancedOrder"][];
             recipient: components["schemas"]["Address"];
         };
         MatchOrders: components["schemas"]["SeaportCall"] & {
-            orders: components["schemas"]["Order"][];
             fulfillments: components["schemas"]["Fulfillment"][];
+            orders: components["schemas"]["Order"][];
         };
         OrderData: {
             parameters: components["schemas"]["Parameters"];
             signature: string;
         };
         OrderParameters: {
-            value?: components["schemas"]["Type"][];
-            offerer?: string;
-            zone?: string;
-            offer?: components["schemas"]["OfferItem"][];
-            consideration?: components["schemas"]["ConsiderationItem"][];
-            orderType?: number;
-            startTime?: number;
-            endTime?: number;
-            /** Format: byte */
-            zoneHash?: string;
-            salt?: number;
             /** Format: byte */
             conduitKey?: string;
+            consideration?: components["schemas"]["ConsiderationItem"][];
+            endTime?: number;
+            nativeValueCopy?: unknown[];
+            offer?: components["schemas"]["OfferItem"][];
+            offerer?: string;
+            orderType?: number;
+            salt?: number;
+            startTime?: number;
             totalOriginalConsiderationItems?: number;
             typeAsString?: string;
-            nativeValueCopy?: unknown[];
+            value?: components["schemas"]["Type"][];
+            zone?: string;
+            /** Format: byte */
+            zoneHash?: string;
         };
         SeaportCall: unknown;
         TransactionData: {
-            function: string;
+            /** @description 4-byte hex attribution suffix (e.g. 0xcdb44011) to append to the ABI-encoded calldata before submitting the transaction onchain. Appending this suffix attributes the fill to OpenSea; omitting it does not affect execution. */
+            calldata_suffix?: string | null;
             /** Format: int32 */
             chain: number;
+            function: string;
+            input_data: components["schemas"]["FulfillAdvancedOrder"] | components["schemas"]["FulfillAvailableAdvancedOrders"] | components["schemas"]["FulfillAvailableOrders"] | components["schemas"]["FulfillBasicOrder"] | components["schemas"]["FulfillOrder"] | components["schemas"]["MatchAdvancedOrders"] | components["schemas"]["MatchOrders"];
             to: string;
             value: string;
             value_hex?: string | null;
-            input_data: components["schemas"]["FulfillAdvancedOrder"] | components["schemas"]["FulfillAvailableAdvancedOrders"] | components["schemas"]["FulfillAvailableOrders"] | components["schemas"]["FulfillBasicOrder"] | components["schemas"]["FulfillOrder"] | components["schemas"]["MatchAdvancedOrders"] | components["schemas"]["MatchOrders"];
-            /** @description 4-byte hex attribution suffix (e.g. 0xcdb44011) to append to the ABI-encoded calldata before submitting the transaction onchain. Appending this suffix attributes the fill to OpenSea; omitting it does not affect execution. */
-            calldata_suffix?: string | null;
         };
         Type: {
-            value?: unknown;
             typeAsString?: string;
+            value?: unknown;
         };
         Uint256: {
-            value?: number;
             /** Format: int32 */
             bitSize?: number;
             typeAsString?: string;
+            value?: number;
         };
         /** @description Response containing blockchain actions to execute to fulfill an order */
         FulfillmentActionsResponse: {
@@ -4343,46 +4392,46 @@ export interface components {
             steps: components["schemas"]["JsonNode"][];
         };
         BuildOfferRequest: {
+            criteria: components["schemas"]["CriteriaObject"];
+            offer_protection_enabled: boolean;
             offerer: string;
+            protocol_address: string;
             /** Format: int32 */
             quantity: number;
-            criteria: components["schemas"]["CriteriaObject"];
-            protocol_address: string;
-            offer_protection_enabled: boolean;
         };
         CollectionObject: {
             slug: string;
         };
         CriteriaObject: {
             collection: components["schemas"]["CollectionObject"];
+            numericTraits?: components["schemas"]["NumericTraitCriteria"][];
             /**
              * @deprecated
              * @description Deprecated: Use 'traits' array instead which supports both single and multiple traits.
              */
             trait?: components["schemas"]["TraitObject"];
             traits?: components["schemas"]["TraitObject"][];
-            numericTraits?: components["schemas"]["NumericTraitCriteria"][];
         };
         TraitObject: {
             type: string;
             value: string;
         };
         BuildOfferResponse: {
-            partialParameters: components["schemas"]["PartialParameters"];
             /** @description The criteria to pass through to the POST /api/v2/offers submit step. Includes collection and trait information so trait offers are not accidentally submitted as collection offers. */
             criteria: components["schemas"]["CriteriaRequest"];
             /** @description Encoded token IDs that can be used to fulfill the criteria offer. When identifierOrCriteria is '0', this field is informational only and not required for order construction. */
             encodedTokenIds?: string | null;
+            partialParameters: components["schemas"]["PartialParameters"];
         };
         Consideration: {
-            /** Format: int32 */
-            itemType: number;
-            token: string;
+            endAmount: string;
             /** @description For criteria-based offers, this is the merkle root of eligible token IDs. For trait offers on supported collections, this will be '0' — trait matching is validated server-side at fulfillment time instead of via onchain merkle proof. */
             identifierOrCriteria: string;
-            startAmount: string;
-            endAmount: string;
+            /** Format: int32 */
+            itemType: number;
             recipient: string;
+            startAmount: string;
+            token: string;
         };
         PartialParameters: {
             consideration: components["schemas"]["Consideration"][];
@@ -4409,31 +4458,31 @@ export interface components {
         };
         /** @description Request to get offer creation actions */
         CreateOfferActionsRequest: {
-            /** @description Item to make an offer on */
-            item: components["schemas"]["CreateOfferActionItem"];
             /**
              * @description Maker (buyer) wallet address
              * @example 0x...
              */
             address: string;
             /**
+             * @description Offer end time in ISO 8601 format. Defaults to 30 days from start.
+             * @example 2026-06-01T00:00:00Z
+             */
+            end_time?: string | null;
+            /** @description Item to make an offer on */
+            item: components["schemas"]["CreateOfferActionItem"];
+            /** @description Price per item */
+            price: components["schemas"]["ListingPriceInput"];
+            /**
              * Format: int64
              * @description Quantity to offer on (use 1 for ERC-721)
              * @example 1
              */
             quantity: number;
-            /** @description Price per item */
-            price: components["schemas"]["ListingPriceInput"];
             /**
              * @description Offer start time in ISO 8601 format. Defaults to now.
              * @example 2026-05-01T00:00:00Z
              */
             start_time?: string | null;
-            /**
-             * @description Offer end time in ISO 8601 format. Defaults to 30 days from start.
-             * @example 2026-06-01T00:00:00Z
-             */
-            end_time?: string | null;
             /** @description Whether to include optional creator fees. Defaults to false. */
             use_creator_fee?: boolean | null;
         };
@@ -4479,31 +4528,31 @@ export interface components {
             token_id: string;
         };
         AgentBindingResponse: {
+            agent: components["schemas"]["AgentNftResponse"];
             agent_id: string;
             binding_contract: string;
-            agent: components["schemas"]["AgentNftResponse"];
             registered_by?: string | null;
         };
         /** @description The ERC-8004 registration file of an agent identity NFT, as parsed from its token URI. Self-reported by the agent's registrant and not verified by OpenSea. */
         AgentMetadataResponse: {
-            /** @description The wallet the registration file names for the agent */
-            agent_wallet?: string | null;
-            x402_support: boolean;
             /** @description Whether the agent declares itself active. ERC-8004 defaults this to true, so a registration file that omits it reads as true. */
             active?: boolean | null;
-            supported_trust: string[];
-            services: components["schemas"]["AgentServiceResponse"][];
-            registrations: components["schemas"]["AgentRegistrationResponse"][];
+            /** @description The wallet the registration file names for the agent */
+            agent_wallet?: string | null;
             /**
              * Format: date-time
              * @description When OpenSea last successfully read this registration file from the token URI, whether or not its content changed. A failed read does not advance it. Null when the file has not been read since OpenSea started recording this.
              */
             fetched_at?: string | null;
+            registrations: components["schemas"]["AgentRegistrationResponse"][];
+            services: components["schemas"]["AgentServiceResponse"][];
+            supported_trust: string[];
+            x402_support: boolean;
         };
         AgentNftResponse: {
             chain: string;
-            token_id: string;
             contract_address: string;
+            token_id: string;
         };
         /** @description A registry entry an ERC-8004 registration file declares for the agent */
         AgentRegistrationResponse: {
@@ -4512,71 +4561,71 @@ export interface components {
         };
         /** @description A service endpoint declared in an ERC-8004 registration file */
         AgentServiceResponse: {
-            name: string;
-            endpoint: string;
-            version?: string | null;
-            skills: string[];
-            domains: string[];
-            tools: string[];
-            prompts: string[];
             capabilities: string[];
+            domains: string[];
+            endpoint: string;
+            name: string;
+            prompts: string[];
+            skills: string[];
+            tools: string[];
+            version?: string | null;
         };
         Nft: {
-            identifier: string;
             collection: string;
             contract: string;
-            token_standard: string;
-            name?: string | null;
-            description?: string | null;
-            image_url?: string | null;
-            display_image_url?: string | null;
-            display_animation_url?: string | null;
-            metadata_url?: string | null;
-            opensea_url: string;
-            updated_at: string;
-            is_disabled: boolean;
-            is_nsfw: boolean;
-            original_image_url?: string | null;
-            original_animation_url?: string | null;
-            traits: components["schemas"]["Trait"][];
-            /** Format: double */
-            estimated_value_usd?: number | null;
             /** Format: int32 */
             decimals?: number | null;
+            description?: string | null;
+            display_animation_url?: string | null;
+            display_image_url?: string | null;
+            /** Format: double */
+            estimated_value_usd?: number | null;
+            identifier: string;
+            image_url?: string | null;
+            is_disabled: boolean;
+            is_nsfw: boolean;
+            metadata_url?: string | null;
+            name?: string | null;
+            opensea_url: string;
+            original_animation_url?: string | null;
+            original_image_url?: string | null;
+            token_standard: string;
+            traits: components["schemas"]["Trait"][];
+            updated_at: string;
         };
         NftBatchResponse: {
             nfts: components["schemas"]["NftDetailed"][];
         };
         NftDetailed: {
-            identifier: string;
+            agent_binding?: components["schemas"]["AgentBindingResponse"] | null;
+            agent_metadata?: components["schemas"]["AgentMetadataResponse"] | null;
+            animation_url?: string | null;
             collection: string;
             contract: string;
-            token_standard: string;
-            name?: string | null;
-            description?: string | null;
-            image_url?: string | null;
-            display_image_url?: string | null;
-            display_animation_url?: string | null;
-            metadata_url?: string | null;
-            opensea_url: string;
-            updated_at: string;
-            is_disabled: boolean;
-            is_nsfw: boolean;
-            original_image_url?: string | null;
-            original_animation_url?: string | null;
-            traits: components["schemas"]["Trait"][];
-            /** Format: double */
-            estimated_value_usd?: number | null;
+            creator: string;
             /** Format: int32 */
             decimals?: number | null;
-            animation_url?: string | null;
+            description?: string | null;
+            display_animation_url?: string | null;
+            display_image_url?: string | null;
+            /** Format: double */
+            estimated_value_usd?: number | null;
+            identifier: string;
+            image_url?: string | null;
+            is_disabled: boolean;
+            is_nsfw: boolean;
             is_suspicious: boolean;
-            creator: string;
+            metadata_url?: string | null;
+            name?: string | null;
+            opensea_url: string;
+            original_animation_url?: string | null;
+            original_image_url?: string | null;
             owners: components["schemas"]["Owner"][];
             rarity?: components["schemas"]["Rarity"] | null;
             subscription?: components["schemas"]["SubscriptionInfoResponse"] | null;
-            agent_binding?: components["schemas"]["AgentBindingResponse"] | null;
-            agent_metadata?: components["schemas"]["AgentMetadataResponse"] | null;
+            token_standard: string;
+            traits: components["schemas"]["Trait"][];
+            updated_at: string;
         };
         Owner: {
             address: string;
@@ -4585,10 +4634,10 @@ export interface components {
             quantity_string: string;
         };
         Rarity: {
-            strategy_id: string;
-            strategy_version: string;
             /** Format: int64 */
             rank?: number | null;
+            strategy_id: string;
+            strategy_version: string;
         };
         SubscriptionInfoResponse: {
             /**
@@ -4596,13 +4645,13 @@ export interface components {
              * @description Unix timestamp in seconds, including fractional seconds
              */
             expires_at?: number | null;
-            is_renewable: boolean;
             is_expired: boolean;
+            is_renewable: boolean;
         };
         Trait: {
-            trait_type: string;
             display_type?: string | null;
             max_value?: string | null;
+            trait_type: string;
             value: unknown;
         };
         /** @description Payment token to use for a cross-chain transaction */
@@ -4621,12 +4670,15 @@ export interface components {
         /** @description Request to sweep buy items from a collection */
         SweepCollectionRequest: {
             /**
+             * @description Address of the buyer
+             * @example 0x...
+             */
+            buyer: string;
+            /**
              * @description The slug of the collection to sweep
              * @example pudgypenguins
              */
             collection_slug: string;
-            /** @description The token to pay with */
-            payment: components["schemas"]["CrossChainPaymentToken"];
             /**
              * Format: int32
              * @description Maximum number of items to buy (1-50)
@@ -4638,20 +4690,17 @@ export interface components {
              * @example 10.0
              */
             max_price_per_item: string;
-            /**
-             * @description Address of the buyer
-             * @example 0x...
-             */
-            buyer: string;
+            /** @description The token to pay with */
+            payment: components["schemas"]["CrossChainPaymentToken"];
             /** @description Optional recipient address for the purchased items */
             recipient?: string | null;
         };
         /** @description Response containing ordered blockchain actions to execute for a collection sweep */
         SweepCollectionResponse: {
-            /** @description Ordered list of blockchain actions to execute. Each action is a JSON object with a single field indicating the type (e.g. buyItemAction, permit2SignatureAction, paymentApprovalAction) and its associated data. Serialized using proto3 JSON format — fields with default values (empty string, 0, false) may be omitted. */
-            steps: components["schemas"]["JsonNode"][];
             /** @description Errors encountered during sweep. Present alongside steps for partial success cases (e.g. some listings became unavailable). */
             errors?: components["schemas"]["SweepError"][] | null;
+            /** @description Ordered list of blockchain actions to execute. Each action is a JSON object with a single field indicating the type (e.g. buyItemAction, permit2SignatureAction, paymentApprovalAction) and its associated data. Serialized using proto3 JSON format — fields with default values (empty string, 0, false) may be omitted. */
+            steps: components["schemas"]["JsonNode"][];
         };
         /** @description An error encountered during a sweep operation */
         SweepError: {
@@ -4659,31 +4708,31 @@ export interface components {
             message: string;
         };
         FullfillListingRequest: {
-            listing: components["schemas"]["ListingObject"];
-            fulfiller: components["schemas"]["FulfillerObject"];
             consideration?: components["schemas"]["ConsiderationObject"];
+            fulfiller: components["schemas"]["FulfillerObject"];
+            /**
+             * @description Whether to include optional creator fees in the fulfillment. If creator fees are already required, this is a no-op. Defaults to false.
+             * @default false
+             */
+            include_optional_creator_fees?: boolean | null;
+            listing: components["schemas"]["ListingObject"];
             recipient?: string;
             /**
              * Format: int64
              * @description Optional quantity of units to fulfill; defaults to remaining units for listings
              */
             units_to_fill?: number | null;
-            /**
-             * @description Whether to include optional creator fees in the fulfillment. If creator fees are already required, this is a no-op. Defaults to false.
-             * @default false
-             */
-            include_optional_creator_fees: boolean | null;
         };
         ListingObject: {
-            hash: string;
             chain: string;
+            hash: string;
             protocol_address: string;
         };
         /** @description Request to fulfill one or more listings using a payment token on a different chain or a different token on the same chain */
         CrossChainFulfillmentRequest: {
+            fulfiller: components["schemas"]["FulfillerObject"];
             /** @description One or more listings to fulfill */
             listings: components["schemas"]["ListingObject"][];
-            fulfiller: components["schemas"]["FulfillerObject"];
             /** @description The token to pay with */
             payment: components["schemas"]["CrossChainPaymentToken"];
             /** @description Optional recipient address for the purchased items */
@@ -4696,17 +4745,17 @@ export interface components {
         };
         /** @description Request to get listing creation actions */
         CreateListingActionsRequest: {
-            /** @description Items to list for sale */
-            items: components["schemas"]["ListingItem"][];
             /**
              * @description Maker (seller) wallet address
              * @example 0x...
              */
             address: string;
-            /** @description Whether to include creator fees. Defaults to true. */
-            use_creator_fee?: boolean | null;
+            /** @description Items to list for sale */
+            items: components["schemas"]["ListingItem"][];
             /** @description Optional taker address for private listings */
             taker?: string | null;
+            /** @description Whether to include creator fees. Defaults to true. */
+            use_creator_fee?: boolean | null;
         };
         /** @description An item to list for sale */
         ListingItem: {
@@ -4721,28 +4770,28 @@ export interface components {
              */
             contract: string;
             /**
-             * @description Token ID of the NFT
-             * @example 1234
+             * @description Listing end time in ISO 8601 format. Defaults to 30 days from start.
+             * @example 2026-06-01T00:00:00Z
              */
-            token_id: string;
+            end_time?: string | null;
+            /** @description Price per item */
+            price: components["schemas"]["ListingPriceInput"];
             /**
              * Format: int64
              * @description Quantity to list (use 1 for ERC-721)
              * @example 1
              */
             quantity: number;
-            /** @description Price per item */
-            price: components["schemas"]["ListingPriceInput"];
             /**
              * @description Listing start time in ISO 8601 format. Defaults to now.
              * @example 2026-05-01T00:00:00Z
              */
             start_time?: string | null;
             /**
-             * @description Listing end time in ISO 8601 format. Defaults to 30 days from start.
-             * @example 2026-06-01T00:00:00Z
+             * @description Token ID of the NFT
+             * @example 1234
              */
-            end_time?: string | null;
+            token_id: string;
         };
         /** @description Response containing blockchain actions to execute for listing creation */
         CreateListingActionsResponse: {
@@ -4757,22 +4806,18 @@ export interface components {
         /** @description Native token price for a Creator Studio drop stage */
         SaveDropEditsPriceRequest: {
             /**
-             * @description Price per token in whole units of the chain's native currency, as a decimal string: "0.05" is 0.05 ETH on Ethereum or Base, and "0" is a free stage. This is not wei. The stages in GET /api/v2/drops/{slug} report `price` in wei, so divide that value by 10^18 before sending it back here.
-             * @example 0.05
-             */
-            unit: string;
-            /**
              * @description Price currency. SeaDrop V1 stages are priced in the chain's native currency only, so this must be 0x0000000000000000000000000000000000000000.
              * @example 0x0000000000000000000000000000000000000000
              */
             contract_address: string;
+            /**
+             * @description Price per token in whole units of the chain's native currency, as a decimal string: "0.05" is 0.05 ETH on Ethereum or Base, and "0" is a free stage. This is not wei. The stages in GET /api/v2/drops/{slug} report `price` in wei, so divide that value by 10^18 before sending it back here.
+             * @example 0.05
+             */
+            unit: string;
         };
         /** @description Request to save Creator Studio drop edits */
         SaveDropEditsRequest: {
-            /** @description The drop's complete stage set, replacing any existing stages rather than merging with them. Exactly one stage must be `public_sale` and it must be first in this array. The presales that follow must be contiguous among themselves, each starting exactly when the previous presale ended, and the last must end exactly when the public stage starts. The first presale start time is not constrained. Array order is therefore not chronological: the public stage is listed first and runs last. */
-            stages: components["schemas"]["SaveDropEditsStageRequest"][];
-            /** @description Maximum supply for the drop as a decimal string */
-            max_supply?: string | null;
             /**
              * @description The wallet that receives mint proceeds, written to the contract on the next publish. Required when any stage has a price above zero and the contract has no payout address yet: SeaDrop reverts every paid mint while none is set, so such a save returns 400. Free drops can omit it. Each save replaces the drafted value, so a save that omits it drops any address an earlier save drafted and keeps the one already onchain. Must not be the zero address.
              * @example 0x1234567890123456789012345678901234567890
@@ -4782,12 +4827,35 @@ export interface components {
              * @description Set when saving a configuration the creator has not chosen a launch date for. Stage start and end times are still required, but they are held as a placeholder rather than a schedule: the whole stage set is shifted so the earliest stage opens at the Unix epoch, preserving each stage's duration and the gaps between them, and publishing the drop is refused until a launch date is set. Omit it to leave the drop scheduled; an explicit null is rejected.
              * @default false
              */
-            launch_date_pending: boolean;
+            launch_date_pending?: boolean;
+            /** @description Maximum supply for the drop as a decimal string */
+            max_supply?: string | null;
+            /** @description The drop's complete stage set, replacing any existing stages rather than merging with them. Exactly one stage must be `public_sale` and it must be first in this array. The presales that follow must be contiguous among themselves, each starting exactly when the previous presale ended, and the last must end exactly when the public stage starts. The first presale start time is not constrained. Array order is therefore not chronological: the public stage is listed first and runs last. */
+            stages: components["schemas"]["SaveDropEditsStageRequest"][];
         };
         /** @description A drop stage for Creator Studio edits */
         SaveDropEditsStageRequest: {
-            /** @description Stage UUID. Reuse an existing stage UUID to update that stage, or supply a new one to add a stage. Because `stages` replaces the whole set, omitting a stage deletes it. Send an existing uuid exactly as GET /api/v2/drops/{slug} returns it: stages match by exact string, so the same UUID with dashes added or removed is treated as a new stage. */
-            uuid: string;
+            /** @description For a `signed_presale` stage, the token returned by POST /api/v2/drops/{slug}/allowlist/validate (or the upload context's token) for the stage's allowlist file. */
+            allowlist_file_token?: string | null;
+            /** @description Stage description */
+            description?: string | null;
+            /**
+             * Format: date-time
+             * @description Stage end time
+             * @example 2024-01-01T01:00:00Z
+             */
+            end_time: string;
+            /**
+             * @description Stage name shown to minters, 1 to 100 characters. Required: a stage without one cannot be published.
+             * @example Public sale
+             */
+            label: string;
+            /** @description Maximum token supply for this stage as a decimal string */
+            max_token_supply_for_stage?: string | null;
+            /** @description This stage's per-wallet limit as a decimal string: what the stage adds for each wallet on its list, unless that wallet's allowlist row sets its own. Not a running total: limits add up across the stages a wallet is listed on, the public stage adds its own on top, and unused mints carry into later stages. */
+            max_total_mintable_by_wallet: string;
+            /** @description Stage price */
+            price: components["schemas"]["SaveDropEditsPriceRequest"];
             /**
              * @description Stage type. `public_sale` for the open stage, `signed_presale` for an allowlist stage. `merkle_presale` exists in the underlying enum but is rejected: no drop has ever used one and mints against such a stage fail.
              * @example signed_presale
@@ -4800,32 +4868,11 @@ export interface components {
              * @example 2024-01-01T00:00:00Z
              */
             start_time: string;
-            /**
-             * Format: date-time
-             * @description Stage end time
-             * @example 2024-01-01T01:00:00Z
-             */
-            end_time: string;
-            /** @description Stage price */
-            price: components["schemas"]["SaveDropEditsPriceRequest"];
-            /** @description This stage's per-wallet limit as a decimal string: what the stage adds for each wallet on its list, unless that wallet's allowlist row sets its own. Not a running total: limits add up across the stages a wallet is listed on, the public stage adds its own on top, and unused mints carry into later stages. */
-            max_total_mintable_by_wallet: string;
-            /** @description Maximum token supply for this stage as a decimal string */
-            max_token_supply_for_stage?: string | null;
-            /**
-             * @description Stage name shown to minters, 1 to 100 characters. Required: a stage without one cannot be published.
-             * @example Public sale
-             */
-            label: string;
-            /** @description Stage description */
-            description?: string | null;
-            /** @description For a `signed_presale` stage, the token returned by POST /api/v2/drops/{slug}/allowlist/validate (or the upload context's token) for the stage's allowlist file. */
-            allowlist_file_token?: string | null;
+            /** @description Stage UUID. Reuse an existing stage UUID to update that stage, or supply a new one to add a stage. Because `stages` replaces the whole set, omitting a stage deletes it. Send an existing uuid exactly as GET /api/v2/drops/{slug} returns it: stages match by exact string, so the same UUID with dashes added or removed is treated as a new stage. */
+            uuid: string;
         };
         /** @description Response body for saving a prereveal drop item */
         PrerevealDropItemResponse: {
-            /** @description Item name */
-            name: string;
             /** @description Item description */
             description?: string | null;
             /** @description Item image URL */
@@ -4834,31 +4881,52 @@ export interface components {
             media_token: string;
             /** @description Item media type */
             media_type?: string | null;
+            /** @description Item name */
+            name: string;
         };
         /** @description Request body for saving a prereveal drop item */
         SavePrerevealDropItemRequest: {
-            /** @description Media token reference */
-            media_token: string;
-            /** @description Item name */
-            name: string;
             /** @description Item description */
             description?: string;
+            /** @description Media token reference */
+            media_token: string;
             /** @description Media type */
             media_type?: string;
+            /** @description Item name */
+            name: string;
+            /**
+             * @description Set to true to put this placeholder back over a revealed drop on purpose. The save then always writes the placeholder to the draft, and the next publish un-reveals the drop. Defaults to false, which leaves a revealed drop's base URI as it is.
+             * @default false
+             */
+            unreveal?: boolean;
         };
         /** @description Ready-to-sign mint transaction data */
         DropMintResponse: {
-            /** @description Transaction target contract address */
-            to: string;
+            /** @description Chain identifier */
+            chain: string;
             /** @description Encoded transaction data (hex) */
             data: string;
+            /** @description End time of that stage (ISO 8601) */
+            stage_end_time?: string;
+            /** @description Start time of that stage (ISO 8601) */
+            stage_start_time?: string;
+            /**
+             * @description Type of that stage, as in the drop's `stages`
+             * @example public_sale
+             */
+            stage_type?: string;
+            /**
+             * @description The stage this transaction was built for. It matches a `uuid` in the drop's `stages` from GET /api/v2/drops/{slug}, unless the stage is hidden: hidden stages can be minted but are not listed there. A presale transaction carries this stage's start and end times in its signed parameters and reverts if mined outside them. Absent only if the stage could not be determined.
+             * @example 5f0c6f7e2b8a4c1d9e3f6a7b8c9d0e1f
+             */
+            stage_uuid?: string;
+            /** @description Transaction target contract address */
+            to: string;
             /**
              * @description Native currency to send with the transaction, in wei, as a decimal string (not hex)
              * @example 10000000000000000
              */
             value: string;
-            /** @description Chain identifier */
-            chain: string;
         };
         /** @description Mint request parameters */
         DropMintRequest: {
@@ -4873,6 +4941,11 @@ export interface components {
              * @example 1
              */
             quantity: number;
+            /**
+             * @description Skip checking that the minter holds enough of the chain's native token for the price and gas. The transaction is the same either way; set this to build a mint for a wallet you will fund before submitting it. An underfunded transaction then fails when submitted instead of returning 422 here.
+             * @default false
+             */
+            skip_balance_check?: boolean;
         };
         /** @description Started upload of a drop's item media and metadata to IPFS */
         DropMetadataUploadResponse: {
@@ -4881,18 +4954,18 @@ export interface components {
         };
         /** @description Request to create a SelfMint drop item */
         SaveSelfMintDropItemRequest: {
+            /** @description Animated media for the item, alongside its image. Blank is treated as no animation, the same as omitting the field. */
+            animation_url?: string | null;
+            /** @description Item description */
+            description?: string | null;
+            /** @description External URL */
+            external_url?: string | null;
             /** @description Media token reference */
             media_token: string;
             /** @description Item name */
             name: string;
             /** @description Item supply as a decimal string */
             supply: string;
-            /** @description Item description */
-            description?: string | null;
-            /** @description External URL */
-            external_url?: string | null;
-            /** @description Animated media for the item, alongside its image. Blank is treated as no animation, the same as omitting the field. */
-            animation_url?: string | null;
             /** @description Item traits */
             traits?: components["schemas"]["SelfMintDropItemTraitRequest"][] | null;
         };
@@ -4918,19 +4991,8 @@ export interface components {
             /** @description Whether the save succeeded */
             success: boolean;
         };
-        /** @description Request body for saving drop item media */
-        SaveDropItemMediaRequest: {
-            /** @description Media tokens to save */
-            media_tokens: string[];
-        };
         /** @description Request body for saving drop item media from an upload batch */
         SaveDropItemMediaBatchRequest: {
-            /**
-             * Format: uuid
-             * @description The upload_batch_id the files were uploaded with through POST /api/v2/drops/{slug}/items/media.
-             * @example 5f0c2b1e-7a4d-4e8b-9c3f-2d6a1b0e9f47
-             */
-            upload_batch_id: string;
             /**
              * @description Filenames exactly as uploaded in the batch, one per item and each at most once, up to 15000. Without a manifest, items are numbered 1 to n in this order. Files in the batch that are not named here are not saved.
              * @example [
@@ -4939,34 +5001,40 @@ export interface components {
              *     ]
              */
             filenames: string[];
+            /**
+             * Format: uuid
+             * @description The upload_batch_id the files were uploaded with through POST /api/v2/drops/{slug}/items/media.
+             * @example 5f0c2b1e-7a4d-4e8b-9c3f-2d6a1b0e9f47
+             */
+            upload_batch_id: string;
         };
         /** @description Ordered transactions required to complete a cross-chain mint */
         CrossChainDropMintResponse: {
-            /** @description Ordered list of transactions to sign and submit */
-            transactions: components["schemas"]["SwapTransactionResponse"][];
             /** @description Pass this object to POST /api/v2/transactions/receipt after submitting the transactions, and poll until the returned status is terminal */
             receipt_request: components["schemas"]["TransactionReceiptRequest"];
+            /** @description Ordered list of transactions to sign and submit */
+            transactions: components["schemas"]["SwapTransactionResponse"][];
         };
         /** @description Cross-chain mint request parameters */
         CrossChainDropMintRequest: {
-            /**
-             * @description Wallet address that will sign and pay for the transactions
-             * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
-             */
-            payer: string;
             /**
              * @description Wallet address that will receive the minted tokens
              * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
              */
             minter: string;
             /**
+             * @description Wallet address that will sign and pay for the transactions
+             * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+             */
+            payer: string;
+            /** @description Token used to pay for the mint */
+            payment: components["schemas"]["CrossChainPaymentToken"];
+            /**
              * Format: int32
              * @description Number of tokens to mint
              * @example 1
              */
             quantity: number;
-            /** @description Token used to pay for the mint */
-            payment: components["schemas"]["CrossChainPaymentToken"];
         };
         /** @description Response body for validating a drop allowlist */
         ValidateDropAllowlistResponse: {
@@ -4980,19 +5048,19 @@ export interface components {
         };
         /** @description Ready-to-sign deploy contract transaction data */
         DropDeployResponse: {
-            /** @description Transaction target. The clone factory for `erc721_clone` and `erc1155_clone`. Null for `erc721_standard`, which is a contract-creation transaction: send it with no `to` at all. Sending it to the zero address does not deploy anything. */
-            to: string | null;
-            /** @description Address the transaction must be sent from: the request's `sender`, which becomes the contract owner. */
-            from: string;
+            /** @description Chain identifier */
+            chain: string;
             /** @description Encoded transaction data (hex) */
             data: string;
+            /** @description Address the transaction must be sent from: the request's `sender`, which becomes the contract owner. */
+            from: string;
+            /** @description Transaction target. The clone factory for `erc721_clone` and `erc1155_clone`. Null for `erc721_standard`, which is a contract-creation transaction: send it with no `to` at all. Sending it to the zero address does not deploy anything. */
+            to: string | null;
             /**
              * @description Native currency to send with the transaction, in wei, as a decimal string (not hex)
              * @example 0
              */
             value: string;
-            /** @description Chain identifier */
-            chain: string;
         };
         /** @description Deploy contract request parameters */
         DropDeployRequest: {
@@ -5018,16 +5086,16 @@ export interface components {
              */
             drop_type: "seadrop_v1_erc721" | "seadrop_v2_erc1155_self_mint";
             /**
+             * @description Deployer wallet address. The transaction must be sent from it, and it becomes the contract owner that publishes the drop and creates self-mint items.
+             * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+             */
+            sender: string;
+            /**
              * @description Contract token type. `erc721_clone` or `erc721_standard` for drop_type `seadrop_v1_erc721`; `erc1155_clone` for drop_type `seadrop_v2_erc1155_self_mint`.
              * @example erc721_clone
              * @enum {string}
              */
             token_type: "erc721_clone" | "erc721_standard" | "erc1155_clone";
-            /**
-             * @description Deployer wallet address. The transaction must be sent from it, and it becomes the contract owner that publishes the drop and creates self-mint items.
-             * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
-             */
-            sender: string;
         };
         /** @description Result of a collection metadata refresh request */
         CollectionRefreshResponse: {
@@ -5048,16 +5116,16 @@ export interface components {
         };
         /** @description A ready-to-sign transaction */
         CollectionTransactionResponse: {
-            /** @description Transaction target contract address */
-            to: string;
-            /** @description Address the transaction must be sent from: the contract's onchain owner. Sent from any other address it reverts. */
-            from: string;
-            /** @description Encoded transaction data (hex) */
-            data: string;
-            /** @description Transaction value in wei */
-            value: string;
             /** @description Chain identifier */
             chain: string;
+            /** @description Encoded transaction data (hex) */
+            data: string;
+            /** @description Address the transaction must be sent from: the contract's onchain owner. Sent from any other address it reverts. */
+            from: string;
+            /** @description Transaction target contract address */
+            to: string;
+            /** @description Transaction value in wei */
+            value: string;
         };
         /** @description Ready-to-sign transactions. Send them in order from the address in each one's from field. */
         CollectionTransactionsResponse: {
@@ -5066,6 +5134,16 @@ export interface components {
         };
         /** @description Request body for turning creator fee enforcement on or off */
         SetCreatorFeeEnforcementRequest: {
+            /**
+             * @description true also returns the Limit Break V5 policy update that lets EIP-7702 wallets (OpenSea embedded wallets, MetaMask Smart Accounts) send this collection's NFTs directly, which the V5 transfer validator rejects by default. Marketplace sales still pay creator earnings, but a 7702 wallet's delegate code could be written to settle a trade as a direct send, which skips them. When enforcement is already on, transactions holds only this update, or is empty when there is none to make (another validator, or a policy that already allows these sends). Ignored when enabled is false.
+             * @default false
+             */
+            allow_eip7702_transfers?: boolean;
+            /**
+             * @description true also returns the Limit Break V5 policy update that lets smart contract wallets (Safe, Coinbase Smart Wallet and other contract accounts) send this collection's NFTs directly, which the V5 transfer validator rejects by default. This is a wider opening than allow_eip7702_transfers: any contract holding the NFTs can then send them, including NFT AMM pools, whose swaps do not pay creator earnings. With allow_eip7702_transfers, both options go in one transaction. When enforcement is already on, transactions holds only the update, or is empty when there is none to make. Ignored when enabled is false.
+             * @default false
+             */
+            allow_smart_wallet_transfers?: boolean;
             /** @description true sets OpenSea's transfer validator on the contract so creator fees are enforced. false removes the validator. */
             enabled: boolean;
         };
@@ -5084,28 +5162,28 @@ export interface components {
             collections: components["schemas"]["CollectionResponse"][];
         };
         CollectionResponse: {
-            collection: string;
-            name: string;
-            description?: string | null;
-            /** @description Square avatar for the collection, used wherever it is named. Falls back to a representative item's image when the collection has none of its own. */
-            image_url?: string | null;
             /** @description Wide image for the collection, and the only wide image on this API. Use it for a header or hero slot; image_url is square and will not fill one. On the single-collection endpoint it is the collection's hero image, else its hero video's poster, else its banner; on list endpoints it is the banner. Always a still image: a video gets a frame from it, or null when no still can be derived. */
             banner_image_url?: string | null;
-            owner?: string | null;
-            safelist_status: string;
             category?: string | null;
+            collection: string;
+            collection_offers_enabled: boolean;
+            contracts: components["schemas"]["Contract"][];
+            description?: string | null;
+            discord_url?: string | null;
+            /** @description Square avatar for the collection, used wherever it is named. Falls back to a representative item's image when the collection has none of its own. */
+            image_url?: string | null;
+            instagram_username?: string | null;
             is_disabled: boolean;
             is_nsfw: boolean;
-            trait_offers_enabled: boolean;
-            collection_offers_enabled: boolean;
+            name: string;
             opensea_url: string;
+            owner?: string | null;
             project_url?: string | null;
-            wiki_url?: string | null;
-            discord_url?: string | null;
+            safelist_status: string;
             telegram_url?: string | null;
+            trait_offers_enabled: boolean;
             twitter_username?: string | null;
-            instagram_username?: string | null;
-            contracts: components["schemas"]["Contract"][];
+            wiki_url?: string | null;
         };
         Contract: {
             address: string;
@@ -5114,9 +5192,9 @@ export interface components {
         MetadataIngestionError: {
             errorType: string;
             message: string;
-            url?: string | null;
             /** Format: int32 */
             statusCode?: number | null;
+            url?: string | null;
         };
         ValidateMetadataAssetIdentifier: {
             chain: string;
@@ -5124,38 +5202,38 @@ export interface components {
             tokenId: string;
         };
         ValidateMetadataAttribute: {
+            displayType?: string | null;
             traitType: string;
             value: string;
-            displayType?: string | null;
         };
         ValidateMetadataDetails: {
-            name?: string | null;
-            description?: string | null;
-            originalImageUrl?: string | null;
-            processedImageUrl?: string | null;
-            originalAnimationUrl?: string | null;
-            processedAnimationUrl?: string | null;
-            externalUrl?: string | null;
-            backgroundColor?: string | null;
             attributes: components["schemas"]["ValidateMetadataAttribute"][];
+            backgroundColor?: string | null;
+            description?: string | null;
+            externalUrl?: string | null;
+            name?: string | null;
+            originalAnimationUrl?: string | null;
+            originalImageUrl?: string | null;
+            processedAnimationUrl?: string | null;
+            processedImageUrl?: string | null;
         };
         ValidateMetadataResponse: {
             assetIdentifier: components["schemas"]["ValidateMetadataAssetIdentifier"];
-            tokenUri?: string | null;
-            metadata?: components["schemas"]["ValidateMetadataDetails"] | null;
             error?: components["schemas"]["MetadataIngestionError"] | null;
+            metadata?: components["schemas"]["ValidateMetadataDetails"] | null;
+            tokenUri?: string | null;
         };
         /** @description Instant API key response */
         InstantApiKeyResponse: {
             /** @description The API key to use in X-API-KEY header */
             api_key: string;
-            /** @description Key name for identification and revocation */
-            name: string;
             /**
              * Format: date-time
              * @description ISO-8601 timestamp when the key expires
              */
             expires_at: string;
+            /** @description Key name for identification and revocation */
+            name: string;
             /** @description Rate limits for this key */
             rate_limits: components["schemas"]["RateLimitsResponse"];
             /** @description URL to upgrade to higher rate limits */
@@ -5163,6 +5241,11 @@ export interface components {
         };
         /** @description Rate limits for the API key */
         RateLimitsResponse: {
+            /**
+             * @description Fulfillment rate limit
+             * @example 5/m
+             */
+            fulfillment: string;
             /**
              * @description Read rate limit
              * @example 600/h
@@ -5173,11 +5256,6 @@ export interface components {
              * @example 30/h
              */
             write: string;
-            /**
-             * @description Fulfillment rate limit
-             * @example 5/m
-             */
-            fulfillment: string;
         };
         /** @description An asset to transfer */
         TransferAsset: {
@@ -5192,15 +5270,15 @@ export interface components {
              */
             contract: string;
             /**
-             * @description The token ID of the asset
-             * @example 1234
-             */
-            token_id: string;
-            /**
              * @description The quantity to transfer in raw units (1 for ERC721, raw amount for ERC1155/fungible)
              * @example 1
              */
             quantity: string;
+            /**
+             * @description The token ID of the asset
+             * @example 1234
+             */
+            token_id: string;
         };
         /** @description Request to transfer NFTs or tokens between wallets */
         TransferRequest: {
@@ -5226,71 +5304,75 @@ export interface components {
             status: string;
         };
         LinkWalletSiwxRequest: {
+            chainArch: string;
             message: components["schemas"]["JsonNode"];
             signature: string;
-            chainArch: string;
         };
         WalletLinkResponse: {
             linkedWalletAddress: string;
         };
+        WalletLinkNonceResponse: {
+            nonce: string;
+            statement: string;
+        };
         ProposeAgentRelationshipRequestBody: {
-            counterparty_address: string;
             /**
              * @description Which side of the relationship the caller is on
              * @enum {string}
              */
             caller_role: "AGENT" | "OWNER";
+            counterparty_address: string;
         };
         AgentRelationshipMutationResponse: {
-            relation: components["schemas"]["AgentRelationshipResponse"];
             created: boolean;
+            relation: components["schemas"]["AgentRelationshipResponse"];
         };
         AgentRelationshipResponse: {
             agent_account_id: string;
-            owner_account_id: string;
-            status: string;
             awaiting_confirmation_from?: string | null;
             /**
              * Format: double
              * @description Unix timestamp in seconds, including fractional seconds
              */
-            created_at: number;
+            confirmed_at?: number | null;
             /**
              * Format: double
              * @description Unix timestamp in seconds, including fractional seconds
              */
-            confirmed_at?: number | null;
+            created_at: number;
+            owner_account_id: string;
+            status: string;
         };
         ConfirmAgentRelationshipRequestBody: {
-            /** @description The other party's account id. Preferred over an address. */
-            counterparty_account_id?: string;
-            /** @description A wallet the other party has linked publicly, resolved to their account. Stops resolving once unlinked. */
-            counterparty_address?: string;
             /**
              * @description Which side of the relationship the caller is on
              * @enum {string}
              */
             caller_role: "AGENT" | "OWNER";
+            /** @description The other party's account id. Preferred over an address. */
+            counterparty_account_id?: string;
+            /** @description A wallet the other party has linked publicly, resolved to their account. Stops resolving once unlinked. */
+            counterparty_address?: string;
         };
         /** @description Request body for updating profile settings */
         UpdateProfileSettingsRequest: {
-            /** @description Profile display name */
-            displayName?: string | null;
+            /** @description Banner image upload token */
+            bannerImageToken?: string | null;
             /** @description Profile bio */
             bio?: string | null;
+            /** @description Profile display name */
+            displayName?: string | null;
             /** @description Profile external URL */
             externalUrl?: string | null;
             /** @description Profile image upload token */
             profileImageToken?: string | null;
-            /** @description Banner image upload token */
-            bannerImageToken?: string | null;
         };
         /** @description Response for updating profile settings */
         UpdateProfileSettingsResponse: {
-            /** @description Display name */
-            displayName?: string | null;
             /** @description Profile bio */
             bio?: string | null;
+            /** @description Display name */
+            displayName?: string | null;
             /** @description Profile external URL */
             externalUrl?: string | null;
         };
@@ -5305,23 +5387,23 @@ export interface components {
         };
         /** @description A shelf item entry that can include an optional description */
         ProfileShelfItemUpdateRequest: {
-            item: components["schemas"]["ProfileShelfItemRequest"];
             /** @description Optional item description */
             description?: string | null;
+            item: components["schemas"]["ProfileShelfItemRequest"];
         };
         /** @description Request body for updating a profile shelf */
         UpdateProfileShelfRequest: {
-            /** @description Shelf title */
-            title?: string | null;
             /** @description Shelf description */
             description?: string | null;
-            items?: components["schemas"]["ProfileShelfItemUpdateRequest"][];
             /** @description Shelf icon */
             icon?: string | null;
-            /** @description Shelf view */
-            view?: string | null;
+            items?: components["schemas"]["ProfileShelfItemUpdateRequest"][];
             /** @description Single-item shelf side */
             single_item_shelf_side?: string | null;
+            /** @description Shelf title */
+            title?: string | null;
+            /** @description Shelf view */
+            view?: string | null;
         };
         /** @description Response body for a drop item attribute */
         DropItemAttributeResponse: {
@@ -5332,41 +5414,41 @@ export interface components {
         };
         /** @description Response body for a drop item */
         DropItemResponse: {
-            /** @description Token ID */
-            token_id: string;
-            /** @description Item name */
-            name?: string | null;
-            /** @description Item description */
-            description?: string | null;
-            /** @description Item image URL */
-            image_url: string;
-            /** @description Item attributes */
-            attributes: components["schemas"]["DropItemAttributeResponse"][];
-            /** @description Image media token */
-            media_token: string;
-            /** @description Contract standard */
-            contract_standard: string;
-            /** @description External URL */
-            external_url?: string | null;
             /** @description Animated media for the item, alongside its image */
             animation_url?: string | null;
+            /** @description Item attributes */
+            attributes: components["schemas"]["DropItemAttributeResponse"][];
             /** @description Chain identifier */
             chain: string;
             /** @description Contract address */
             contract_address: string;
+            /** @description Contract standard */
+            contract_standard: string;
+            /** @description Item description */
+            description?: string | null;
+            /** @description External URL */
+            external_url?: string | null;
+            /** @description Item image URL */
+            image_url: string;
+            /** @description Image media token */
+            media_token: string;
+            /** @description Item name */
+            name?: string | null;
+            /** @description Token ID */
+            token_id: string;
         };
         /** @description Request body for updating a drop item */
         UpdateDropItemRequest: {
-            /** @description Media token reference */
-            media_token: string;
-            /** @description Item name */
-            name: string;
-            /** @description External URL */
-            external_url?: string;
             /** @description Animated media for the item, alongside its image. Omit to leave the stored value alone; send an empty string to remove it. */
             animation_url?: string;
             /** @description Item description */
             description?: string;
+            /** @description External URL */
+            external_url?: string;
+            /** @description Media token reference */
+            media_token: string;
+            /** @description Item name */
+            name: string;
             /** @description Traits to apply */
             traits?: components["schemas"]["SelfMintDropItemTraitRequest"][];
         };
@@ -5377,53 +5459,53 @@ export interface components {
         };
         /** @description A creator fee entry for collection edits */
         ModifyCollectionCreatorFeeRequest: {
+            /** @description Creator fee recipient address */
+            address: string;
             /**
              * Format: int32
              * @description Creator fee basis points
              */
             basis_points: number;
-            /** @description Creator fee recipient address */
-            address: string;
         };
         /** @description Request body for modifying collection metadata. Only the fields you send change. X (Twitter) and Discord are not free-text links: they are verified connections made by signing in to the account in Creator Studio, so they cannot be set here. */
         ModifyCollectionRequest: {
-            /** @description Collection name */
-            name?: string | null;
-            /** @description Collection description */
-            description?: string | null;
-            /** @description Logo image token */
-            logo_image_token?: string | null;
-            /** @description Banner image token */
-            banner_image_token?: string | null;
-            /** @description Collection category. Creators can no longer set or change it: any value other than the current one is rejected with 400, and OpenSea support handles category changes. */
-            category?: string | null;
-            /** @description New collection slug: 1 to 50 lowercase letters, numbers and hyphens. Renaming releases the old slug at once. It does not redirect: requests for it return 404 once cached responses expire (a few minutes), and any other collection can claim it, after which it serves that collection. Update links that use the old slug. Verified collections cannot change their slug. */
-            slug?: string | null;
-            /** @description Whether the collection is NSFW */
-            is_nsfw?: boolean | null;
-            /** @description Whether trait offers are enabled */
-            is_trait_offers_enabled?: boolean | null;
-            /** @description Whether rarity is disabled */
-            is_rarity_disabled?: boolean | null;
             /** @description Authorized editors */
             authorized_editors?: string[] | null;
-            /** @description Website URL shown on the collection page */
-            external_url?: string | null;
-            /** @description Collection Telegram URL */
-            telegram_url?: string | null;
-            /** @description Medium username */
-            medium_username?: string | null;
-            /** @description Creator fees */
-            creator_fees?: components["schemas"]["ModifyCollectionCreatorFeeRequest"][] | null;
-            /** @description Whether buyer-side creator fees are enabled */
-            buyer_side_creator_fee_enabled?: boolean | null;
+            /** @description Banner image token */
+            banner_image_token?: string | null;
             /**
              * Format: int32
              * @description Buyer-side creator fee basis points
              */
             buyer_side_creator_fee_basis_points?: number | null;
+            /** @description Whether buyer-side creator fees are enabled */
+            buyer_side_creator_fee_enabled?: boolean | null;
             /** @description Buyer-side creator fee recipient */
             buyer_side_creator_fee_recipient?: string | null;
+            /** @description Collection category. Creators can no longer set or change it: any value other than the current one is rejected with 400, and OpenSea support handles category changes. */
+            category?: string | null;
+            /** @description Creator fees */
+            creator_fees?: components["schemas"]["ModifyCollectionCreatorFeeRequest"][] | null;
+            /** @description Collection description */
+            description?: string | null;
+            /** @description Website URL shown on the collection page */
+            external_url?: string | null;
+            /** @description Whether the collection is NSFW */
+            is_nsfw?: boolean | null;
+            /** @description Whether rarity is disabled */
+            is_rarity_disabled?: boolean | null;
+            /** @description Whether trait offers are enabled */
+            is_trait_offers_enabled?: boolean | null;
+            /** @description Logo image token */
+            logo_image_token?: string | null;
+            /** @description Medium username */
+            medium_username?: string | null;
+            /** @description Collection name */
+            name?: string | null;
+            /** @description New collection slug: 1 to 50 lowercase letters, numbers and hyphens. Renaming releases the old slug at once. It does not redirect: requests for it return 404 once cached responses expire (a few minutes), and any other collection can claim it, after which it serves that collection. Update links that use the old slug. Verified collections cannot change their slug. */
+            slug?: string | null;
+            /** @description Collection Telegram URL */
+            telegram_url?: string | null;
         };
         /** @description Response body for setting collection visibility */
         SetCollectionVisibilityResponse: {
@@ -5449,41 +5531,43 @@ export interface components {
         };
         /** @description A section within collection about content */
         AboutSectionRequest: {
-            /** @description Section ID. Send the saved id to update that section in place. */
-            id?: string | null;
-            /** @description Section title, 1 to 100 characters */
-            title: string;
             /** @description Section description, 1 to 1000 characters */
             description: string;
+            /** @description Section ID. Send the saved id to update that section in place. */
+            id?: string | null;
             /** @description Section media, at most 20. A non-empty list replaces the section's media; an empty list removes it; leave media out to keep a matching saved section's media. */
             media?: components["schemas"]["MediaInputRequest"][] | null;
+            /** @description Section title, 1 to 100 characters */
+            title: string;
         };
         /** @description A content block overview module: a carousel of sections. The first section's module_type sets the layout for the whole block, so give every section the same type. */
         ContentBlockModuleRequest: {
+            /** @description Module description, up to 1000 characters */
+            description?: string | null;
+            /** @description Module ID */
+            id?: string | null;
             /**
              * Format: int32
              * @description Position on the page across all module types
              */
             index: number;
-            /** @description Module ID */
-            id?: string | null;
-            /** @description Module title, up to 100 characters */
-            title?: string | null;
-            /** @description Module description, up to 1000 characters */
-            description?: string | null;
             /** @description Module sections, at most 20 */
             sections?: components["schemas"]["ContentBlockSectionRequest"][] | null;
+            /** @description Module title, up to 100 characters */
+            title?: string | null;
         };
         /** @description A content block section */
         ContentBlockSectionRequest: {
-            /** @description Section ID (not saved for timeline sections) */
-            id?: string | null;
-            /** @description Section title, up to 100 characters */
-            title?: string | null;
+            /** @description Feature sections only: slug of the collection to feature */
+            collection_slug?: string | null;
+            /** @description Timeline sections only: the heading label, up to 100 characters. It is free text shown as written, such as Phase 1 or Q3 2026, not a parsed date. */
+            date?: string | null;
             /** @description Section description, up to 1000 characters. Rendered as Markdown on the page: links are clickable and raw HTML is dropped. */
             description?: string | null;
             /** @description Section external link */
             external_link?: components["schemas"]["LinkRequest"] | null;
+            /** @description Section ID (not saved for timeline sections) */
+            id?: string | null;
             /** @description Section media */
             media?: components["schemas"]["MediaInputRequest"] | null;
             /**
@@ -5491,37 +5575,35 @@ export interface components {
              * @enum {string}
              */
             module_type: "default" | "feature" | "timeline";
-            /** @description Timeline sections only: the heading label, up to 100 characters. It is free text shown as written, such as Phase 1 or Q3 2026, not a parsed date. */
-            date?: string | null;
-            /** @description Feature sections only: slug of the collection to feature */
-            collection_slug?: string | null;
+            /** @description Section title, up to 100 characters */
+            title?: string | null;
             /** @description Feature sections only: token ID of an item */
             token_id?: string | null;
         };
         /** @description A FAQ overview module */
         FaqBlockModuleRequest: {
+            /** @description Module description */
+            description?: string | null;
+            /** @description Whether the module is hidden */
+            hidden?: boolean | null;
             /**
              * Format: int32
              * @description Position on the page across all module types
              */
             index: number;
-            /** @description Whether the module is hidden */
-            hidden?: boolean | null;
-            /** @description Module title */
-            title?: string | null;
-            /** @description Module description */
-            description?: string | null;
             /** @description Questions, at most 20 */
             sections?: components["schemas"]["FaqSectionRequest"][] | null;
+            /** @description Module title */
+            title?: string | null;
         };
         /** @description A FAQ entry */
         FaqSectionRequest: {
+            /** @description Answer, up to 2000 characters. Rendered as Markdown on the page: links are clickable and raw HTML is dropped. */
+            answer: string;
             /** @description Section ID */
             id?: string | null;
             /** @description Question, up to 200 characters */
             question: string;
-            /** @description Answer, up to 2000 characters. Rendered as Markdown on the page: links are clickable and raw HTML is dropped. */
-            answer: string;
         };
         /** @description Collection hero content */
         HeroMetadataRequest: {
@@ -5551,6 +5633,16 @@ export interface components {
         };
         /** @description A narrative overview module */
         NarrativeModuleRequest: {
+            /** @description Accepted for compatibility but not saved. Use desktop_background_media and mobile_background_media. */
+            background_image?: components["schemas"]["ImageMediaRequest"] | null;
+            /** @description Accepted for compatibility but not saved. Use desktop_background_media and mobile_background_media. */
+            background_media?: components["schemas"]["MediaInputRequest"] | null;
+            /** @description Module description, up to 1000 characters. Rendered as Markdown on the page: links are clickable and raw HTML is dropped. */
+            description: string;
+            /** @description Desktop background media for the background and text_and_background variants. Image or video/mp4, shown full width in a 16:9 frame at most 480px tall. */
+            desktop_background_media?: components["schemas"]["MediaInputRequest"] | null;
+            /** @description Horizontal text position. For text_and_background it places the text over the background. For text_and_media, left puts the text left of the media; any other value puts it on the right. Alternate it between modules to alternate sides. */
+            horizontal_text_position?: string | null;
             /** @description Module ID */
             id?: string | null;
             /**
@@ -5558,29 +5650,19 @@ export interface components {
              * @description Position on the page across all module types
              */
             index: number;
-            /** @description Module title, up to 100 characters */
-            title: string;
-            /** @description Module description, up to 1000 characters. Rendered as Markdown on the page: links are clickable and raw HTML is dropped. */
-            description: string;
             /** @description Module media, at most 20. The text_and_media variant shows the first item in a 16:9 frame beside the text, about 550x310 on desktop; image or video/mp4. */
             media?: components["schemas"]["MediaInputRequest"][] | null;
-            /** @description Horizontal text position. For text_and_background it places the text over the background. For text_and_media, left puts the text left of the media; any other value puts it on the right. Alternate it between modules to alternate sides. */
-            horizontal_text_position?: string | null;
-            /** @description Vertical text position over the background for text_and_background */
-            vertical_text_position?: string | null;
-            /** @description Desktop background media for the background and text_and_background variants. Image or video/mp4, shown full width in a 16:9 frame at most 480px tall. */
-            desktop_background_media?: components["schemas"]["MediaInputRequest"] | null;
             /** @description Mobile background media for the background and text_and_background variants. Image or video/mp4. Without it, the mobile page shows no background. */
             mobile_background_media?: components["schemas"]["MediaInputRequest"] | null;
+            /** @description Module title, up to 100 characters */
+            title: string;
             /**
              * @description Layout of the module. text: title and description only. text_and_media: text beside media. text_and_background: text over full-width background media, placed by horizontal_text_position and vertical_text_position; a last module of this variant makes a full-bleed closing section. background: background media only, without the title and description. Leave it out to derive it from the media that is saved: text_and_background when a background media is saved, text_and_media when media is saved, text otherwise. The saved variant is returned by GET /api/v2/collections/{slug}/metadata.
              * @enum {string|null}
              */
             variant?: "text" | "background" | "text_and_background" | "text_and_media" | null;
-            /** @description Accepted for compatibility but not saved. Use desktop_background_media and mobile_background_media. */
-            background_image?: components["schemas"]["ImageMediaRequest"] | null;
-            /** @description Accepted for compatibility but not saved. Use desktop_background_media and mobile_background_media. */
-            background_media?: components["schemas"]["MediaInputRequest"] | null;
+            /** @description Vertical text position over the background for text_and_background */
+            vertical_text_position?: string | null;
         };
         /** @description Collection overview content */
         OverviewMetadataRequest: {
@@ -5589,49 +5671,49 @@ export interface components {
         };
         /** @description Overview modules by type. index on each module sets its position on the page across all four types, lowest first, so give every module a distinct index. */
         OverviewModuleRequest: {
-            /** @description Narrative modules, at most 50 */
-            narrative?: components["schemas"]["NarrativeModuleRequest"][] | null;
             /** @description Content block modules, at most 10 */
             content_block?: components["schemas"]["ContentBlockModuleRequest"][] | null;
-            /** @description Team modules, at most 5 */
-            team?: components["schemas"]["TeamBlockModuleRequest"][] | null;
             /** @description FAQ modules, at most 5 */
             faq?: components["schemas"]["FaqBlockModuleRequest"][] | null;
+            /** @description Narrative modules, at most 50 */
+            narrative?: components["schemas"]["NarrativeModuleRequest"][] | null;
+            /** @description Team modules, at most 5 */
+            team?: components["schemas"]["TeamBlockModuleRequest"][] | null;
         };
         /** @description A team overview module */
         TeamBlockModuleRequest: {
+            /** @description Module description */
+            description?: string | null;
+            /** @description Whether the module is hidden */
+            hidden?: boolean | null;
             /**
              * Format: int32
              * @description Position on the page across all module types
              */
             index: number;
-            /** @description Whether the module is hidden */
-            hidden?: boolean | null;
-            /** @description Module title */
-            title?: string | null;
-            /** @description Module description */
-            description?: string | null;
             /** @description Team members, at most 20 */
             sections?: components["schemas"]["TeamSectionRequest"][] | null;
+            /** @description Module title */
+            title?: string | null;
         };
         /** @description A team member */
         TeamSectionRequest: {
-            /** @description Section ID */
-            id?: string | null;
-            /** @description Section name */
-            name: string;
-            /** @description Section title */
-            title: string;
             /** @description Bio, up to 500 characters. Rendered as Markdown on the page: links are clickable and raw HTML is dropped. */
             bio: string;
-            /** @description Website URL */
-            website_url?: string | null;
-            /** @description Twitter URL */
-            twitter_url?: string | null;
+            /** @description Section ID */
+            id?: string | null;
             /** @description Instagram URL */
             instagram_url?: string | null;
             /** @description Team member media, at most 20 */
             media?: components["schemas"]["MediaInputRequest"][] | null;
+            /** @description Section name */
+            name: string;
+            /** @description Section title */
+            title: string;
+            /** @description Twitter URL */
+            twitter_url?: string | null;
+            /** @description Website URL */
+            website_url?: string | null;
         };
         /** @description Request body for updating a collection's page: hero, about and overview. Top-level fields you leave out keep what is saved. Each field you send replaces what is saved for it, as its description says; overview in particular is replaced as a whole. Media fields take a token from POST /api/v2/collections/{slug}/media/{placement} or POST /api/v2/collections/{slug}/images/{image_type}. To keep media that is already saved, send its url from GET /api/v2/collections/{slug}/metadata as the token. Read the result back with GET /api/v2/collections/{slug}/metadata. */
         UpdateCollectionMetadataRequest: {
@@ -5639,24 +5721,20 @@ export interface components {
             about?: components["schemas"]["AboutMetadataRequest"] | null;
             /** @description Hero media. Leave it out to keep the saved hero. */
             hero?: components["schemas"]["HeroMetadataRequest"] | null;
-            /** @description Overview modules. Sending overview replaces every saved module: a module type you leave out is removed, so sending only faq clears the narrative, content block and team modules. Leave overview out to keep the saved modules. */
-            overview?: components["schemas"]["OverviewMetadataRequest"] | null;
             /** @description Collection logo image token */
             logo_image_token?: string | null;
+            /** @description Overview modules. Sending overview replaces every saved module: a module type you leave out is removed, so sending only faq clears the narrative, content block and team modules. Leave overview out to keep the saved modules. */
+            overview?: components["schemas"]["OverviewMetadataRequest"] | null;
         };
         /** @description A video media input */
         VideoMediaRequest: {
-            /** @description Token of an uploaded video/mp4, the url of a video already saved on this page to keep it, or an https url on the OpenSea CDN (seadn.io). Any other value, or an upload that is missing or has expired, fails the whole update with 400 and saves nothing. */
-            token: string;
             /** @description Accepted for compatibility but not saved */
             enable_static_video?: boolean | null;
+            /** @description Token of an uploaded video/mp4, the url of a video already saved on this page to keep it, or an https url on the OpenSea CDN (seadn.io). Any other value, or an upload that is missing or has expired, fails the whole update with 400 and saves nothing. */
+            token: string;
         };
         /** @description Floor price for one trait value in one payment currency */
         TraitFloorResponse: {
-            /** @description Trait category, for example Background */
-            trait_type: string;
-            /** @description Trait value, for example Purple */
-            value: string;
             /**
              * Format: double
              * @description Price of the cheapest listing carrying this trait value, across every marketplace OpenSea aggregates. This matches the basis of the collection's floor_price and may be below the cheapest listing fulfillable through this API.
@@ -5664,6 +5742,10 @@ export interface components {
             floor_price: number;
             /** @description Payment token this floor is denominated in, on the response's chain. Floors are not converted to a common currency, so a trait value listed in more than one currency appears once per currency and prices are only comparable within the same symbol. */
             payment_token_symbol: string;
+            /** @description Trait category, for example Background */
+            trait_type: string;
+            /** @description Trait value, for example Purple */
+            value: string;
         };
         /** @description Floor price per trait value for a collection */
         TraitFloorsResponse: {
@@ -5673,106 +5755,106 @@ export interface components {
             floors: components["schemas"]["TraitFloorResponse"][];
         };
         ToolListItemResponse: {
-            tool_id: string;
-            registry_chain: string;
-            registry_addr: string;
-            creator: string;
-            metadata_uri: string;
-            manifest_hash: string;
-            endpoint_url?: string | null;
-            endpoint_domain?: string | null;
-            manifest_hash_verified: boolean;
-            is_active: boolean;
             created_at: string;
+            creator: string;
+            endpoint_domain?: string | null;
+            endpoint_url?: string | null;
+            is_active: boolean;
+            manifest_hash: string;
+            manifest_hash_verified: boolean;
+            metadata_uri: string;
+            registry_addr: string;
+            registry_chain: string;
+            tool_id: string;
             updated_at: string;
         };
         ToolListPaginatedResponse: {
-            tools: components["schemas"]["ToolListItemResponse"][];
             next?: string | null;
+            tools: components["schemas"]["ToolListItemResponse"][];
         };
         RegisteredToolResponse: {
-            tool_id: string;
-            registry_chain: string;
-            registry_addr: string;
-            creator: string;
-            metadata_uri: string;
-            manifest_hash: string;
-            endpoint_url?: string;
-            endpoint_domain?: string;
-            manifest_hash_verified: boolean;
-            is_active: boolean;
-            created_at: string;
-            updated_at: string;
-            name?: string;
-            display_name: string;
-            health_status: string;
-            access_tier: string;
-            description?: string;
-            tags?: string[];
-            inputs?: unknown;
-            outputs?: unknown;
-            creator_address?: string;
-            endpoint?: string;
             access?: components["schemas"]["ToolAccessResponse"];
-            image_url?: string;
+            access_tier: string;
+            created_at: string;
+            creator: string;
+            creator_address?: string;
+            description?: string;
+            display_name: string;
+            endpoint?: string;
+            endpoint_domain?: string;
+            endpoint_url?: string;
             featured_image_url?: string;
+            health_status: string;
+            image_url?: string;
+            inputs?: unknown;
+            is_active: boolean;
+            manifest_hash: string;
+            manifest_hash_verified: boolean;
+            metadata_uri: string;
+            name?: string;
+            outputs?: unknown;
             pricing_recipients: components["schemas"]["ToolPricingRecipientResponse"][];
+            registry_addr: string;
+            registry_chain: string;
+            tags?: string[];
+            tool_id: string;
+            updated_at: string;
         };
         ToolAccessResponse: {
-            open_access: boolean;
             logic: string;
+            open_access: boolean;
             requirements: components["schemas"]["ToolRequirementResponse"][];
         };
         ToolCollectionResponse: {
-            slug: string;
-            name: string;
-            image_url?: string | null;
-            opensea_url: string;
             contracts: components["schemas"]["Contract"][];
+            image_url?: string | null;
+            name: string;
+            opensea_url: string;
+            slug: string;
         };
         ToolPricingRecipientResponse: {
-            recipient: string;
-            payment_chain: string;
-            asset: string;
-            protocol: string;
             amount_per_call: string;
-            created_at: string;
-            asset_symbol?: string;
+            amount_per_call_usd?: string;
+            asset: string;
             /** Format: int32 */
             asset_decimals?: number;
             asset_image_url?: string;
-            amount_per_call_usd?: string;
+            asset_symbol?: string;
+            created_at: string;
+            payment_chain: string;
+            protocol: string;
+            recipient: string;
         };
         ToolRequirementResponse: {
-            kind: string;
-            type: string;
+            collection?: components["schemas"]["ToolCollectionResponse"];
             collection_address?: string;
-            token_id?: string;
-            /** Format: int32 */
-            min_tier?: number;
-            token_address?: string;
-            min_balance?: string;
             data?: string;
+            kind: string;
             label?: string;
             links?: {
                 [key: string]: string;
             };
-            collection?: components["schemas"]["ToolCollectionResponse"];
+            min_balance?: string;
+            /** Format: int32 */
+            min_tier?: number;
+            token_address?: string;
+            token_id?: string;
+            type: string;
         };
         ToolActivityEventResponse: {
-            id: string;
-            type: string;
-            attribution: string;
-            paid: boolean;
-            caller_address: string;
-            seller_address?: string;
-            timestamp: string;
             amount?: string;
             asset?: string;
+            attribution: string;
+            caller_address: string;
+            candidate_tool_slugs: string[];
             /** Format: int64 */
             chain_id?: number;
+            id: string;
+            paid: boolean;
+            seller_address?: string;
+            timestamp: string;
             tx_hash?: string;
-            candidate_tool_slugs: string[];
+            type: string;
         };
         ToolActivityPaginatedResponse: {
             activity: components["schemas"]["ToolActivityEventResponse"][];
@@ -5780,45 +5862,45 @@ export interface components {
         };
         ToolPaymentStatsResponse: {
             /** Format: int64 */
+            payments_last_24h: number;
+            /** Format: int64 */
+            payments_last_7d: number;
+            /** Format: int64 */
             total_payments: number;
             /** Format: double */
             total_volume_usd: number;
             /** Format: int64 */
             unique_buyers: number;
-            /** Format: int64 */
-            payments_last_24h: number;
-            /** Format: int64 */
-            payments_last_7d: number;
         };
         ToolSearchPaginatedResponse: {
-            results: components["schemas"]["ToolSearchResultResponse"][];
             next?: string | null;
+            results: components["schemas"]["ToolSearchResultResponse"][];
         };
         ToolSearchResultResponse: {
-            tool_id: string;
-            registry_chain: string;
-            registry_addr: string;
-            name: string;
-            display_name: string;
-            description: string;
-            tags: string[];
+            access?: components["schemas"]["ToolAccessResponse"];
+            access_type: string;
+            created_at: string;
             creator: string;
             creator_display_name: string;
+            description: string;
+            display_name: string;
             endpoint_domain: string;
-            access_type: string;
-            payment_stats?: components["schemas"]["ToolPaymentStatsResponse"];
-            created_at: string;
-            image_url?: string;
             featured_image_url?: string;
+            image_url?: string;
+            name: string;
+            payment_stats?: components["schemas"]["ToolPaymentStatsResponse"];
             pricing_recipients?: components["schemas"]["ToolPricingRecipientResponse"][];
-            access?: components["schemas"]["ToolAccessResponse"];
+            registry_addr: string;
+            registry_chain: string;
+            tags: string[];
+            tool_id: string;
         };
         /** @description Paginated list of tokens */
         TokenPaginatedResponse: {
-            /** @description List of tokens */
-            tokens: components["schemas"]["TokenResponse"][];
             /** @description Cursor for the next page of results */
             next?: string | null;
+            /** @description List of tokens */
+            tokens: components["schemas"]["TokenResponse"][];
         };
         /** @description A token with summary market data */
         TokenResponse: {
@@ -5833,62 +5915,62 @@ export interface components {
              */
             chain: string;
             /**
-             * @description The display name of the token
-             * @example USDC
+             * Format: double
+             * @description When OpenSea first recorded the token
              */
-            name: string;
-            /**
-             * @description The ticker symbol of the token
-             * @example USDC
-             */
-            symbol: string;
-            /** @description URL of the token's image */
-            image_url?: string | null;
-            /**
-             * @description Current price in USD
-             * @example 1.0
-             */
-            usd_price: string;
+            created_at?: number | null;
             /**
              * Format: int32
              * @description Number of decimal places
              * @example 6
              */
             decimals: number;
-            /** @description URL to the token page on OpenSea */
-            opensea_url: string;
+            /**
+             * Format: double
+             * @description Earliest known onchain activity for the token
+             */
+            genesis_date?: number | null;
+            /**
+             * Format: int64
+             * @description Number of token holders
+             */
+            holders_count?: number | null;
+            /** @description URL of the token's image */
+            image_url?: string | null;
+            /** @description Whether OpenSea has verified the token */
+            is_verified: boolean;
             /**
              * Format: double
              * @description Market capitalization in USD
              */
             market_cap_usd?: number | null;
             /**
-             * Format: double
-             * @description 24-hour trading volume in USD
+             * @description The display name of the token
+             * @example USDC
              */
-            volume_24h?: number | null;
+            name: string;
+            /** @description URL to the token page on OpenSea */
+            opensea_url: string;
             /**
              * Format: double
              * @description Price change percentage over the last 24 hours
              */
             price_change_24h?: number | null;
             /**
-             * Format: int64
-             * @description Number of token holders
+             * @description The ticker symbol of the token
+             * @example USDC
              */
-            holders_count?: number | null;
-            /** @description Whether OpenSea has verified the token */
-            is_verified: boolean;
+            symbol: string;
+            /**
+             * @description Current price in USD
+             * @example 1.0
+             */
+            usd_price: string;
             /**
              * Format: double
-             * @description When OpenSea first recorded the token
+             * @description 24-hour trading volume in USD
              */
-            created_at?: number | null;
-            /**
-             * Format: double
-             * @description Earliest known onchain activity for the token
-             */
-            genesis_date?: number | null;
+            volume_24h?: number | null;
         };
         /** @description A currency within a token group */
         TokenGroupCurrencyResponse: {
@@ -5903,6 +5985,14 @@ export interface components {
              */
             chain: string;
             /**
+             * Format: int32
+             * @description Number of decimal places
+             * @example 18
+             */
+            decimals: number;
+            /** @description URL of the currency's image */
+            image_url?: string | null;
+            /**
              * @description The display name of the currency
              * @example Wrapped Ether
              */
@@ -5912,14 +6002,6 @@ export interface components {
              * @example WETH
              */
             symbol: string;
-            /** @description URL of the currency's image */
-            image_url?: string | null;
-            /**
-             * Format: int32
-             * @description Number of decimal places
-             * @example 18
-             */
-            decimals: number;
             /**
              * @description Current price in USD
              * @example 2345.67
@@ -5928,55 +6010,49 @@ export interface components {
         };
         /** @description Paginated list of token groups */
         TokenGroupPaginatedResponse: {
-            /** @description List of token groups */
-            token_groups: components["schemas"]["TokenGroupResponse"][];
             /** @description Cursor for the next page of results */
             next?: string | null;
+            /** @description List of token groups */
+            token_groups: components["schemas"]["TokenGroupResponse"][];
         };
         /** @description A token group representing equivalent currencies across different blockchains */
         TokenGroupResponse: {
-            /**
-             * @description Unique slug identifier for the token group
-             * @example eth
-             */
-            slug: string;
+            /** @description ISO 8601 timestamp when the token group was created */
+            created_at: string;
+            /** @description Currencies in this token group */
+            currencies: components["schemas"]["TokenGroupCurrencyResponse"][];
+            /** @description Description of the token group */
+            description?: string | null;
             /**
              * @description Display name of the token group
              * @example Ethereum
              */
             display_name: string;
+            /** @description URL of the token group's image */
+            image_url?: string | null;
+            /** @description URL to the token group page on OpenSea */
+            opensea_url: string;
+            /** @description The primary currency for this token group */
+            primary_currency: components["schemas"]["TokenGroupCurrencyResponse"];
+            /**
+             * @description Unique slug identifier for the token group
+             * @example eth
+             */
+            slug: string;
+            /** @description Social media links for the token group */
+            socials?: components["schemas"]["TokenGroupSocialsResponse"] | null;
+            /** @description Market statistics for the token group */
+            stats?: components["schemas"]["TokenGroupStatsResponse"] | null;
             /**
              * @description Ticker symbol of the token group
              * @example ETH
              */
             symbol?: string | null;
-            /** @description Description of the token group */
-            description?: string | null;
-            /** @description URL of the token group's image */
-            image_url?: string | null;
-            /** @description URL to the token group page on OpenSea */
-            opensea_url: string;
-            /** @description Currencies in this token group */
-            currencies: components["schemas"]["TokenGroupCurrencyResponse"][];
-            /** @description The primary currency for this token group */
-            primary_currency: components["schemas"]["TokenGroupCurrencyResponse"];
-            /** @description Market statistics for the token group */
-            stats?: components["schemas"]["TokenGroupStatsResponse"] | null;
-            /** @description Social media links for the token group */
-            socials?: components["schemas"]["TokenGroupSocialsResponse"] | null;
-            /** @description ISO 8601 timestamp when the token group was created */
-            created_at: string;
             /** @description ISO 8601 timestamp when the token group was last updated */
             updated_at: string;
         };
         /** @description Rolling statistics for a token group over multiple time periods */
         TokenGroupRollingStatsResponse: {
-            /** @description 1-day trading volume in USD */
-            volume_1d?: string | null;
-            /** @description 7-day trading volume in USD */
-            volume_7d?: string | null;
-            /** @description 30-day trading volume in USD */
-            volume_30d?: string | null;
             /**
              * Format: double
              * @description 1-day price change percentage
@@ -5984,52 +6060,58 @@ export interface components {
             price_change_1d?: number | null;
             /**
              * Format: double
-             * @description 7-day price change percentage
-             */
-            price_change_7d?: number | null;
-            /**
-             * Format: double
              * @description 30-day price change percentage
              */
             price_change_30d?: number | null;
+            /**
+             * Format: double
+             * @description 7-day price change percentage
+             */
+            price_change_7d?: number | null;
+            /** @description 1-day trading volume in USD */
+            volume_1d?: string | null;
+            /** @description 30-day trading volume in USD */
+            volume_30d?: string | null;
+            /** @description 7-day trading volume in USD */
+            volume_7d?: string | null;
         };
         /** @description Social media links for a token group */
         TokenGroupSocialsResponse: {
-            /** @description The token group's website URL */
-            website?: string | null;
-            /** @description The token group's Twitter/X handle */
-            twitter?: string | null;
+            /** @description CoinGecko listing URL */
+            coingecko?: string | null;
+            /** @description CoinMarketCap listing URL */
+            coinmarketcap?: string | null;
             /** @description The token group's Discord invite URL */
             discord?: string | null;
             /** @description The token group's Telegram identifier */
             telegram?: string | null;
-            /** @description CoinMarketCap listing URL */
-            coinmarketcap?: string | null;
-            /** @description CoinGecko listing URL */
-            coingecko?: string | null;
+            /** @description The token group's Twitter/X handle */
+            twitter?: string | null;
+            /** @description The token group's website URL */
+            website?: string | null;
         };
         /** @description Market statistics for a token group */
         TokenGroupStatsResponse: {
-            /** @description Total market capitalization in USD */
-            market_cap_usd: string;
-            /** @description 24-hour trading volume in USD */
-            volume_usd_24h: string;
-            /** @description Current price in USD (from primary currency) */
-            price_usd?: string | null;
-            /**
-             * Format: double
-             * @description Price change percentage over the last 24 hours
-             */
-            price_change_percent_24h?: number | null;
-            /** @description Total supply across all currencies in the group */
-            total_supply?: string | null;
             /**
              * Format: int32
              * @description Number of holders
              */
             holders?: number | null;
+            /** @description Total market capitalization in USD */
+            market_cap_usd: string;
+            /**
+             * Format: double
+             * @description Price change percentage over the last 24 hours
+             */
+            price_change_percent_24h?: number | null;
+            /** @description Current price in USD (from primary currency) */
+            price_usd?: string | null;
             /** @description Rolling statistics over multiple time periods */
             rolling_stats?: components["schemas"]["TokenGroupRollingStatsResponse"] | null;
+            /** @description Total supply across all currencies in the group */
+            total_supply?: string | null;
+            /** @description 24-hour trading volume in USD */
+            volume_usd_24h: string;
         };
         /** @description Swap quote with price details and executable transactions */
         SwapQuoteResponse: {
@@ -6038,16 +6120,43 @@ export interface components {
             /** @description Transactions to execute the swap */
             transactions: components["schemas"]["SwapTransactionResponse"][];
         };
+        /** @description A public signal authored on OpenSea */
+        SignalResponse: {
+            author_address: string;
+            /** @description Creation time in ISO 8601 format */
+            created_at: string;
+            edited_at?: string | null;
+            /** @description Opaque signal reference. Pass unchanged to signal endpoints. */
+            signal_id: string;
+            subject: components["schemas"]["SignalSubjectResponse"];
+            /** @description USD subject price captured when the signal was created */
+            subject_price_usd?: string | null;
+            text: string;
+            updated_at: string;
+        };
+        /** @description Signal subject, using public chain, contract, token or collection identifiers */
+        SignalSubjectResponse: {
+            chain?: string | null;
+            collection?: string | null;
+            contract?: string | null;
+            token_id?: string | null;
+            /** @enum {string} */
+            type: "currency" | "item" | "collection";
+        };
+        SignalsResponse: {
+            next?: string | null;
+            signals: components["schemas"]["SignalResponse"][];
+        };
         /** @description Account search result */
         AccountSearchResponse: {
             /** @description Primary wallet address of the account */
             address: string;
-            /** @description Username of the account */
-            username?: string | null;
-            /** @description URL of the account's profile image */
-            profile_image_url?: string | null;
             /** @description URL to the account on OpenSea */
             opensea_url: string;
+            /** @description URL of the account's profile image */
+            profile_image_url?: string | null;
+            /** @description Username of the account */
+            username?: string | null;
         };
         /** @description Collection search result */
         CollectionSearchResponse: {
@@ -6056,27 +6165,22 @@ export interface components {
              * @example bored-ape-yacht-club
              */
             collection: string;
-            /**
-             * @description The collection name
-             * @example Bored Ape Yacht Club
-             */
-            name: string;
             /** @description URL of the collection image */
             image_url?: string | null;
             /** @description Whether trading is disabled for this collection */
             is_disabled: boolean;
             /** @description Whether this collection is marked as NSFW */
             is_nsfw: boolean;
+            /**
+             * @description The collection name
+             * @example Bored Ape Yacht Club
+             */
+            name: string;
             /** @description URL to the collection on OpenSea */
             opensea_url: string;
         };
         /** @description Cheapest listing for one unit of an NFT search result that can be filled through this API */
         NftSearchBestListingResponse: {
-            /**
-             * @description Price for one unit, in whole units of the payment currency
-             * @example 0.25
-             */
-            price: string;
             /**
              * @description Symbol of the payment currency. Null when the currency could not be resolved.
              * @example ETH
@@ -6088,6 +6192,11 @@ export interface components {
              */
             currency_address: string;
             /**
+             * @description Price for one unit, in whole units of the payment currency
+             * @example 0.25
+             */
+            price: string;
+            /**
              * @description Price for one unit in USD. Null when the currency has no USD price.
              * @example 812.5
              */
@@ -6095,11 +6204,8 @@ export interface components {
         };
         /** @description NFT search result */
         NftSearchResponse: {
-            /**
-             * @description Token ID of the NFT
-             * @example 1234
-             */
-            identifier: string;
+            /** @description Cheapest listing for one unit of this NFT that can be filled through this API (OpenSea listings; other marketplaces are excluded). Null when there is none. */
+            best_listing?: components["schemas"]["NftSearchBestListingResponse"] | null;
             /**
              * @description Collection slug the NFT belongs to
              * @example bored-ape-yacht-club
@@ -6107,14 +6213,17 @@ export interface components {
             collection: string;
             /** @description Contract address of the NFT */
             contract: string;
-            /** @description Name of the NFT */
-            name?: string | null;
+            /**
+             * @description Token ID of the NFT
+             * @example 1234
+             */
+            identifier: string;
             /** @description URL of the NFT image */
             image_url?: string | null;
+            /** @description Name of the NFT */
+            name?: string | null;
             /** @description URL to the NFT on OpenSea */
             opensea_url: string;
-            /** @description Cheapest listing for one unit of this NFT that can be filled through this API (OpenSea listings; other marketplaces are excluded). Null when there is none. */
-            best_listing?: components["schemas"]["NftSearchBestListingResponse"] | null;
         };
         /** @description Search results response */
         SearchResponse: {
@@ -6123,19 +6232,19 @@ export interface components {
         };
         /** @description A single search result with a type discriminator and the corresponding typed object */
         SearchResultResponse: {
+            /** @description Account details, present when type is 'account' */
+            account?: components["schemas"]["AccountSearchResponse"];
+            /** @description Collection details, present when type is 'collection' */
+            collection?: components["schemas"]["CollectionSearchResponse"];
+            /** @description NFT details, present when type is 'nft' */
+            nft?: components["schemas"]["NftSearchResponse"];
+            /** @description Token details, present when type is 'token' */
+            token?: components["schemas"]["TokenSearchResponse"];
             /**
              * @description The type of search result
              * @example collection
              */
             type: string;
-            /** @description Collection details, present when type is 'collection' */
-            collection?: components["schemas"]["CollectionSearchResponse"];
-            /** @description Token details, present when type is 'token' */
-            token?: components["schemas"]["TokenSearchResponse"];
-            /** @description NFT details, present when type is 'nft' */
-            nft?: components["schemas"]["NftSearchResponse"];
-            /** @description Account details, present when type is 'account' */
-            account?: components["schemas"]["AccountSearchResponse"];
         };
         /** @description Token (currency) search result */
         TokenSearchResponse: {
@@ -6150,47 +6259,47 @@ export interface components {
              */
             chain: string;
             /**
-             * @description The display name of the token
-             * @example USDC
-             */
-            name: string;
-            /**
-             * @description The ticker symbol of the token
-             * @example USDC
-             */
-            symbol: string;
-            /** @description URL of the token's image */
-            image_url?: string | null;
-            /**
-             * @description Current price in USD
-             * @example 1.0
-             */
-            usd_price: string;
-            /**
              * Format: int32
              * @description Number of decimal places
              * @example 6
              */
             decimals: number;
+            /** @description URL of the token's image */
+            image_url?: string | null;
+            /**
+             * @description The display name of the token
+             * @example USDC
+             */
+            name: string;
             /** @description URL to the token page on OpenSea */
             opensea_url: string;
+            /**
+             * @description The ticker symbol of the token
+             * @example USDC
+             */
+            symbol: string;
+            /**
+             * @description Current price in USD
+             * @example 1.0
+             */
+            usd_price: string;
         };
         /** @description A page of tools saved by the authenticated account */
         SavedToolsPaginatedResponse: {
-            tools: components["schemas"]["SavedToolResponse"][];
             /** @description Cursor for the next page, or null when this is the last page */
             next?: string | null;
+            tools: components["schemas"]["SavedToolResponse"][];
         };
         /** @description A collection ranked by verified NFT profile-picture wearer count */
         TopPfpCollectionResponse: {
-            /** Format: int32 */
-            rank: number;
             collection: components["schemas"]["CollectionResponse"];
             /**
              * Format: int64
              * @description Number of public profiles whose verified NFT profile picture belongs to this collection, counted as get_collection_pfp_profiles lists them
              */
             pfp_wearer_count: number;
+            /** Format: int32 */
+            rank: number;
         };
         /** @description NFT collections ranked by verified NFT profile-picture wearer count */
         TopPfpCollectionsResponse: {
@@ -6201,8 +6310,8 @@ export interface components {
         };
         ListingOrOffer: unknown;
         OffersResponse: {
-            offers: components["schemas"]["Offer"][];
             next?: string | null;
+            offers: components["schemas"]["Offer"][];
         };
         /** @description Price of a listing in its payment token, with its USD equivalent */
         ListingPriceResponse: {
@@ -6224,37 +6333,37 @@ export interface components {
         };
         /** @description An NFT from a cross-collection group, with its current best listing price */
         StandardizedNft: {
-            identifier: string;
+            /** @description Price of the lowest active listing. Null when the NFT is not listed. */
+            best_listing_price?: components["schemas"]["ListingPriceResponse"] | null;
             collection: string;
             contract: string;
-            token_standard: string;
-            name?: string | null;
+            /** Format: int32 */
+            decimals?: number | null;
             description?: string | null;
-            image_url?: string | null;
-            display_image_url?: string | null;
             display_animation_url?: string | null;
-            metadata_url?: string | null;
-            opensea_url: string;
-            updated_at: string;
-            is_disabled: boolean;
-            is_nsfw: boolean;
-            original_image_url?: string | null;
-            original_animation_url?: string | null;
-            traits: components["schemas"]["Trait"][];
+            display_image_url?: string | null;
             /**
              * @description Estimated value in USD
              * @example 250.5
              */
             estimated_value_usd?: string | null;
-            /** Format: int32 */
-            decimals?: number | null;
-            /** @description Price of the lowest active listing. Null when the NFT is not listed. */
-            best_listing_price?: components["schemas"]["ListingPriceResponse"] | null;
+            identifier: string;
+            image_url?: string | null;
+            is_disabled: boolean;
+            is_nsfw: boolean;
+            metadata_url?: string | null;
+            name?: string | null;
+            opensea_url: string;
+            original_animation_url?: string | null;
+            original_image_url?: string | null;
+            token_standard: string;
+            traits: components["schemas"]["Trait"][];
+            updated_at: string;
         };
         StandardizedNftListResponse: {
-            nfts: components["schemas"]["StandardizedNft"][];
             /** @description Cursor for the next page of results */
             next?: string | null;
+            nfts: components["schemas"]["StandardizedNft"][];
         };
         /** @description Values and counts for one facet type */
         FacetGroupResponse: {
@@ -6267,22 +6376,22 @@ export interface components {
         };
         /** @description Count of matching NFTs for one facet value */
         FacetValueResponse: {
-            value: string;
             /** Format: int64 */
             count: number;
+            value: string;
         };
         StandardizedNftFacetsResponse: {
             facets: components["schemas"]["FacetGroupResponse"][];
         };
         AssetMetadataResponse: {
-            name?: string | null;
-            description?: string | null;
-            image?: string | null;
-            external_link?: string | null;
             animation_url?: string | null;
-            traits: components["schemas"]["Trait"][];
             /** Format: int32 */
             decimals?: number | null;
+            description?: string | null;
+            external_link?: string | null;
+            image?: string | null;
+            name?: string | null;
+            traits: components["schemas"]["Trait"][];
         };
         ListingsResponse: {
             listings: components["schemas"]["Listing"][];
@@ -6293,77 +6402,67 @@ export interface components {
             next?: string | null;
         };
         Event: unknown;
-        EventBase: {
-            event_type: string;
-            /** Format: int64 */
-            event_timestamp: number;
-            transaction?: string;
-            order_hash?: string;
-            protocol_address?: string;
-            chain: string;
-            payment?: components["schemas"]["Payment"];
-        };
         OrderEvent: components["schemas"]["Event"] & {
-            event_type: string;
+            asset?: components["schemas"]["Nft"] | null;
+            chain: string;
+            criteria?: components["schemas"]["Criteria"] | null;
             /** Format: int64 */
             event_timestamp: number;
-            transaction?: string;
-            order_hash?: string;
-            protocol_address?: string;
-            chain: string;
-            payment?: components["schemas"]["Payment"];
-            order_type: string;
-            /** Format: int64 */
-            start_date?: number | null;
+            event_type: string;
             /** Format: int64 */
             expiration_date?: number | null;
-            asset?: components["schemas"]["Nft"] | null;
+            is_private_listing: boolean;
+            maker: string;
+            order_hash?: string;
+            order_type: string;
+            payment?: components["schemas"]["Payment"];
+            protocol_address?: string;
             /** Format: int64 */
             quantity: number;
-            maker: string;
+            /** Format: int64 */
+            start_date?: number | null;
             taker?: string | null;
-            criteria?: components["schemas"]["Criteria"] | null;
-            is_private_listing: boolean;
+            transaction?: string;
         };
         Payment: {
-            quantity: string;
-            token_address: string;
             /** Format: int32 */
             decimals: number;
+            quantity: string;
             symbol: string;
+            token_address: string;
         };
         SaleEvent: components["schemas"]["Event"] & {
-            event_type: string;
-            /** Format: int64 */
-            event_timestamp: number;
-            transaction?: string;
-            order_hash?: string;
-            protocol_address?: string;
+            buyer: string;
             chain: string;
-            payment?: components["schemas"]["Payment"];
             /** Format: int64 */
             closing_date: number;
-            seller: string;
-            buyer: string;
-            /** Format: int64 */
-            quantity: number;
-            nft?: components["schemas"]["Nft"] | null;
-        };
-        TransferEvent: components["schemas"]["Event"] & {
-            event_type: string;
             /** Format: int64 */
             event_timestamp: number;
-            transaction?: string;
-            order_hash?: string;
-            protocol_address?: string;
-            chain: string;
-            payment?: components["schemas"]["Payment"];
-            transfer_type: string;
-            from_address: string;
-            to_address: string;
+            event_type: string;
             nft?: components["schemas"]["Nft"] | null;
+            order_hash?: string;
+            payment?: components["schemas"]["Payment"];
+            protocol_address?: string;
             /** Format: int64 */
             quantity: number;
+            seller: string;
+            transaction?: string;
+        };
+        TransferEvent: components["schemas"]["Event"] & {
+            chain: string;
+            /** Format: int64 */
+            event_timestamp: number;
+            event_type: string;
+            from_address: string;
+            nft?: components["schemas"]["Nft"] | null;
+            order_hash?: string;
+            payment?: components["schemas"]["Payment"];
+            protocol_address?: string;
+            /** Format: int64 */
+            quantity: number;
+            to_address: string;
+            transaction?: string;
+            transfer_type: string;
         };
         /** @description Paginated list of drops */
         DropPaginatedResponse: {
@@ -6374,21 +6473,23 @@ export interface components {
         };
         /** @description Summary of an NFT drop */
         DropResponse: {
+            /** @description The currently-minting stage, if the drop is live. Null if not minting. */
+            active_stage?: components["schemas"]["DropStageResponse"] | null;
             /**
-             * @description Collection slug
-             * @example cool-cats
+             * @description Blockchain the drop is on
+             * @example ethereum
              */
-            collection_slug: string;
+            chain: string;
             /**
              * @description Collection name
              * @example Cool Cats
              */
             collection_name?: string | null;
             /**
-             * @description Blockchain the drop is on
-             * @example ethereum
+             * @description Collection slug
+             * @example cool-cats
              */
-            chain: string;
+            collection_slug: string;
             /** @description Contract address */
             contract_address: string;
             /**
@@ -6396,65 +6497,65 @@ export interface components {
              * @example seadrop_v1_erc721
              */
             drop_type: string;
-            /** @description Whether the drop is currently minting */
-            is_minting: boolean;
             /** @description Collection image URL */
             image_url?: string | null;
-            /** @description OpenSea URL for the drop */
-            opensea_url: string;
-            /** @description The currently-minting stage, if the drop is live. Null if not minting. */
-            active_stage?: components["schemas"]["DropStageResponse"] | null;
+            /** @description Whether the drop is currently minting */
+            is_minting: boolean;
             /** @description The earliest upcoming stage by start_time when the drop is not currently minting (e.g. before it starts or between stages). Null if the drop is live or has no future stages. */
             next_stage?: components["schemas"]["DropStageResponse"] | null;
+            /** @description OpenSea URL for the drop */
+            opensea_url: string;
         };
         /** @description A mint stage within a drop */
         DropStageResponse: {
-            /**
-             * @description Stage id. Treat it as opaque and send it back exactly as returned to update the stage in POST /api/v2/drops/{slug}: stages are matched by exact string, so the same UUID with or without dashes counts as a different stage.
-             * @example 5f0c6f7e2b8a4c1d9e3f6a7b8c9d0e1f
-             */
-            uuid: string;
-            /**
-             * @description Stage type
-             * @example public_sale
-             */
-            stage_type: string;
-            /** @description Stage label/name */
-            label?: string | null;
-            /** @description Mint price per token in wei (decimal string) */
-            price?: string | null;
-            /** @description Currency contract address (e.g. 0x0000...0000 for native token) */
-            price_currency_address: string;
-            /** @description Stage start time (ISO 8601) */
-            start_time: string;
-            /** @description Stage end time (ISO 8601) */
-            end_time: string;
-            /** @description This stage's default per-wallet limit, as a decimal string: what the stage adds for each wallet on its list, unless that wallet's allowlist row sets its own. Limits add up across the stages a wallet is listed on, the public stage adds its own on top, and unused mints carry into later stages. For one wallet's running total through a stage, read max_total_mintable_by_wallet on the eligibility response. */
-            max_per_wallet: string;
             /**
              * Format: int32
              * @description Wallets on this stage's allowlist when the drop service last synced it. Null when the stage has no synced allowlist, which includes every public sale stage; that is distinct from 0, which means the allowlist is empty. Equivalent to allowlistMemberCount on the GraphQL DropStage.
              * @example 1200
              */
             allowlist_wallet_count?: number | null;
+            /** @description Stage end time (ISO 8601) */
+            end_time: string;
+            /** @description Stage label/name */
+            label?: string | null;
+            /** @description This stage's default per-wallet limit, as a decimal string: what the stage adds for each wallet on its list, unless that wallet's allowlist row sets its own. Limits add up across the stages a wallet is listed on, the public stage adds its own on top, and unused mints carry into later stages. For one wallet's running total through a stage, read max_total_mintable_by_wallet on the eligibility response. */
+            max_per_wallet: string;
+            /** @description Mint price per token in wei (decimal string) */
+            price?: string | null;
+            /** @description Currency contract address (e.g. 0x0000...0000 for native token) */
+            price_currency_address: string;
+            /**
+             * @description Stage type
+             * @example public_sale
+             */
+            stage_type: string;
+            /** @description Stage start time (ISO 8601) */
+            start_time: string;
+            /**
+             * @description Stage id. Treat it as opaque and send it back exactly as returned to update the stage in POST /api/v2/drops/{slug}: stages are matched by exact string, so the same UUID with or without dashes counts as a different stage.
+             * @example 5f0c6f7e2b8a4c1d9e3f6a7b8c9d0e1f
+             */
+            uuid: string;
         };
         /** @description Detailed drop information including stages and supply */
         DropDetailedResponse: {
+            /** @description The currently-minting stage, if the drop is live. Null if not minting. */
+            active_stage?: components["schemas"]["DropStageResponse"] | null;
             /**
-             * @description Collection slug
-             * @example cool-cats
+             * @description Blockchain the drop is on
+             * @example ethereum
              */
-            collection_slug: string;
+            chain: string;
             /**
              * @description Collection name
              * @example Cool Cats
              */
             collection_name?: string | null;
             /**
-             * @description Blockchain the drop is on
-             * @example ethereum
+             * @description Collection slug
+             * @example cool-cats
              */
-            chain: string;
+            collection_slug: string;
             /** @description Contract address */
             contract_address: string;
             /**
@@ -6462,37 +6563,31 @@ export interface components {
              * @example seadrop_v1_erc721
              */
             drop_type: string;
-            /** @description Whether the drop is currently minting */
-            is_minting: boolean;
-            /** @description Collection image URL */
-            image_url?: string | null;
-            /** @description OpenSea URL for the drop */
-            opensea_url: string;
-            /** @description The currently-minting stage, if the drop is live. Null if not minting. */
-            active_stage?: components["schemas"]["DropStageResponse"] | null;
-            /** @description The earliest upcoming stage by start_time when the drop is not currently minting (e.g. before it starts or between stages). Null if the drop is live or has no future stages. */
-            next_stage?: components["schemas"]["DropStageResponse"] | null;
-            /** @description Drop stages (public sale, presale, etc.) */
-            stages: components["schemas"]["DropStageResponse"][];
-            /** @description Total minted supply */
-            total_supply?: string | null;
-            /** @description Maximum supply */
-            max_supply?: string | null;
             /**
              * Format: int32
              * @description OpenSea's fee on primary sales, in basis points: the share of each mint's price that goes to OpenSea. Publish sets it onchain; it is not configurable through the API. 1000 is 10%.
              * @example 1000
              */
             fee_bps: number;
+            /** @description Collection image URL */
+            image_url?: string | null;
+            /** @description Whether the drop is currently minting */
+            is_minting: boolean;
+            /** @description Maximum supply */
+            max_supply?: string | null;
+            /** @description The earliest upcoming stage by start_time when the drop is not currently minting (e.g. before it starts or between stages). Null if the drop is live or has no future stages. */
+            next_stage?: components["schemas"]["DropStageResponse"] | null;
+            /** @description OpenSea URL for the drop */
+            opensea_url: string;
+            /** @description Drop stages (public sale, presale, etc.) */
+            stages: components["schemas"]["DropStageResponse"][];
+            /** @description Total minted supply */
+            total_supply?: string | null;
         };
         /** @description Progress of a drop's IPFS metadata upload */
         DropMetadataUploadProgressResponse: {
-            /**
-             * @description running, completed, failed, or not_found. Keep polling while running. On completed the draft holds the new base URI; publish again to put it onchain.
-             * @example running
-             * @enum {string}
-             */
-            status: "running" | "completed" | "failed" | "not_found";
+            /** @description Why the upload failed, when status is failed */
+            failure_reason?: string | null;
             /**
              * Format: double
              * @description Media upload progress, 0 to 100
@@ -6503,8 +6598,12 @@ export interface components {
              * @description Metadata upload progress, 0 to 100
              */
             metadata_upload_progress?: number | null;
-            /** @description Why the upload failed, when status is failed */
-            failure_reason?: string | null;
+            /**
+             * @description running, completed, failed, or not_found. Keep polling while running. On completed the draft holds the new base URI; publish again to put it onchain.
+             * @example running
+             * @enum {string}
+             */
+            status: "running" | "completed" | "failed" | "not_found";
         };
         /** @description A page of the items saved to a drop */
         DropItemsPaginatedResponse: {
@@ -6520,82 +6619,82 @@ export interface components {
         };
         /** @description Drop stage eligibility result for the authenticated wallet */
         DropStageEligibilityResponse: {
+            /** @description Whether the wallet is eligible for this stage */
+            is_eligible: boolean;
+            /** @description The wallet's running cap through this stage, all token ids included, as a decimal string: the limits of every stage up to and including this one that the wallet is listed on, added together, clamped to supply. The public stage's own limit is added only on the public stage's result, not on any presale's. SeaDrop checks the cap against the wallet's lifetime minted count on the contract, so subtract what the wallet has minted to get what it can still mint. */
+            max_total_mintable_by_wallet?: string | null;
+            /** @description The same running cap for a single token id (ERC-1155), as a decimal string: the per-token limits of every stage up to and including this one that the wallet is listed on, added together, clamped to supply. As with the whole-drop cap, the public stage's own per-token limit is added only on the public stage's result. */
+            max_total_mintable_by_wallet_per_token?: string | null;
+            /** @description Mint price per token in wei (decimal string) */
+            price?: string | null;
             /**
              * Format: uuid
              * @description Drop stage UUID
              */
             stage_uuid: string;
-            /** @description Whether the wallet is eligible for this stage */
-            is_eligible: boolean;
-            /** @description Mint price per token in wei (decimal string) */
-            price?: string | null;
-            /** @description The wallet's running cap through this stage, all token ids included, as a decimal string: the limits of every stage up to and including this one that the wallet is listed on, added together, clamped to supply. The public stage's own limit is added only on the public stage's result, not on any presale's. SeaDrop checks the cap against the wallet's lifetime minted count on the contract, so subtract what the wallet has minted to get what it can still mint. */
-            max_total_mintable_by_wallet?: string | null;
-            /** @description The same running cap for a single token id (ERC-1155), as a decimal string: the per-token limits of every stage up to and including this one that the wallet is listed on, added together, clamped to supply. As with the whole-drop cap, the public stage's own per-token limit is added only on the public stage's result. */
-            max_total_mintable_by_wallet_per_token?: string | null;
         };
         /** @description Deploy contract receipt status */
         DropDeployReceiptResponse: {
+            /** @description Chain slug (only present on success) */
+            chain?: string | null;
+            /** @description Linked collection slug (only present on success, may take time to materialize) */
+            collection_slug?: string | null;
+            /** @description Deployed contract address (only present on success) */
+            contract_address?: string | null;
             /**
              * @description Deployment status: pending (known to the chain, not mined yet), success, failed, or not_found (the chain has no transaction with this hash)
              * @example success
              * @enum {string}
              */
             status: "pending" | "success" | "failed" | "not_found";
-            /** @description Deployed contract address (only present on success) */
-            contract_address?: string | null;
-            /** @description Chain slug (only present on success) */
-            chain?: string | null;
-            /** @description Linked collection slug (only present on success, may take time to materialize) */
-            collection_slug?: string | null;
         };
         CollectionPaginatedResponse: {
             collections: components["schemas"]["CollectionResponse"][];
             next?: string | null;
         };
         CollectionDetailedResponse: {
-            collection: string;
-            name: string;
-            description?: string | null;
-            /** @description Square avatar for the collection, used wherever it is named. Falls back to a representative item's image when the collection has none of its own. */
-            image_url?: string | null;
             /** @description Wide image for the collection, and the only wide image on this API. Use it for a header or hero slot; image_url is square and will not fill one. On the single-collection endpoint it is the collection's hero image, else its hero video's poster, else its banner; on list endpoints it is the banner. Always a still image: a video gets a frame from it, or null when no still can be derived. */
             banner_image_url?: string | null;
-            owner?: string | null;
-            safelist_status: string;
             category?: string | null;
-            is_disabled: boolean;
-            is_nsfw: boolean;
-            trait_offers_enabled: boolean;
+            collection: string;
             collection_offers_enabled: boolean;
-            opensea_url: string;
-            project_url?: string | null;
-            wiki_url?: string | null;
-            discord_url?: string | null;
-            telegram_url?: string | null;
-            twitter_username?: string | null;
-            instagram_username?: string | null;
             contracts: components["schemas"]["Contract"][];
-            editors: string[];
-            fees: components["schemas"]["Fee"][];
-            required_zone?: string;
-            rarity?: components["schemas"]["CollectionRarity"];
-            /** Format: int64 */
-            total_supply: number;
-            /** Format: int64 */
-            unique_item_count: number;
             /** Format: date */
             created_date: string;
+            description?: string | null;
+            discord_url?: string | null;
+            editors: string[];
+            fees: components["schemas"]["Fee"][];
+            /** @description Square avatar for the collection, used wherever it is named. Falls back to a representative item's image when the collection has none of its own. */
+            image_url?: string | null;
+            instagram_username?: string | null;
+            is_disabled: boolean;
+            is_nsfw: boolean;
+            name: string;
+            opensea_url: string;
+            owner?: string | null;
             pricing_currencies: components["schemas"]["PricingCurrencies"];
+            project_url?: string | null;
+            rarity?: components["schemas"]["CollectionRarity"];
+            required_zone?: string;
+            safelist_status: string;
+            telegram_url?: string | null;
+            /** Format: int64 */
+            total_supply: number;
+            trait_offers_enabled: boolean;
+            twitter_username?: string | null;
+            /** Format: int64 */
+            unique_item_count: number;
+            wiki_url?: string | null;
         };
         CollectionRarity: {
             calculated_at: string;
             /** Format: int32 */
             max_rank: number;
-            /** Format: int64 */
-            total_supply: number;
             strategy_id: string;
             strategy_version: string;
+            /** Format: int64 */
+            total_supply: number;
         };
         Fee: {
             /** Format: double */
@@ -6604,14 +6703,14 @@ export interface components {
             required: boolean;
         };
         PaymentToken: {
-            symbol: string;
             address: string;
             chain: string;
-            image: string;
-            name: string;
             /** Format: int32 */
             decimals: number;
             eth_price: string;
+            image: string;
+            name: string;
+            symbol: string;
             usd_price: string;
         };
         PricingCurrencies: {
@@ -6619,8 +6718,8 @@ export interface components {
             offer_currency: components["schemas"]["PaymentToken"];
         };
         CollectionStatsResponse: {
-            total: components["schemas"]["Total"];
             intervals: components["schemas"]["IntervalStat"][];
+            total: components["schemas"]["Total"];
         };
         IntervalStat: {
             /**
@@ -6628,6 +6727,11 @@ export interface components {
              * @example one_day
              */
             interval: string;
+            /**
+             * Format: int32
+             * @description Number of sales over the interval
+             */
+            sales: number;
             /**
              * Format: double
              * @description Trading volume over the interval, denominated in the currency named by volume_symbol
@@ -6638,33 +6742,8 @@ export interface components {
              * @example ETH
              */
             volume_symbol: string;
-            /**
-             * Format: int32
-             * @description Number of sales over the interval
-             */
-            sales: number;
         };
         Total: {
-            /**
-             * Format: double
-             * @description All-time trading volume, denominated in the currency named by volume_symbol. This is not necessarily the currency of floor_price.
-             */
-            volume: number;
-            /**
-             * @description Currency that volume is denominated in. Empty when the conversion rate was unavailable and the unit could not be determined.
-             * @example ETH
-             */
-            volume_symbol: string;
-            /**
-             * Format: int32
-             * @description All-time number of sales
-             */
-            sales: number;
-            /**
-             * Format: int64
-             * @description Number of distinct addresses holding an item in the collection
-             */
-            num_owners: number;
             /**
              * Format: double
              * @description Price of the cheapest current listing, denominated in the currency named by floor_price_symbol. 0 when the collection has no listing.
@@ -6675,20 +6754,40 @@ export interface components {
              * @example ETH
              */
             floor_price_symbol: string;
+            /**
+             * Format: int64
+             * @description Number of distinct addresses holding an item in the collection
+             */
+            num_owners: number;
+            /**
+             * Format: int32
+             * @description All-time number of sales
+             */
+            sales: number;
+            /**
+             * Format: double
+             * @description All-time trading volume, denominated in the currency named by volume_symbol. This is not necessarily the currency of floor_price.
+             */
+            volume: number;
+            /**
+             * @description Currency that volume is denominated in. Empty when the conversion rate was unavailable and the unit could not be determined.
+             * @example ETH
+             */
+            volume_symbol: string;
         };
         /** @description A profile using a verified NFT from the collection as its profile picture */
         CollectionPfpProfileResponse: {
             address: string;
-            username?: string | null;
             display_name?: string | null;
-            profile_image_url?: string | null;
             is_verified: boolean;
             nft_pfp: components["schemas"]["NftPfpResponse"];
+            profile_image_url?: string | null;
+            username?: string | null;
         };
         /** @description Profiles using a verified NFT from the collection as their profile picture */
         CollectionPfpProfilesResponse: {
-            profiles: components["schemas"]["CollectionPfpProfileResponse"][];
             next?: string | null;
+            profiles: components["schemas"]["CollectionPfpProfileResponse"][];
         };
         /** @description A bidder in an offer aggregate */
         BidderResponse: {
@@ -6702,38 +6801,38 @@ export interface components {
         };
         /** @description An aggregated offer bucket */
         CollectionOfferAggregateResponse: {
+            /** @description Bidders at this price level */
+            bidders: components["schemas"]["BidderResponse"][];
             /** @description Offer price level */
             offer_price: components["schemas"]["OfferAggregatePriceResponse"];
-            /** @description Total value of offers at this level */
-            total_value: components["schemas"]["OfferAggregatePriceResponse"];
             /**
              * Format: int32
              * @description Total number of offers at this level
              */
             total_offers: number;
-            /** @description Bidders at this price level */
-            bidders: components["schemas"]["BidderResponse"][];
+            /** @description Total value of offers at this level */
+            total_value: components["schemas"]["OfferAggregatePriceResponse"];
         };
         /** @description Paginated list of collection offer aggregates */
         CollectionOfferAggregatesPaginatedResponse: {
-            /** @description List of offer aggregates */
-            offer_aggregates: components["schemas"]["CollectionOfferAggregateResponse"][];
             /** @description Cursor for the next page of results */
             next?: string | null;
+            /** @description List of offer aggregates */
+            offer_aggregates: components["schemas"]["CollectionOfferAggregateResponse"][];
         };
         /** @description Price information for an offer aggregate */
         OfferAggregatePriceResponse: {
-            /** @description Price in USD */
-            usd_price: string;
+            /** @description Blockchain chain */
+            chain: string;
+            /** @description Payment token symbol */
+            symbol?: string | null;
             /**
              * Format: double
              * @description Price in token units
              */
             token_unit: number;
-            /** @description Payment token symbol */
-            symbol?: string | null;
-            /** @description Blockchain chain */
-            chain: string;
+            /** @description Price in USD */
+            usd_price: string;
         };
         /** @description Collection about content */
         AboutMetadataResponse: {
@@ -6744,65 +6843,65 @@ export interface components {
         };
         /** @description A section of the about content */
         AboutSectionResponse: {
-            id?: string | null;
-            title?: string | null;
             description?: string | null;
+            id?: string | null;
             media: components["schemas"]["PageMediaResponse"][];
+            title?: string | null;
         };
         /** @description The collection page content as saved by PATCH /api/v2/collections/{slug}/metadata. The shape mirrors that request body, so it can be edited and sent back. To keep a media item when you send PATCH /api/v2/collections/{slug}/metadata, pass its url back as the token. A mux_video item is the exception: it has no url, so it cannot be sent back. To keep one, leave out the request field that holds it; each field's description says what leaving it out keeps. */
         CollectionPageMetadataResponse: {
-            /** @description Hero media, or null when none is saved */
-            hero?: components["schemas"]["HeroMetadataResponse"] | null;
             /** @description About content, or null when none is saved */
             about?: components["schemas"]["AboutMetadataResponse"] | null;
+            /** @description Hero media, or null when none is saved */
+            hero?: components["schemas"]["HeroMetadataResponse"] | null;
             /** @description Overview modules, or null when none are saved */
             overview?: components["schemas"]["OverviewMetadataResponse"] | null;
         };
         /** @description A content block overview module */
         ContentBlockModuleResponse: {
+            description?: string | null;
             id?: string | null;
             /**
              * Format: int32
              * @description Position of the module on the page, counting from 0
              */
             index: number;
-            title?: string | null;
-            description?: string | null;
             sections: components["schemas"]["ContentBlockSectionResponse"][];
+            title?: string | null;
         };
         /** @description A section of a content block */
         ContentBlockSectionResponse: {
+            /** @description Featured item's collection (feature only) */
+            collection_slug?: string | null;
+            /** @description Label of a timeline entry, as saved */
+            date?: string | null;
+            description?: string | null;
+            external_link?: components["schemas"]["LinkResponse"] | null;
             id?: string | null;
+            media?: components["schemas"]["PageMediaResponse"] | null;
             /** @description default, feature or timeline */
             module_type: string;
             title?: string | null;
-            description?: string | null;
-            /** @description Label of a timeline entry, as saved */
-            date?: string | null;
-            external_link?: components["schemas"]["LinkResponse"] | null;
-            media?: components["schemas"]["PageMediaResponse"] | null;
-            /** @description Featured item's collection (feature only) */
-            collection_slug?: string | null;
             /** @description Featured item's token id (feature only) */
             token_id?: string | null;
         };
         /** @description A FAQ overview module */
         FaqModuleResponse: {
+            description?: string | null;
+            hidden?: boolean | null;
             /**
              * Format: int32
              * @description Position of the module on the page, counting from 0
              */
             index: number;
-            hidden?: boolean | null;
-            title?: string | null;
-            description?: string | null;
             sections: components["schemas"]["FaqSectionResponse"][];
+            title?: string | null;
         };
         /** @description A FAQ entry */
         FaqSectionResponse: {
+            answer?: string | null;
             id?: string | null;
             question?: string | null;
-            answer?: string | null;
         };
         /** @description Collection hero media */
         HeroMetadataResponse: {
@@ -6818,23 +6917,23 @@ export interface components {
         };
         /** @description A narrative overview module */
         NarrativeModuleResponse: {
+            description?: string | null;
+            desktop_background_media?: components["schemas"]["PageMediaResponse"] | null;
+            /** @description left, center or right */
+            horizontal_text_position?: string | null;
             id?: string | null;
             /**
              * Format: int32
              * @description Position of the module on the page, counting from 0
              */
             index: number;
-            title?: string | null;
-            description?: string | null;
             media: components["schemas"]["PageMediaResponse"][];
-            /** @description left, center or right */
-            horizontal_text_position?: string | null;
-            /** @description top, center or bottom */
-            vertical_text_position?: string | null;
-            desktop_background_media?: components["schemas"]["PageMediaResponse"] | null;
             mobile_background_media?: components["schemas"]["PageMediaResponse"] | null;
+            title?: string | null;
             /** @description text, background, text_and_background or text_and_media */
             variant?: string | null;
+            /** @description top, center or bottom */
+            vertical_text_position?: string | null;
         };
         /** @description Collection overview content */
         OverviewMetadataResponse: {
@@ -6843,10 +6942,10 @@ export interface components {
         };
         /** @description Overview modules grouped by type */
         OverviewModulesResponse: {
-            narrative: components["schemas"]["NarrativeModuleResponse"][];
             content_block: components["schemas"]["ContentBlockModuleResponse"][];
-            team: components["schemas"]["TeamModuleResponse"][];
             faq: components["schemas"]["FaqModuleResponse"][];
+            narrative: components["schemas"]["NarrativeModuleResponse"][];
+            team: components["schemas"]["TeamModuleResponse"][];
         };
         /** @description A saved image */
         PageImageResponse: {
@@ -6856,9 +6955,9 @@ export interface components {
         /** @description A saved media item. Exactly one of image, video or mux_video is set. To keep a media item when you send PATCH /api/v2/collections/{slug}/metadata, pass its url back as the token. */
         PageMediaResponse: {
             image?: components["schemas"]["PageImageResponse"] | null;
-            video?: components["schemas"]["PageVideoResponse"] | null;
             /** @description Video hosted on Mux. It has no url, so it cannot be sent back as a token. */
             mux_video?: components["schemas"]["PageMuxVideoResponse"] | null;
+            video?: components["schemas"]["PageVideoResponse"] | null;
         };
         /** @description A saved Mux video */
         PageMuxVideoResponse: {
@@ -6867,44 +6966,44 @@ export interface components {
         };
         /** @description A saved video */
         PageVideoResponse: {
+            thumbnail_url?: string | null;
             /** @description Stored video URL */
             url: string;
-            thumbnail_url?: string | null;
         };
         /** @description A team member */
         TeamMemberResponse: {
-            id?: string | null;
-            name?: string | null;
-            title?: string | null;
             bio?: string | null;
-            website_url?: string | null;
-            twitter_url?: string | null;
+            id?: string | null;
             instagram_url?: string | null;
             media: components["schemas"]["PageMediaResponse"][];
+            name?: string | null;
+            title?: string | null;
+            twitter_url?: string | null;
+            website_url?: string | null;
         };
         /** @description A team overview module */
         TeamModuleResponse: {
+            description?: string | null;
+            hidden?: boolean | null;
             /**
              * Format: int32
              * @description Position of the module on the page, counting from 0
              */
             index: number;
-            hidden?: boolean | null;
-            title?: string | null;
-            description?: string | null;
             sections: components["schemas"]["TeamMemberResponse"][];
+            title?: string | null;
         };
         /** @description A collection holder */
         CollectionHolderResponse: {
             /** @description Wallet address of the holder */
             address: string;
-            /** @description Number of items held */
-            quantity: number;
             /**
              * Format: float
              * @description Ownership percentage of the collection
              */
             percentage: number;
+            /** @description Number of items held */
+            quantity: number;
         };
         /** @description Paginated list of collection holders */
         CollectionHoldersPaginatedResponse: {
@@ -6920,33 +7019,33 @@ export interface components {
         };
         /** @description A floor price data point */
         FloorPricePointResponse: {
+            /** @description Blockchain chain */
+            chain?: string | null;
+            /** @description Payment token symbol */
+            symbol?: string | null;
             /**
              * Format: double
              * @description Timestamp of the data point
              */
             time: number;
-            /** @description Floor price in USD */
-            usd_price?: string | null;
             /**
              * Format: double
              * @description Floor price in token units
              */
             token_unit?: number | null;
-            /** @description Payment token symbol */
-            symbol?: string | null;
-            /** @description Blockchain chain */
-            chain?: string | null;
+            /** @description Floor price in USD */
+            usd_price?: string | null;
         };
         /** @description Creator fee enforcement state of a collection */
         CreatorFeeEnforcementStatusResponse: {
-            /** @description Whether creator fees are enforced onchain today */
-            enabled: boolean;
             /** @description Whether the collection's contract supports turning enforcement on through POST /api/v2/collections/{slug}/creator_fee_enforcement */
             eligible: boolean;
+            /** @description Whether creator fees are enforced onchain today */
+            enabled: boolean;
         };
         NftListResponse: {
-            nfts: components["schemas"]["Nft"][];
             next?: string | null;
+            nfts: components["schemas"]["Nft"][];
         };
         /** @description List of supported blockchains */
         ChainListResponse: {
@@ -6955,23 +7054,6 @@ export interface components {
         };
         /** @description Information about a supported blockchain */
         ChainResponse: {
-            /**
-             * @description The chain identifier slug used in API paths
-             * @example ethereum
-             */
-            chain: string;
-            /**
-             * @description Human-readable chain name
-             * @example Ethereum
-             */
-            name: string;
-            /**
-             * @description Native currency symbol
-             * @example ETH
-             */
-            symbol: string;
-            /** @description Whether token swaps are supported on this chain */
-            supports_swaps: boolean;
             /**
              * @description Block explorer name
              * @example Etherscan
@@ -6982,6 +7064,23 @@ export interface components {
              * @example https://etherscan.io
              */
             block_explorer_url: string;
+            /**
+             * @description The chain identifier slug used in API paths
+             * @example ethereum
+             */
+            chain: string;
+            /**
+             * @description Human-readable chain name
+             * @example Ethereum
+             */
+            name: string;
+            /** @description Whether token swaps are supported on this chain */
+            supports_swaps: boolean;
+            /**
+             * @description Native currency symbol
+             * @example ETH
+             */
+            symbol: string;
         };
         /** @description A price history data point */
         PriceHistoryPointResponse: {
@@ -7003,19 +7102,19 @@ export interface components {
         };
         /** @description An OHLCV candle data point */
         OhlcvCandleResponse: {
+            /** @description Closing price in USD */
+            close: number;
+            /** @description Highest price in USD */
+            high: number;
+            /** @description Lowest price in USD */
+            low: number;
+            /** @description Opening price in USD */
+            open: number;
             /**
              * Format: double
              * @description Candle timestamp
              */
             time: number;
-            /** @description Opening price in USD */
-            open: number;
-            /** @description Highest price in USD */
-            high: number;
-            /** @description Lowest price in USD */
-            low: number;
-            /** @description Closing price in USD */
-            close: number;
             /** @description Trading volume in USD */
             volume: number;
         };
@@ -7026,22 +7125,10 @@ export interface components {
         };
         /** @description A liquidity pool for a token */
         TokenLiquidityPoolResponse: {
-            /** @description Pool protocol type (e.g. UNISWAP_V2, UNISWAP_V3) */
-            pool_type: string;
-            /** @description Unique identifier for the pool */
-            pool_identifier: string;
-            /** @description On-chain address of the pool contract */
-            pool_address?: string | null;
-            /** @description Base token contract identifier (chain/address) */
-            base_token: string;
-            /** @description Quote token contract identifier (chain/address) */
-            quote_token: string;
             /** @description USD value of base token reserves */
             base_reserve_usd?: number | null;
-            /** @description USD value of quote token reserves */
-            quote_reserve_usd?: number | null;
-            /** @description Total USD value of reserves in the pool */
-            total_reserve_usd?: number | null;
+            /** @description Base token contract identifier (chain/address) */
+            base_token: string;
             /**
              * Format: float
              * @description Bonding curve progress percentage (0-100)
@@ -7049,21 +7136,43 @@ export interface components {
             bonding_curve_progress?: number | null;
             /** @description Whether the token has graduated from its bonding curve */
             is_graduated?: boolean | null;
+            /** @description On-chain address of the pool contract */
+            pool_address?: string | null;
+            /** @description Unique identifier for the pool */
+            pool_identifier: string;
+            /** @description Pool protocol type (e.g. UNISWAP_V2, UNISWAP_V3) */
+            pool_type: string;
+            /** @description USD value of quote token reserves */
+            quote_reserve_usd?: number | null;
+            /** @description Quote token contract identifier (chain/address) */
+            quote_token: string;
+            /** @description Total USD value of reserves in the pool */
+            total_reserve_usd?: number | null;
         };
         /** @description Paginated list of liquidity pools for a token */
         TokenLiquidityPoolsResponse: {
-            /** @description List of liquidity pools */
-            pools: components["schemas"]["TokenLiquidityPoolResponse"][];
             /** @description Cursor for the next page of results */
             next?: string | null;
+            /** @description List of liquidity pools */
+            pools: components["schemas"]["TokenLiquidityPoolResponse"][];
         };
         /** @description Holder distribution health metrics for a token */
         TokenHolderDistributionResponse: {
             /**
-             * Format: int32
-             * @description Total number of holders with a non-zero balance
+             * @description Human-readable label for the health score
+             * @enum {string}
              */
-            total_holders: number;
+            health_label: "STRONG" | "HEALTHY" | "CONCERNING" | "BAD";
+            /**
+             * Format: int32
+             * @description Health score from 0-100 (higher = more distributed)
+             */
+            health_score: number;
+            /**
+             * Format: float
+             * @description Percentage of eligible supply (all holdings after mint/LP/CEX/burn exclusions) held by the top 250 holders (0-100)
+             */
+            top_holders_concentration: number;
             /**
              * Format: int32
              * @description Size of the measured top-holder cohort: 250, or the total holder count when fewer
@@ -7071,61 +7180,54 @@ export interface components {
             top_holders_count: number;
             /**
              * Format: float
-             * @description Percentage of eligible supply (all holdings after mint/LP/CEX/burn exclusions) held by the top 250 holders (0-100)
-             */
-            top_holders_concentration: number;
-            /**
-             * Format: float
              * @description Deprecated: percentage of eligible supply (after mint/LP/CEX/burn exclusions) held by the top 1% of holders (0-100), approximated from the fetched top-250 rows for tokens whose 1% cohort exceeds 250 holders; use top_holders_concentration
              */
             top_one_percent_concentration: number;
             /**
              * Format: int32
-             * @description Health score from 0-100 (higher = more distributed)
+             * @description Total number of holders with a non-zero balance
              */
-            health_score: number;
-            /**
-             * @description Human-readable label for the health score
-             * @enum {string}
-             */
-            health_label: "STRONG" | "HEALTHY" | "CONCERNING" | "BAD";
+            total_holders: number;
         };
         /** @description A holder of a token */
         TokenHolderResponse: {
-            /** @description Token quantity in display units */
-            quantity: number;
+            /** @description Wallet address of the holder */
+            owner_address: string;
+            /** @description Display name of the holder */
+            owner_display_name?: string | null;
             /**
              * Format: float
              * @description Percentage of total supply held by this address
              */
             percentage_held?: number | null;
+            /** @description Token quantity in display units */
+            quantity: number;
             /** @description USD value of the holding */
             usd_value?: number | null;
-            /** @description Wallet address of the holder */
-            owner_address: string;
-            /** @description Display name of the holder */
-            owner_display_name?: string | null;
         };
         /** @description Paginated list of token holders */
         TokenHoldersResponse: {
+            /** @description Holder distribution health metrics */
+            distribution?: components["schemas"]["TokenHolderDistributionResponse"] | null;
             /** @description List of token holders */
             holders: components["schemas"]["TokenHolderResponse"][];
+            /** @description Cursor for the next page of results */
+            next?: string | null;
             /**
              * Format: int32
              * @description Total number of holders
              */
             total_count?: number | null;
-            /** @description Holder distribution health metrics */
-            distribution?: components["schemas"]["TokenHolderDistributionResponse"] | null;
-            /** @description Cursor for the next page of results */
-            next?: string | null;
         };
         /** @description Token amount with contract and value information */
         TokenAmountResponse: {
             /** @description Contract address of the token */
             address: string;
-            /** @description Blockchain the token is on */
-            chain: string;
+            /**
+             * Format: double
+             * @description Amount in chain-native units
+             */
+            amount_native: number;
             /**
              * Format: double
              * @description Amount in token units
@@ -7133,52 +7235,49 @@ export interface components {
             amount_token: number;
             /** @description Amount in USD */
             amount_usd: string;
-            /**
-             * Format: double
-             * @description Amount in chain-native units
-             */
-            amount_native: number;
+            /** @description Blockchain the token is on */
+            chain: string;
         };
         /** @description Paginated list of token swap activity events */
         TokenSwapActivityPaginatedResponse: {
-            /** @description List of swap activity events */
-            swap_events: components["schemas"]["TokenSwapActivityResponse"][];
             /** @description Cursor for the next page of results */
             next?: string | null;
+            /** @description List of swap activity events */
+            swap_events: components["schemas"]["TokenSwapActivityResponse"][];
         };
         /** @description A token swap activity event */
         TokenSwapActivityResponse: {
+            /** @description Blockchain the swap occurred on */
+            chain: string;
+            /** @description Token sold in the swap */
+            from_token: components["schemas"]["TokenAmountResponse"];
             /** @description Unique identifier for the swap event */
             id: string;
+            /** @description Address of the sender */
+            sender_address: string;
+            /** @description Swap protocol used */
+            swap_protocol?: string | null;
             /**
              * Format: double
              * @description Timestamp of the swap
              */
             timestamp: number;
-            /** @description Address of the sender */
-            sender_address: string;
-            /** @description Token sold in the swap */
-            from_token: components["schemas"]["TokenAmountResponse"];
             /** @description Token bought in the swap */
             to_token: components["schemas"]["TokenAmountResponse"];
             /** @description Transaction hash */
             transaction_hash: string;
             /** @description User operation hash (for account abstraction) */
             user_op_hash?: string | null;
-            /** @description Swap protocol used */
-            swap_protocol?: string | null;
-            /** @description Blockchain the swap occurred on */
-            chain: string;
         };
         /** @description Windowed trading activity for a token */
         TokenActivityStatsResponse: {
+            /** @description Token contract address */
+            address: string;
             /**
              * @description Blockchain slug
              * @example base
              */
             chain: string;
-            /** @description Token contract address */
-            address: string;
             /**
              * Format: date-time
              * @description End time of the oldest returned aggregation window, or null when no window is returned
@@ -7192,20 +7291,15 @@ export interface components {
         /** @description Trading activity within one time window */
         TokenActivityWindowStatsResponse: {
             /**
-             * Format: int64
-             * @description Swap transaction count
-             */
-            trades: number;
-            /**
-             * @description Total buy and sell volume in USD
-             * @example 710410.75
-             */
-            volume_usd: string;
-            /**
              * @description Average USD volume per trade
              * @example 232.92
              */
             average_trade_usd: string;
+            /**
+             * Format: int64
+             * @description Swap transaction count
+             */
+            trades: number;
             /**
              * Format: int64
              * @description Distinct wallets that bought this token during the window. Only populated for the 1h and 24h windows; always null for 5m and 4h, which have no materialized source. Null also means the value is unavailable or not yet authoritative for this token, which remains a valid runtime state. Zero is an authoritative zero, so do not treat null as 0.
@@ -7218,6 +7312,11 @@ export interface components {
              * @example 377
              */
             unique_seller_count?: number | null;
+            /**
+             * @description Total buy and sell volume in USD
+             * @example 710410.75
+             */
+            volume_usd: string;
         };
         ContractResponse: {
             address: string;
@@ -7230,57 +7329,54 @@ export interface components {
             nft: components["schemas"]["NftDetailed"];
         };
         OwnersPaginatedResponse: {
-            owners: components["schemas"]["Owner"][];
             next?: string | null;
+            owners: components["schemas"]["Owner"][];
         };
         /** @description Analytics data for an NFT including sales and floor price history */
         NftAnalyticsResponse: {
-            /** @description List of sale data points */
-            sales: components["schemas"]["NftSalePointResponse"][];
             /** @description List of floor price data points */
             floor_prices: components["schemas"]["FloorPricePointResponse"][];
+            /** @description List of sale data points */
+            sales: components["schemas"]["NftSalePointResponse"][];
         };
         /** @description A sale data point for an NFT */
         NftSalePointResponse: {
+            /** @description Blockchain chain */
+            chain: string;
+            /** @description Payment token symbol */
+            symbol?: string | null;
             /**
              * Format: double
              * @description Timestamp of the sale
              */
             time: number;
-            /** @description Sale price in USD */
-            usd_price: string;
             /**
              * Format: double
              * @description Sale price in token units
              */
             token_unit: number;
-            /** @description Payment token symbol */
-            symbol?: string | null;
-            /** @description Blockchain chain */
-            chain: string;
+            /** @description Sale price in USD */
+            usd_price: string;
         };
         AccountNft: {
-            identifier: string;
             collection: string;
             contract: string;
-            token_standard: string;
-            name?: string | null;
-            description?: string | null;
-            image_url?: string | null;
-            display_image_url?: string | null;
-            display_animation_url?: string | null;
-            metadata_url?: string | null;
-            opensea_url: string;
-            updated_at: string;
-            is_disabled: boolean;
-            is_nsfw: boolean;
-            original_image_url?: string | null;
-            original_animation_url?: string | null;
-            traits: components["schemas"]["Trait"][];
-            /** Format: double */
-            estimated_value_usd?: number | null;
             /** Format: int32 */
             decimals?: number | null;
+            description?: string | null;
+            display_animation_url?: string | null;
+            display_image_url?: string | null;
+            /** Format: double */
+            estimated_value_usd?: number | null;
+            identifier: string;
+            image_url?: string | null;
+            is_disabled: boolean;
+            is_nsfw: boolean;
+            metadata_url?: string | null;
+            name?: string | null;
+            opensea_url: string;
+            original_animation_url?: string | null;
+            original_image_url?: string | null;
             /**
              * Format: int32
              * @description Units of this NFT the account holds, in raw base units. Always 1 for ERC-721. Capped at 2147483647; read quantity_string for the exact value.
@@ -7288,31 +7384,34 @@ export interface components {
             quantity: number;
             /** @description Exact units held, as a decimal string. */
             quantity_string: string;
+            token_standard: string;
+            traits: components["schemas"]["Trait"][];
+            updated_at: string;
         };
         AccountNftListResponse: {
-            nfts: components["schemas"]["AccountNft"][];
             next?: string | null;
+            nfts: components["schemas"]["AccountNft"][];
         };
         AccountResponse: {
             address: string;
-            username?: string | null;
+            banner_image_url?: string | null;
+            bio: string;
             display_name?: string | null;
             ens_name?: string | null;
-            is_verified: boolean;
-            /** @description Whether this account has declared itself an agent. Self-declared and not OpenSea verification, and the declaration on its own confers nothing: see GET /api/v2/accounts/{address_or_username}/agent-relationships for the ownership relationship, which is likewise a declaration rather than an authorization. */
-            is_agent: boolean;
             /** Format: int64 */
             follower_count: number;
             /** Format: int64 */
             following_count: number;
-            nft_pfp?: components["schemas"]["NftPfpResponse"] | null;
-            profile_image_url?: string | null;
-            banner_image_url?: string | null;
-            website?: string | null;
-            social_media_accounts: components["schemas"]["SocialMediaAccount"][];
-            bio: string;
+            /** @description Whether this account has declared itself an agent. Self-declared and not OpenSea verification, and the declaration on its own confers nothing: see GET /api/v2/accounts/{address_or_username}/agent-relationships for the ownership relationship, which is likewise a declaration rather than an authorization. */
+            is_agent: boolean;
+            is_verified: boolean;
             /** Format: date */
             joined_date: string;
+            nft_pfp?: components["schemas"]["NftPfpResponse"] | null;
+            profile_image_url?: string | null;
+            social_media_accounts: components["schemas"]["SocialMediaAccount"][];
+            username?: string | null;
+            website?: string | null;
         };
         SocialMediaAccount: {
             platform: string;
@@ -7323,20 +7422,20 @@ export interface components {
             is_watching: boolean;
         };
         SocialProfilePageResponse: {
-            profiles: components["schemas"]["SocialProfileSummaryResponse"][];
             next?: string | null;
+            profiles: components["schemas"]["SocialProfileSummaryResponse"][];
         };
         SocialProfileSummaryResponse: {
             address: string;
-            username?: string | null;
             display_name?: string | null;
-            profile_image_url?: string | null;
-            is_verified: boolean;
             /** Format: int64 */
             follower_count: number;
-            nft_pfp?: components["schemas"]["NftPfpResponse"] | null;
             is_following: boolean;
+            is_verified: boolean;
             is_watching: boolean;
+            nft_pfp?: components["schemas"]["NftPfpResponse"] | null;
+            profile_image_url?: string | null;
+            username?: string | null;
         };
         /** @description Public agent ownership relationships for a profile */
         AgentProfileRelationshipsResponse: {
@@ -7348,10 +7447,10 @@ export interface components {
         /** @description Compact public profile summary for an agent relationship */
         AgentProfileSummaryResponse: {
             address: string;
-            username?: string | null;
             display_name?: string | null;
-            profile_image_url?: string | null;
             is_verified: boolean;
+            profile_image_url?: string | null;
+            username?: string | null;
         };
         /** @description Resolved account info */
         AccountResolveResponse: {
@@ -7360,23 +7459,23 @@ export interface components {
              * @example 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
              */
             address: string;
-            /** @description OpenSea username, if available */
-            username?: string | null;
             /**
              * @description Primary ENS name, if available
              * @example vitalik.eth
              */
             ens_name?: string | null;
+            /** @description OpenSea username, if available */
+            username?: string | null;
         };
         AgentRelationshipListResponse: {
             relationships: components["schemas"]["AgentRelationshipResponse"][];
         };
         /** @description Paginated list of token balances */
         TokenBalancePaginatedResponse: {
-            /** @description List of token balances */
-            token_balances: components["schemas"]["TokenBalanceResponse"][];
             /** @description Cursor for the next page of results */
             next?: string | null;
+            /** @description List of token balances */
+            token_balances: components["schemas"]["TokenBalanceResponse"][];
         };
         /** @description Token balance for a wallet address */
         TokenBalanceResponse: {
@@ -7386,33 +7485,28 @@ export interface components {
              */
             address: string;
             /**
+             * @description USD value of base token reserves in the top liquidity pool paired with a curated quote token
+             * @example 125000.5
+             */
+            base_token_liquidity_usd?: string | null;
+            /**
              * @description The blockchain the token is on
              * @example ethereum
              */
             chain: string;
-            /**
-             * @description The display name of the token
-             * @example USDC
-             */
-            name: string;
-            /**
-             * @description The ticker symbol of the token
-             * @example USDC
-             */
-            symbol: string;
-            /** @description URL of the token's image */
-            image_url?: string | null;
-            /**
-             * @description Current price in USD
-             * @example 1.0
-             */
-            usd_price: string;
             /**
              * Format: int32
              * @description Number of decimal places
              * @example 6
              */
             decimals: number;
+            /** @description URL of the token's image */
+            image_url?: string | null;
+            /**
+             * @description The display name of the token
+             * @example USDC
+             */
+            name: string;
             /** @description URL to the token page on OpenSea */
             opensea_url: string;
             /**
@@ -7421,26 +7515,31 @@ export interface components {
              */
             quantity: string;
             /**
-             * @description Total USD value of the balance (quantity * usd_price)
-             * @example 3518.51835185
+             * @description USD value of quote token reserves in the top liquidity pool paired with a curated quote token
+             * @example 125000.5
              */
-            usd_value: string;
+            quote_token_liquidity_usd?: string | null;
             /**
              * @description Token status relative to OpenSea's spam-classification rules. `OK` for tokens that pass all spam filters (the normal case); populated with a more specific value for tokens surfaced via `disable_spam_filtering=true` that would normally be hidden. Categories are intentionally broad and may evolve. Possible values, in decreasing severity: `WARNING` (flagged as risky/suspicious — caution advised), `SPAM` (flagged as spam), `LOW_LIQUIDITY` (insufficient pool liquidity), `LOW_VALUE` (dust holding < $0.01), `OK` (passes all filters).
              * @default OK
              * @enum {string}
              */
-            status: "OK" | "WARNING" | "SPAM" | "LOW_LIQUIDITY" | "LOW_VALUE";
+            status?: "OK" | "WARNING" | "SPAM" | "LOW_LIQUIDITY" | "LOW_VALUE";
             /**
-             * @description USD value of base token reserves in the top liquidity pool paired with a curated quote token
-             * @example 125000.5
+             * @description The ticker symbol of the token
+             * @example USDC
              */
-            base_token_liquidity_usd?: string | null;
+            symbol: string;
             /**
-             * @description USD value of quote token reserves in the top liquidity pool paired with a curated quote token
-             * @example 125000.5
+             * @description Current price in USD
+             * @example 1.0
              */
-            quote_token_liquidity_usd?: string | null;
+            usd_price: string;
+            /**
+             * @description Total USD value of the balance (quantity * usd_price)
+             * @example 3518.51835185
+             */
+            usd_value: string;
         };
         /** @description Paginated list of account token activity events */
         TokenAccountActivityPaginatedResponse: {
@@ -7451,52 +7550,42 @@ export interface components {
         };
         /** @description A fungible token activity event for an account */
         TokenAccountActivityResponse: {
-            /**
-             * @description Type of activity
-             * @enum {string}
-             */
-            type: "send" | "receive" | "swap" | "wrap" | "unwrap";
             /** @description Blockchain the activity occurred on */
             chain: string;
             /** @description Address that initiated the activity */
             from: string;
-            /** @description Recipient address for transfers */
-            to?: string | null;
-            /** @description Token amount for transfers */
-            token?: components["schemas"]["TokenAmountResponse"] | null;
             /** @description Token sold/swapped from */
             from_token?: components["schemas"]["TokenAmountResponse"] | null;
-            /** @description Token received/swapped to */
-            to_token?: components["schemas"]["TokenAmountResponse"] | null;
             /** @description Swap protocol used */
             swap_protocol?: string | null;
-            /** @description Transaction hash */
-            transaction_hash: string;
-            /** @description User operation hash (for account abstraction) */
-            user_op_hash?: string | null;
             /**
              * Format: double
              * @description Timestamp of the activity
              */
             timestamp: number;
+            /** @description Recipient address for transfers */
+            to?: string | null;
+            /** @description Token received/swapped to */
+            to_token?: components["schemas"]["TokenAmountResponse"] | null;
+            /** @description Token amount for transfers */
+            token?: components["schemas"]["TokenAmountResponse"] | null;
+            /** @description Transaction hash */
+            transaction_hash: string;
+            /**
+             * @description Type of activity
+             * @enum {string}
+             */
+            type: "send" | "receive" | "swap" | "wrap" | "unwrap";
+            /** @description User operation hash (for account abstraction) */
+            user_op_hash?: string | null;
         };
         /** @description Portfolio stats including total value, P&L, and asset breakdown */
         PortfolioStatsResponse: {
-            /**
-             * @description Total portfolio value in USD
-             * @example 125430.5
-             */
-            total_value_usd: string;
             /**
              * @description NFT portfolio value in USD
              * @example 98200.0
              */
             nft_value_usd: string;
-            /**
-             * @description Token portfolio value in USD
-             * @example 27230.5
-             */
-            token_value_usd: string;
             /**
              * @description Absolute P&L in USD over the timeframe
              * @example +1250.00
@@ -7512,9 +7601,24 @@ export interface components {
              * @example WEEK
              */
             timeframe: string;
+            /**
+             * @description Token portfolio value in USD
+             * @example 27230.5
+             */
+            token_value_usd: string;
+            /**
+             * @description Total portfolio value in USD
+             * @example 125430.5
+             */
+            total_value_usd: string;
         };
         /** @description A single net worth data point */
         PortfolioHistoryDataPoint: {
+            /**
+             * @description NFT value in USD
+             * @example 98180.0
+             */
+            nft_value_usd: string;
             /**
              * Format: double
              * @description Timestamp of the data point
@@ -7522,20 +7626,15 @@ export interface components {
              */
             timestamp: number;
             /**
-             * @description Total portfolio value in USD
-             * @example 124180.0
-             */
-            value_usd: string;
-            /**
              * @description Token value in USD
              * @example 26000.0
              */
             token_value_usd: string;
             /**
-             * @description NFT value in USD
-             * @example 98180.0
+             * @description Total portfolio value in USD
+             * @example 124180.0
              */
-            nft_value_usd: string;
+            value_usd: string;
         };
         /** @description Net worth time series data */
         PortfolioHistoryResponse: {
@@ -7550,63 +7649,38 @@ export interface components {
         /** @description Aggregated realized and unrealized trading P&L across all currencies held by a wallet */
         WalletPnlResponse: {
             /**
-             * @description Realized P&L in USD from closed positions
-             * @example +1840.25
+             * @description Current USD value of the wallet's open positions (net_invested + unrealized P&L). Provides a visible anchor for the unrealized figure.
+             * @example 12179.9
              */
-            realized_pnl_usd: string;
-            /**
-             * @description Unrealized P&L in USD from open positions
-             * @example -320.1
-             */
-            unrealized_pnl_usd: string;
-            /**
-             * @description Total P&L in USD (realized + unrealized)
-             * @example +1520.15
-             */
-            total_pnl_usd: string;
+            current_value_usd: string;
             /**
              * @description Net amount invested in USD
              * @example 12500.0
              */
             net_invested_usd: string;
             /**
-             * @description Current USD value of the wallet's open positions (net_invested + unrealized P&L). Provides a visible anchor for the unrealized figure.
-             * @example 12179.9
+             * @description Realized P&L in USD from closed positions
+             * @example +1840.25
              */
-            current_value_usd: string;
+            realized_pnl_usd: string;
             /**
              * @description Total return as a signed percentage in percent units (e.g. +12.16 means +12.16%, -8.40 means -8.40%). Not a 0-1 ratio.
              * @example +12.16
              */
             return_percentage: string;
+            /**
+             * @description Total P&L in USD (realized + unrealized)
+             * @example +1520.15
+             */
+            total_pnl_usd: string;
+            /**
+             * @description Unrealized P&L in USD from open positions
+             * @example -320.1
+             */
+            unrealized_pnl_usd: string;
         };
         /** @description A single token transfer that contributed to a wallet's position in a currency. Combine `direction` and `transfer_type` to distinguish zero-cost acquisitions (e.g. AIRDROP, CEX_TRANSFER) from buys (e.g. SWAP_BUY). */
         PositionTokenTransferResponse: {
-            /**
-             * @description Transfer direction relative to the wallet (e.g. IN, OUT).
-             * @example IN
-             */
-            direction: string;
-            /**
-             * @description Raw token quantity transferred, in token base units, as a string to preserve precision.
-             * @example 1500000000
-             */
-            quantity_raw: string;
-            /**
-             * @description Token price in USD at the time of the transfer, or null if unknown.
-             * @example 0.0425
-             */
-            price_usd?: string | null;
-            /**
-             * @description USD value of the transfer, or null if unknown.
-             * @example 63.75
-             */
-            value_usd?: string | null;
-            /**
-             * @description Transaction hash/signature of the transfer.
-             * @example 0xabc123
-             */
-            tx_signature: string;
             /**
              * Format: double
              * @description Block time of the transfer, or null if unknown.
@@ -7614,13 +7688,40 @@ export interface components {
              */
             block_time?: number | null;
             /**
+             * @description Transfer direction relative to the wallet (e.g. IN, OUT).
+             * @example IN
+             */
+            direction: string;
+            /**
+             * @description Token price in USD at the time of the transfer, or null if unknown.
+             * @example 0.0425
+             */
+            price_usd?: string | null;
+            /**
+             * @description Raw token quantity transferred, in token base units, as a string to preserve precision.
+             * @example 1500000000
+             */
+            quantity_raw: string;
+            /**
              * @description Type of transfer, used to distinguish zero-cost acquisitions (e.g. AIRDROP, CEX_TRANSFER) from buys/sells (e.g. SWAP_BUY, SWAP_SELL). Null if unclassified.
              * @example SWAP_BUY
              */
             transfer_type?: string | null;
+            /**
+             * @description Transaction hash/signature of the transfer.
+             * @example 0xabc123
+             */
+            tx_signature: string;
+            /**
+             * @description USD value of the transfer, or null if unknown.
+             * @example 63.75
+             */
+            value_usd?: string | null;
         };
         /** @description A page of token transfers contributing to a wallet's position in a currency */
         PositionTokenTransfersResponse: {
+            /** @description Cursor for the next page of results, or null if there are no more pages */
+            next?: string | null;
             /** @description The token transfers for this page */
             token_transfers: components["schemas"]["PositionTokenTransferResponse"][];
             /**
@@ -7629,33 +7730,9 @@ export interface components {
              * @example 17
              */
             total_count: number;
-            /** @description Cursor for the next page of results, or null if there are no more pages */
-            next?: string | null;
         };
         /** @description A single realized (closed) trading position. Realized P&L and cost basis are computed via FIFO (first-in, first-out) lot matching. */
         ClosedPositionResponse: {
-            /** @description The currency that was traded. Null if the currency is no longer surfaced (e.g. under trust & safety enforcement). */
-            currency?: components["schemas"]["TokenBaseResponse"] | null;
-            /**
-             * @description Realized profit or loss in USD for this position (FIFO). Signed.
-             * @example +1840.25
-             */
-            realized_pnl_usd: string;
-            /**
-             * @description Realized return as a signed percentage in percent units (e.g. +12.16 means +12.16%). Not a 0-1 ratio.
-             * @example +12.16
-             */
-            return_percentage: string;
-            /**
-             * @description Total USD proceeds from the sells that closed this position.
-             * @example 5200.0
-             */
-            total_proceeds_usd: string;
-            /**
-             * @description Total USD cost basis of the tokens sold, via FIFO lot matching.
-             * @example 3359.75
-             */
-            total_cost_basis_usd: string;
             /**
              * @description Average cost per token in USD (FIFO).
              * @example 0.0425
@@ -7667,172 +7744,151 @@ export interface components {
              * @example 1777334400
              */
             closed_at?: number | null;
-            /** @description Whether this was a round-trip OpenSea trade (bought and sold on OpenSea). */
-            is_opensea_trade: boolean;
+            /** @description The currency that was traded. Null if the currency is no longer surfaced (e.g. under trust & safety enforcement). */
+            currency?: components["schemas"]["TokenBaseResponse"] | null;
             /**
              * Format: double
              * @description When the tokens in this position were first acquired. Null if unknown.
              * @example 1768435200
              */
             first_acquired_at?: number | null;
+            /** @description Whether this was a round-trip OpenSea trade (bought and sold on OpenSea). */
+            is_opensea_trade: boolean;
+            /**
+             * @description Realized profit or loss in USD for this position (FIFO). Signed.
+             * @example +1840.25
+             */
+            realized_pnl_usd: string;
+            /**
+             * @description Realized return as a signed percentage in percent units (e.g. +12.16 means +12.16%). Not a 0-1 ratio.
+             * @example +12.16
+             */
+            return_percentage: string;
+            /**
+             * @description Total USD cost basis of the tokens sold, via FIFO lot matching.
+             * @example 3359.75
+             */
+            total_cost_basis_usd: string;
+            /**
+             * @description Total USD proceeds from the sells that closed this position.
+             * @example 5200.0
+             */
+            total_proceeds_usd: string;
         };
         /** @description A page of a wallet's closed (realized) trading positions */
         ClosedPositionsResponse: {
             /** @description The closed positions for this page */
             closed_positions: components["schemas"]["ClosedPositionResponse"][];
+            /** @description Cursor for the next page of results, or null if there are no more pages */
+            next?: string | null;
             /**
              * Format: int32
              * @description Total number of closed positions for the wallet across all pages
              * @example 42
              */
             total_count: number;
-            /** @description Cursor for the next page of results, or null if there are no more pages */
-            next?: string | null;
-        };
-        /** @description Common perpetual future identity fields shared across perpetual responses */
-        PerpetualFutureBaseResponse: {
-            /** @description The perpetual future ID */
-            id: string;
-            /** @description The display name of the perpetual future */
-            name: string;
-            /** @description The perpetual future symbol */
-            symbol: string;
-            /** @description URL of the perpetual future image */
-            image_url?: string | null;
-            /** @description Description of the perpetual future */
-            description?: string | null;
-            /**
-             * Format: double
-             * @description Created timestamp
-             */
-            created_at?: number | null;
-            /** @description Chain identifier */
-            chain: string;
-            /** @description Contract address */
-            contract_address: string;
-            /**
-             * Format: int32
-             * @description Maximum leverage
-             */
-            max_leverage: number;
-            /**
-             * Format: int32
-             * @description Decimal places
-             */
-            decimals: number;
-            /** @description Asset ID */
-            asset_id: string;
-            /**
-             * Format: int64
-             * @description Version
-             */
-            version: number;
-            /** @description Categories */
-            categories: string[];
-            /** @description Market */
-            market?: string | null;
         };
         /** @description Paginated list of perpetual futures */
         PerpetualFuturePaginatedResponse: {
-            /** @description List of perpetual futures */
-            perpetuals: components["schemas"]["PerpetualFutureResponse"][];
             /** @description Cursor for the next page of results */
             next?: string | null;
+            /** @description List of perpetual futures */
+            perpetuals: components["schemas"]["PerpetualFutureResponse"][];
         };
         /** @description A perpetual future */
         PerpetualFutureResponse: {
-            /** @description The perpetual future ID */
-            id: string;
-            /** @description The display name of the perpetual future */
-            name: string;
-            /** @description The perpetual future symbol */
-            symbol: string;
-            /** @description URL of the perpetual future image */
-            image_url?: string | null;
-            /** @description Description of the perpetual future */
-            description?: string | null;
-            /**
-             * Format: double
-             * @description Created timestamp
-             */
-            created_at?: number | null;
+            /** @description Asset ID */
+            asset_id: string;
+            /** @description Categories */
+            categories: string[];
             /** @description Chain identifier */
             chain: string;
             /** @description Contract address */
             contract_address: string;
             /**
-             * Format: int32
-             * @description Maximum leverage
+             * Format: double
+             * @description Created timestamp
              */
-            max_leverage: number;
+            created_at?: number | null;
             /**
              * Format: int32
              * @description Decimal places
              */
             decimals: number;
-            /** @description Asset ID */
-            asset_id: string;
+            /** @description Description of the perpetual future */
+            description?: string | null;
+            /** @description The perpetual future ID */
+            id: string;
+            /** @description URL of the perpetual future image */
+            image_url?: string | null;
+            /** @description Market */
+            market?: string | null;
+            /**
+             * Format: int32
+             * @description Maximum leverage
+             */
+            max_leverage: number;
+            /** @description The display name of the perpetual future */
+            name: string;
+            /** @description Market statistics */
+            stats?: components["schemas"]["PerpetualFutureStatsResponse"] | null;
+            /** @description The perpetual future symbol */
+            symbol: string;
             /**
              * Format: int64
              * @description Version
              */
             version: number;
-            /** @description Categories */
-            categories: string[];
-            /** @description Market */
-            market?: string | null;
-            /** @description Market statistics */
-            stats?: components["schemas"]["PerpetualFutureStatsResponse"] | null;
         };
         /** @description Market statistics for a perpetual future */
         PerpetualFutureStatsResponse: {
-            /** @description Price in USD */
-            price_usd?: number | null;
+            /** @description Funding rate */
+            funding_rate?: number | null;
+            /** @description Mark price */
+            mark_price?: number | null;
+            /** @description Open interest */
+            open_interest?: number | null;
+            /** @description Oracle price */
+            oracle_price?: number | null;
             /**
              * Format: float
              * @description 24-hour price change percentage
              */
             price_change_24h?: number | null;
+            /** @description Price in USD */
+            price_usd?: number | null;
             /** @description 24-hour volume in USD */
             volume_24h?: number | null;
-            /** @description Mark price */
-            mark_price?: number | null;
-            /** @description Oracle price */
-            oracle_price?: number | null;
-            /** @description Funding rate */
-            funding_rate?: number | null;
-            /** @description Open interest */
-            open_interest?: number | null;
         };
         ProfileCollectionResponse: {
-            collection: string;
-            name: string;
-            description?: string | null;
-            /** @description Square avatar for the collection, used wherever it is named. Falls back to a representative item's image when the collection has none of its own. */
-            image_url?: string | null;
             /** @description Wide image for the collection, and the only wide image on this API. Use it for a header or hero slot; image_url is square and will not fill one. On the single-collection endpoint it is the collection's hero image, else its hero video's poster, else its banner; on list endpoints it is the banner. Always a still image: a video gets a frame from it, or null when no still can be derived. */
             banner_image_url?: string | null;
-            owner?: string | null;
-            safelist_status: string;
             category?: string | null;
+            collection: string;
+            collection_offers_enabled: boolean;
+            contracts: components["schemas"]["Contract"][];
+            description?: string | null;
+            discord_url?: string | null;
+            /** @description Square avatar for the collection, used wherever it is named. Falls back to a representative item's image when the collection has none of its own. */
+            image_url?: string | null;
+            instagram_username?: string | null;
             is_disabled: boolean;
             is_nsfw: boolean;
-            trait_offers_enabled: boolean;
-            collection_offers_enabled: boolean;
-            opensea_url: string;
-            project_url?: string | null;
-            wiki_url?: string | null;
-            discord_url?: string | null;
-            telegram_url?: string | null;
-            twitter_username?: string | null;
-            instagram_username?: string | null;
-            contracts: components["schemas"]["Contract"][];
             /** Format: int32 */
             item_count: number;
+            name: string;
+            opensea_url: string;
+            owner?: string | null;
+            project_url?: string | null;
+            safelist_status: string;
+            telegram_url?: string | null;
             /** Format: int32 */
             total_quantity: number;
+            trait_offers_enabled: boolean;
+            twitter_username?: string | null;
             /** Format: double */
             usd_value?: number | null;
+            wiki_url?: string | null;
         };
         ProfileCollectionsResponse: {
             collections: components["schemas"]["ProfileCollectionResponse"][];
@@ -7869,17 +7925,12 @@ export interface components {
              * @default ACCESS_TOKEN
              * @enum {string}
              */
-            subjectTokenType: "ACCESS_TOKEN";
+            subjectTokenType?: "ACCESS_TOKEN";
         };
         /** @description Minted access token */
         TokenExchangeResponse: {
             /** @description Bearer token to send as `Authorization: Bearer <token>` */
             accessToken: string;
-            /**
-             * @description Token type
-             * @example Bearer
-             */
-            tokenType: string;
             /**
              * Format: int64
              * @description Token lifetime in seconds, when the issuer reports one
@@ -7889,24 +7940,25 @@ export interface components {
             scope?: string;
             /** @description Scopes bound to the presented scoped token at mint time. Requests are authorized against these, not the full account scope set. */
             tokenScopes?: components["schemas"]["AuthScope"][];
+            /**
+             * @description Token type
+             * @example Bearer
+             */
+            tokenType: string;
         };
         /** @description Error envelope returned by the authentication endpoints */
         AuthErrorResponse: {
             error?: {
-                /** @description Human-readable reason */
-                message?: string;
-                /** @description Status name */
-                status?: string;
                 /**
                  * Format: int32
                  * @description HTTP status code
                  */
                 code?: number;
+                /** @description Human-readable reason */
+                message?: string;
+                /** @description Status name */
+                status?: string;
             };
-        };
-        WalletLinkNonceResponse: {
-            nonce: string;
-            statement: string;
         };
     };
     responses: {
@@ -8038,6 +8090,15 @@ export interface operations {
                     "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             /** @description The drop's contract is not a configured SeaDrop V2 ERC-1155 self-mint contract (its configurer() call reverts or returns the zero address). Nothing is saved; retrying does not help. */
             422: {
                 headers: {
@@ -8087,6 +8148,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -8108,6 +8178,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WalletVisibilityResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
         };
@@ -8132,6 +8256,60 @@ export interface operations {
                     "application/json": components["schemas"]["WalletVisibilityResponse"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     declare_agent_account: {
@@ -8152,6 +8330,60 @@ export interface operations {
                     "application/json": components["schemas"]["AgentAccountStatusResponse"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     withdraw_agent_account_declaration: {
@@ -8170,6 +8402,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgentAccountStatusResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
         };
@@ -8198,7 +8484,25 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -8226,7 +8530,25 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -8253,6 +8575,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -8279,6 +8637,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -8305,6 +8699,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -8331,6 +8761,174 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    list_signals: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Chain slug; required with contract
+                 * @example ethereum
+                 */
+                chain?: components["schemas"]["ChainIdentifier"];
+                /** @description Currency or NFT contract address; required with chain */
+                contract?: string;
+                /** @description NFT token identifier; requires chain and contract */
+                token_id?: string;
+                /** @description Collection slug; cannot be combined with chain, contract or token_id */
+                collection?: string;
+                /**
+                 * @description Number of items to return per page
+                 * @example 20
+                 */
+                limit?: number;
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signals and optional continuation cursor */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SignalsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+        };
+    };
+    create_signal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSignalRequest"];
+            };
+        };
+        responses: {
+            /** @description Signal created */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignalMutationResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Signal creation is on cooldown for this account and subject */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            429: components["responses"]["RateLimit"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -8363,6 +8961,24 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -8391,6 +9007,24 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -8420,6 +9054,24 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -8448,7 +9100,25 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             409: components["responses"]["Conflict"];
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     get_profile_shelves: {
@@ -8476,7 +9146,43 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     create_profile_shelf: {
@@ -8505,6 +9211,24 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     reorder_profile_shelves: {
@@ -8533,6 +9257,24 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     set_profile_nft_pfp: {
@@ -8560,6 +9302,33 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     clear_profile_nft_pfp: {
@@ -8580,8 +9349,44 @@ export interface operations {
                     "application/json": components["schemas"]["ClearNftPfpResponse"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     upload_profile_image: {
@@ -8609,6 +9414,33 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     post_offer: {
@@ -8641,6 +9473,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -8674,6 +9542,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -8710,6 +9614,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -8750,8 +9690,42 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "*/*": components["schemas"]["CancelOrderActionsResponse"];
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
             500: components["responses"]["InternalError"];
@@ -8780,6 +9754,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -8816,8 +9826,42 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "*/*": components["schemas"]["FulfillListingResponse"];
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
             500: components["responses"]["InternalError"];
@@ -8850,8 +9894,42 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "*/*": components["schemas"]["FulfillmentActionsResponse"];
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
             500: components["responses"]["InternalError"];
@@ -8880,6 +9958,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -8910,8 +10024,42 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "*/*": components["schemas"]["CreateOfferActionsResponse"];
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
             500: components["responses"]["InternalError"];
@@ -8940,6 +10088,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -8970,8 +10154,42 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "*/*": components["schemas"]["SweepCollectionResponse"];
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
             500: components["responses"]["InternalError"];
@@ -9010,8 +10228,42 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "*/*": components["schemas"]["FulfillListingResponse"];
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
             500: components["responses"]["InternalError"];
@@ -9044,8 +10296,42 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "*/*": components["schemas"]["FulfillmentActionsResponse"];
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
             500: components["responses"]["InternalError"];
@@ -9078,8 +10364,42 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "*/*": components["schemas"]["CrossChainFulfillmentResponse"];
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
             500: components["responses"]["InternalError"];
@@ -9112,8 +10432,42 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "*/*": components["schemas"]["CreateListingActionsResponse"];
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
             500: components["responses"]["InternalError"];
@@ -9144,7 +10498,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -9180,6 +10561,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -9211,6 +10601,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -9242,6 +10641,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -9277,6 +10685,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -9308,7 +10725,7 @@ export interface operations {
                     "*/*": components["schemas"]["DropMintResponse"];
                 };
             };
-            /** @description Invalid request: bad address format, invalid quantity, missing required fields, or a drop type this endpoint does not mint (ERC-1155) */
+            /** @description Invalid request: bad address format, invalid quantity, missing required fields, or a drop type this endpoint does not mint (ERC-1155, code UNSUPPORTED_DROP_TYPE) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -9317,7 +10734,25 @@ export interface operations {
                     "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
-            /** @description Drop or collection not found for the given slug */
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Drop or collection not found for the given slug. Code DROP_NOT_FOUND. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -9326,7 +10761,7 @@ export interface operations {
                     "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
-            /** @description Drop is not currently active for minting (not started, ended, or paused) */
+            /** @description Drop is not currently active for minting (not started, ended, or paused). Code NOT_MINTING. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -9335,7 +10770,7 @@ export interface operations {
                     "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
-            /** @description Minting precondition failed: insufficient native balance, wallet not in allowlist, mint limit exceeded, supply exhausted, or a paid stage on a drop with no creator payout address */
+            /** @description Minting precondition failed. Codes: MINTER_NOT_ELIGIBLE (wallet not on the active presale's allowlist), MINT_LIMIT_EXCEEDED (the wallet's limit for the stage), SUPPLY_EXHAUSTED (the drop's or the stage's remaining supply), INSUFFICIENT_BALANCE (cannot pay the price and gas; skipped with skip_balance_check), NO_PAYOUT_ADDRESS (a paid stage on a drop with no creator payout address) */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -9385,6 +10820,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -9424,6 +10868,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -9475,6 +10928,15 @@ export interface operations {
                     "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             /** @description The drop's contract is not a configured SeaDrop V2 ERC-1155 self-mint contract (its configurer() call reverts or returns the zero address). Nothing is saved; retrying does not help. */
             422: {
                 headers: {
@@ -9519,41 +10981,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            500: components["responses"]["InternalError"];
-        };
-    };
-    save_drop_item_media: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /**
-                 * @description Collection slug
-                 * @example cool-cats
-                 */
-                slug: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SaveDropItemMediaRequest"];
-            };
-        };
-        responses: {
-            /** @description Drop item media saved successfully */
-            200: {
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["SaveDropItemMediaResponse"];
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -9592,11 +11028,18 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "*/*": components["schemas"]["SaveDropItemMediaResponse"];
-                };
+                content?: never;
             };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -9628,6 +11071,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -9659,7 +11111,7 @@ export interface operations {
                     "*/*": components["schemas"]["CrossChainDropMintResponse"];
                 };
             };
-            /** @description Invalid address, payment chain, payment token, quantity, or request body */
+            /** @description Invalid address, payment chain, payment token, quantity, or request body, or an ERC-1155 drop (code UNSUPPORTED_DROP_TYPE) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -9668,7 +11120,25 @@ export interface operations {
                     "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
-            /** @description Drop or collection not found for the given slug */
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Drop or collection not found for the given slug. Code DROP_NOT_FOUND. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -9677,7 +11147,7 @@ export interface operations {
                     "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
-            /** @description Drop is not currently active for minting */
+            /** @description Drop is not currently active for minting. Code NOT_MINTING. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -9686,7 +11156,7 @@ export interface operations {
                     "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
-            /** @description Minting precondition failed, including an ineligible wallet, exhausted supply, insufficient balance, a payer that is not allowed for the active presale, a paid stage on a drop with no creator payout address, or a mint Relay reports would fail on the drop's chain (DESTINATION_TX_FAILED). Retrying the same request does not help. */
+            /** @description Minting precondition failed, including an ineligible wallet, exhausted supply, insufficient balance, a payer that is not allowed for the active presale, a paid stage on a drop with no creator payout address, or a mint Relay reports would fail on the drop's chain (DESTINATION_TX_FAILED). Retrying the same request does not help. Codes: the mint endpoint's 422 codes, plus PAYER_NOT_ALLOWED, MINT_WOULD_REVERT, AMOUNT_TOO_LOW, PAYMENT_TOKEN_UNSUPPORTED and ROUTE_UNSUPPORTED. INSUFFICIENT_BALANCE here means the payer's balance of the payment token. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -9736,6 +11206,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -9771,6 +11250,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -9798,6 +11286,42 @@ export interface operations {
             };
             /** @description Invalid request: unsupported drop_type/token_type combination, bad address format, or missing required fields */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9836,6 +11360,16 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            429: components["responses"]["RateLimit"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -9914,6 +11448,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -9956,6 +11499,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -9984,7 +11536,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -10020,6 +11599,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -10046,6 +11634,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -10090,7 +11714,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -10125,7 +11776,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -10145,6 +11823,51 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["InstantApiKeyResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
             /** @description Key creation rate limit exceeded */
@@ -10204,8 +11927,42 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "*/*": components["schemas"]["TransferResponse"];
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
             500: components["responses"]["InternalError"];
@@ -10231,6 +11988,60 @@ export interface operations {
                     "*/*": components["schemas"]["ProfileSocialMutationResponse"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     unwatch_account: {
@@ -10251,6 +12062,60 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ProfileSocialMutationResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
         };
@@ -10275,6 +12140,60 @@ export interface operations {
                     "*/*": components["schemas"]["ProfileSocialMutationResponse"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     unfollow_account: {
@@ -10295,6 +12214,60 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ProfileSocialMutationResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
         };
@@ -10328,8 +12301,80 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "application/json": components["schemas"]["WalletLinkResponse"];
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_wallet_link_nonce: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Nonce issued */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletLinkNonceResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
             500: components["responses"]["InternalError"];
@@ -10351,6 +12396,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgentRelationshipListResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
         };
@@ -10377,6 +12476,60 @@ export interface operations {
                     "application/json": components["schemas"]["AgentRelationshipMutationResponse"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     revoke_agent_relationship: {
@@ -10401,6 +12554,60 @@ export interface operations {
                     "application/json": components["schemas"]["AgentRelationshipRemovalResponse"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     confirm_agent_relationship: {
@@ -10423,6 +12630,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgentRelationshipMutationResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
         };
@@ -10452,6 +12713,33 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     delete_profile_shelf: {
@@ -10478,6 +12766,24 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     update_profile_shelf: {
@@ -10508,6 +12814,24 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     get_collection: {
@@ -10535,7 +12859,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -10571,6 +12922,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -10606,6 +12966,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -10637,6 +13006,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -10672,6 +13050,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -10700,7 +13087,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -10729,7 +13143,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
             /** @description Aggregation timed out; the collection is too large to serve */
             503: {
@@ -10774,6 +13215,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -10803,7 +13280,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -10840,7 +13344,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -10888,6 +13419,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -10933,6 +13500,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -10978,6 +13581,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11008,6 +13647,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11036,7 +13711,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11100,6 +13802,138 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_signal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Opaque signal_id returned by the Signals API */
+                signal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Public signal */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SignalResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+        };
+    };
+    delete_signal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                signal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signal deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            429: components["responses"]["RateLimit"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -11134,6 +13968,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11182,6 +14052,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11214,6 +14120,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11246,7 +14188,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11303,7 +14272,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11338,7 +14334,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11366,7 +14389,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11401,7 +14451,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11469,7 +14546,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11521,7 +14625,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11560,7 +14691,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11591,7 +14749,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11636,7 +14821,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
             /** @description Trait filter query timed out; try a more selective filter */
             503: {
@@ -11682,7 +14894,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11718,6 +14957,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11769,7 +15044,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11821,7 +15123,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11868,6 +15197,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11908,6 +15273,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11941,6 +15342,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -11972,6 +15382,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12005,6 +15424,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12048,7 +15503,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12077,7 +15559,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12113,7 +15622,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12155,6 +15691,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12198,6 +15770,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12234,6 +15842,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12279,6 +15923,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12324,6 +16004,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12368,7 +16084,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12391,6 +16134,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12424,7 +16203,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12474,6 +16280,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12528,6 +16370,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12567,6 +16445,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12608,6 +16522,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12649,6 +16599,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12688,7 +16674,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12719,7 +16732,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12750,7 +16790,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12788,6 +16855,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12826,7 +16929,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12873,7 +17003,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12912,7 +17069,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12951,7 +17135,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -12992,7 +17203,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -13021,7 +17259,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -13043,6 +17308,60 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ProfileRelationshipResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
         };
@@ -13074,6 +17393,60 @@ export interface operations {
                     "*/*": components["schemas"]["SocialProfilePageResponse"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     get_account_followers: {
@@ -13103,6 +17476,60 @@ export interface operations {
                     "*/*": components["schemas"]["SocialProfilePageResponse"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
         };
     };
     get_agent_profile_relationships: {
@@ -13127,6 +17554,60 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["AgentProfileRelationshipsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
         };
@@ -13156,7 +17637,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -13213,6 +17721,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -13247,11 +17791,18 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "*/*": components["schemas"]["TokenPaginatedResponse"];
-                };
+                content?: never;
             };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -13299,6 +17850,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -13335,6 +17922,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -13366,6 +17989,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -13394,7 +18053,34 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -13438,6 +18124,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -13473,6 +18195,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -13507,11 +18265,18 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "*/*": components["schemas"]["PerpetualFuturePaginatedResponse"];
-                };
+                content?: never;
             };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -13553,6 +18318,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -13594,6 +18395,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -13635,6 +18472,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -13680,11 +18553,18 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "*/*": components["schemas"]["NftListResponse"];
-                };
+                content?: never;
             };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -13720,6 +18600,42 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -13751,11 +18667,18 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["WalletUnlinkResponse"];
-                };
+                content?: never;
             };
             404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -13844,62 +18767,6 @@ export interface operations {
                     "application/json": components["schemas"]["AuthErrorResponse"];
                 };
             };
-        };
-    };
-    get_wallet_link_nonce: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Nonce issued */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WalletLinkNonceResponse"];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["V1ErrorWrapper"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["V1ErrorWrapper"];
-                };
-            };
-            /** @description Conflict */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["V1ErrorWrapper"];
-                };
-            };
-            500: components["responses"]["InternalError"];
         };
     };
 }

@@ -87,7 +87,7 @@ export const AUTH_SCOPES = [
     displayName: "Creator Studio drop management",
     description: "Manage Creator Studio drops for authenticated account",
     group: "write",
-    endpoints: ["/api/v2/drops/{slug}","/api/v2/drops/{slug}/allowlist","/api/v2/drops/{slug}/allowlist/validate","/api/v2/drops/{slug}/prereveal-item","/api/v2/drops/{slug}/items","/api/v2/drops/{slug}/items/media","/api/v2/drops/{slug}/items/media/save","/api/v2/drops/{slug}/items/media/save-batch","/api/v2/drops/{slug}/items/manifest","/api/v2/drops/{slug}/items/{token_id}","/api/v2/drops/{slug}/metadata/ipfs","/api/v2/drops/{slug}/metadata/ipfs/{workflow_execution_id}","/api/v2/drops/{slug}/publish","/api/v2/drops/{slug}/unpublish"],
+    endpoints: ["/api/v2/drops/{slug}","/api/v2/drops/{slug}/allowlist","/api/v2/drops/{slug}/allowlist/validate","/api/v2/drops/{slug}/prereveal-item","/api/v2/drops/{slug}/items","/api/v2/drops/{slug}/items/media","/api/v2/drops/{slug}/items/media/save-batch","/api/v2/drops/{slug}/items/manifest","/api/v2/drops/{slug}/items/{token_id}","/api/v2/drops/{slug}/metadata/ipfs","/api/v2/drops/{slug}/metadata/ipfs/{workflow_execution_id}","/api/v2/drops/{slug}/publish","/api/v2/drops/{slug}/unpublish"],
     mcpTools: ["manage_drops"],
   },
   {

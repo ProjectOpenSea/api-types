@@ -809,6 +809,15 @@ export type CreateProfileShelfRequest = Schemas["CreateProfileShelfRequest"]
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
  * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<CreateSignalRequest>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `CreateSignalRequest`.
+ */
+export type CreateSignalRequest = Schemas["CreateSignalRequest"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
  * SDK-facing value with `Camelize<CreatorFeeEnforcementStatusResponse>` (exported by
  * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
  * `CreatorFeeEnforcementStatusResponse`.
@@ -1066,15 +1075,6 @@ export type Eip3009Fields = Schemas["Eip3009Fields"]
  * `Event`.
  */
 export type Event = Schemas["Event"]
-
-/**
- * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
- * camelizes responses and snakeizes request bodies, so annotate an
- * SDK-facing value with `Camelize<EventBase>` (exported by
- * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
- * `EventBase`.
- */
-export type EventBase = Schemas["EventBase"]
 
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
@@ -1898,15 +1898,6 @@ export type PaymentToken = Schemas["PaymentToken"]
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
  * camelizes responses and snakeizes request bodies, so annotate an
- * SDK-facing value with `Camelize<PerpetualFutureBaseResponse>` (exported by
- * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
- * `PerpetualFutureBaseResponse`.
- */
-export type PerpetualFutureBaseResponse = Schemas["PerpetualFutureBaseResponse"]
-
-/**
- * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
- * camelizes responses and snakeizes request bodies, so annotate an
  * SDK-facing value with `Camelize<PerpetualFuturePaginatedResponse>` (exported by
  * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
  * `PerpetualFuturePaginatedResponse`.
@@ -2222,15 +2213,6 @@ export type SaveDropItemMediaBatchRequest = Schemas["SaveDropItemMediaBatchReque
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
  * camelizes responses and snakeizes request bodies, so annotate an
- * SDK-facing value with `Camelize<SaveDropItemMediaRequest>` (exported by
- * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
- * `SaveDropItemMediaRequest`.
- */
-export type SaveDropItemMediaRequest = Schemas["SaveDropItemMediaRequest"]
-
-/**
- * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
- * camelizes responses and snakeizes request bodies, so annotate an
  * SDK-facing value with `Camelize<SaveDropItemMediaResponse>` (exported by
  * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
  * `SaveDropItemMediaResponse`.
@@ -2425,6 +2407,42 @@ export type SetCreatorFeeEnforcementRequest = Schemas["SetCreatorFeeEnforcementR
  * `SetNftPfpRequest`.
  */
 export type SetNftPfpRequest = Schemas["SetNftPfpRequest"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<SignalMutationResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `SignalMutationResponse`.
+ */
+export type SignalMutationResponse = Schemas["SignalMutationResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<SignalResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `SignalResponse`.
+ */
+export type SignalResponse = Schemas["SignalResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<SignalSubjectResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `SignalSubjectResponse`.
+ */
+export type SignalSubjectResponse = Schemas["SignalSubjectResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<SignalsResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `SignalsResponse`.
+ */
+export type SignalsResponse = Schemas["SignalsResponse"]
 
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`

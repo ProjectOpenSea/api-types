@@ -27,6 +27,7 @@ pnpm run lint
 4. **Rebuild downstream**. After spec changes, rebuild api-types, then run `pnpm --filter sdk run check-types` and `pnpm --filter cli run build`. Those use the workspace copy; the `Mirror layout` CI gate compiles sdk and cli against the *published* package, so SDK/CLI code that consumes a spec addition stays red until api-types is on npm. Land and release the spec refresh first, and see [Spec changes and release order](../../AGENTS.md#spec-changes-and-release-order) for the auth-scope case, which cannot be split that way.
 5. **Export check**. CI runs `node packages/api-types/scripts/check-consumer-imports.mjs` to ensure every workspace import from `@opensea/api-types` exists in `dist/index.d.ts`.
 6. **Auth-scope drift**. CI runs `node scripts/check-auth-scope-drift.mjs` (repo root) to compare the auth scopes in `opensea-api.json` against the live `/api/v2/auth/scopes` registry. Re-run `update-spec` + `build` when it reports drift.
+7. **Defaults stay optional**. `generate` passes `--default-non-nullable false` to openapi-typescript. Without it, any field with a spec `default` comes out required, so a new defaulted request field (`DropMintRequest.skip_balance_check`) forces every SDK and CLI caller to pass it. `test/defaults.test.ts` fails if a defaulted field outside `required` is generated as required, so keep the flag. A response field the server always sends belongs in the schema's `required` list in os2-core, not behind a default.
 
 ## Conventions
 

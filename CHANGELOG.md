@@ -1,5 +1,18 @@
 # @opensea/api-types
 
+## 0.18.0
+
+### Minor Changes
+
+- c0ee307: Sync OpenAPI spec. Breaking: `ChainIdentifier` drops `blast` and `arc` (and `CHAIN_IDENTIFIERS` with it), and the unreferenced `EventBase` and `PerpetualFutureBaseResponse` schemas are removed. `SavePrerevealDropItemRequest` gains `unreveal`. Most operations now document their 401/403/404/409/500 error responses as `V1ErrorWrapper`, and several 400/403 responses no longer reuse the success schema. Updated drop item media/IPFS/prereveal descriptions. The CLI keeps its `EventBase` type export as a deprecated local definition.
+- 355bb4d: Sync OpenAPI spec. Adds the Signal endpoints: `get_signal` and `list_signals` (`GET /api/v2/signals/{signal_id}`, `GET /api/v2/signals`), and `create_signal` and `delete_signal` (`POST /api/v2/signals`, `DELETE /api/v2/signals/{signal_id}`, which need a bearer token with `write:posts`). New schemas: `CreateSignalRequest`, `SignalMutationResponse`, `SignalResponse`, `SignalSubjectResponse` and `SignalsResponse`.
+
+  Also from the spec: `DropMintRequest` gains `skip_balance_check`, `DropMintResponse` gains the stage fields, `SetCreatorFeeEnforcementRequest` gains `allow_eip7702_transfers` and `allow_smart_wallet_transfers`, and `V1ErrorWrapper` gains `code`. Breaking: `ChainIdentifier` drops `stablechain` (and `CHAIN_IDENTIFIERS` with it), and `save_drop_item_media` and its `SaveDropItemMediaRequest` schema are removed.
+
+  Fields with a spec `default` are now generated as optional unless the schema lists them as required. Request fields such as `skip_balance_check`, `include_optional_creator_fees` and `unreveal` can be omitted. `TokenDetailedResponse.status` and `TokenBalanceResponse.status` are optional for the same reason.
+
+  CLI: the `SaveDropItemMediaRequest` type export is removed along with the endpoint, which `opensea drops save-item-media` already stopped calling.
+
 ## 0.17.2
 
 ### Patch Changes

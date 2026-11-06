@@ -15,7 +15,6 @@ import type { ChainIdentifier } from "./schemas-generated.js"
  * generated artifacts fail the type-check the moment they disagree.
  */
 export const CHAIN_IDENTIFIERS = [
-  "blast",
   "base",
   "ethereum",
   "zora",
@@ -42,8 +41,6 @@ export const CHAIN_IDENTIFIERS = [
   "megaeth",
   "ink",
   "robinhood",
-  "stablechain",
-  "arc",
 ] as const satisfies readonly ChainIdentifier[]
 
 type _AssertEveryChainIdentifierListed =
