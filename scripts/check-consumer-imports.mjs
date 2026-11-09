@@ -106,7 +106,7 @@ try {
 }
 
 // A name is "exported" if any of these patterns appear in the d.ts.
-// tsup bundles everything into one file with a final `export type { ... }`
+// tsdown bundles everything into one file with a final `export type { ... }`
 // block, so the bundled-export case is the common one in practice; the
 // declarative forms below are kept for robustness against future build
 // configurations.

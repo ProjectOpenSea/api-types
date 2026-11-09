@@ -8,7 +8,7 @@
  */
 
 import { readFileSync } from "node:fs"
-import ts from "typescript"
+import ts from "@typescript/typescript6"
 import { describe, expect, it } from "vitest"
 import spec from "../opensea-api.json" with { type: "json" }
 import type {
