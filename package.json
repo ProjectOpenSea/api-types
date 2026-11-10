@@ -42,6 +42,7 @@
     "update-spec": "node scripts/update-spec.mjs"
   },
   "devDependencies": {
+    "@types/node": "22.7.5",
     "@typescript/typescript6": "6.0.2",
     "openapi-typescript": "^7.6.1",
     "tsdown": "^0.23.4",
