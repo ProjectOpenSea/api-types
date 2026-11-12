@@ -1,9 +1,5 @@
 # @opensea/api-types
 
-> **Read-only mirror.** This package is developed in a private monorepo and mirrored to [ProjectOpenSea/api-types](https://github.com/ProjectOpenSea/api-types) when a version is released, so the public code can trail the internal main branch by weeks.
->
-> Pull requests opened on the mirror cannot be merged there. They are read, and a fix worth taking is recreated in the monorepo. Because a fix that has landed internally is not public until the next release, filing an issue before writing a patch is the quickest way to find out whether a bug is already fixed.
-
 Auto-generated TypeScript types from the OpenSea API OpenAPI spec.
 
 ## Updating the spec
@@ -64,6 +60,10 @@ where the wire type has a required snake_case key somewhere in its tree, so it c
 SDK callers want the camelized view: the matching type from `@opensea/sdk` (`OpenSeaCollection`,
 `ResolveAccountResponse`, and so on), or `Camelize<T>` from `@opensea/sdk` wrapped around the wire
 type. The SDK README has the detail under "Response casing".
+
+## Contributing
+
+Read-only mirror of a private monorepo, updated on each release. Pull requests are welcome, and we bring accepted changes into the monorepo.
 
 ## Security
 
