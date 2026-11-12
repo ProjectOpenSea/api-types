@@ -59,9 +59,9 @@ for (const { file } of hits) {
   seenFiles.add(file)
   const content = readFileSync(join(repoRoot, file), "utf8")
   // Match every `import ... from "@opensea/api-types"` (possibly multi-line).
-  // [^{}]*? keeps the match scoped to a single import block — using
-  // [\s\S]*? would happily span unrelated type defs between two api-types
-  // imports until it found the next `} from "@opensea/api-types"`.
+  // [^{}]*? keeps the match inside one import block. [\s\S]*? would span
+  // unrelated type defs between two api-types imports until it reached the
+  // next `} from "@opensea/api-types"`.
   const re =
     /import\s+(?:type\s+)?\{([^{}]*?)\}\s+from\s+['"]@opensea\/api-types['"]/g
   let match
@@ -107,9 +107,8 @@ try {
 
 // A name is "exported" if any of these patterns appear in the d.ts.
 // tsdown bundles everything into one file with a final `export type { ... }`
-// block, so the bundled-export case is the common one in practice; the
-// declarative forms below are kept for robustness against future build
-// configurations.
+// block, so the bundled-export case is the usual one. The declarative forms
+// below cover other build configurations.
 const isExported = name => {
   // Escape regex chars in the name (defensive; symbol names are alnum+_$ in practice).
   const esc = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")

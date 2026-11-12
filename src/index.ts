@@ -12,11 +12,10 @@
  *
  * Schema types (everything under `components.schemas`) are re-exported from
  * `./schemas-generated.ts`, which is regenerated from the spec on every
- * build. That eliminates the manual-curation gap — when the spec gains a
- * new schema, downstream consumers can import it immediately with no
- * intermediate step. Hand-written sections below cover the things the
- * generator can't infer mechanically (operations helpers, response
- * envelopes, namespace re-exports).
+ * build, so a schema added to the spec is importable immediately with no
+ * manual curation. The hand-written sections below cover what the generator
+ * can't infer (operations helpers, response envelopes, namespace
+ * re-exports).
  */
 
 export type { components, operations, paths } from "./generated.js"
