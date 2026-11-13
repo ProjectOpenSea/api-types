@@ -644,7 +644,7 @@ export interface paths {
          * Get drop by collection slug
          * @description Get detailed drop information for a collection, including stages and supply.
          *
-         *     `stages` is in the order the drop stores them, not sorted by start time. For a drop saved through POST /api/v2/drops/{slug} that puts the public stage first, although it runs last; sort by `start_time` for the schedule.
+         *     `stages` is in the order the drop stores them, not sorted by start time. For a drop saved through POST /api/v2/drops/{slug} that puts the public stage first, although it runs last; sort by `start_time` for the schedule. A drop with no `public_sale` stage is allowlist only: only wallets on a presale allowlist can mint, and it ends when its last presale ends.
          */
         get: operations["get_drop_by_slug"];
         put?: never;
@@ -662,14 +662,16 @@ export interface paths {
          *
          *     The stage list has four rules, and rules 2 and 4 interact in a way worth reading before the first attempt:
          *
-         *     1. Exactly one stage must be `public_sale`.
-         *     2. That public stage must be first in the array.
-         *     3. The presales, meaning every stage after the first, must be contiguous among themselves: each one starts exactly when the previous presale ended. The first presale start time is not constrained.
-         *     4. The last presale must end exactly when the public stage starts.
+         *     1. At most one stage may be `public_sale`. A drop with none is allowlist only: only wallets on a presale allowlist can mint, and the drop ends when its last presale ends.
+         *     2. A public stage, when there is one, must be first in the array.
+         *     3. The presales, meaning every stage that is not `public_sale`, must be contiguous among themselves: each one starts exactly when the previous presale ended. The first presale start time is not constrained.
+         *     4. When there is a public stage, the last presale must end exactly when it starts.
          *
-         *     Together, 2 and 4 mean array order is not chronological order: the public stage is listed first and runs last, with the presales running in array order before it. A drop with two allowlist stages therefore sends `[public, presale1, presale2]` while time runs presale1, then presale2, then public. Rule 3 does not tie presale1 back to the public stage, which is why the chain reads forward from presale1 rather than from the array head.
+         *     Together, 2 and 4 mean array order is not chronological order: the public stage is listed first and runs last, with the presales running in array order before it. A drop with two allowlist stages therefore sends `[public, presale1, presale2]` while time runs presale1, then presale2, then public. Rule 3 does not tie presale1 back to the public stage, which is why the chain reads forward from presale1 rather than from the array head. An allowlist-only drop sends `[presale1, presale2]`, in time order.
          *
-         *     Each stage's `max_total_mintable_by_wallet` is what that stage adds for a wallet, not a running total. Limits add up across the stages a wallet is listed on, the public stage adds its own limit on top, and mints a wallet leaves unused carry into later stages. So presales of 2 and 1 plus a public limit of 1 let a wallet on both lists mint 4.
+         *     Each stage's `max_total_mintable_by_wallet` is what that stage adds for a wallet, not a running total. Limits add up across the stages a wallet is listed on, a public stage adds its own limit on top, and mints a wallet leaves unused carry into later stages. So presales of 2 and 1 plus a public limit of 1 let a wallet on both lists mint 4.
+         *
+         *     A drop has at most 6 stages. An allowlist stage can also set `max_token_supply_for_stage`, a cap on the collection's total minted at which that stage stops, counting mints from every stage. A public stage cannot have one.
          */
         post: operations["save_drop_edits"];
         delete?: never;
@@ -767,11 +769,11 @@ export interface paths {
          * Build mint transaction data for a drop
          * @description Returns ready-to-sign transaction data for minting tokens from a drop. The caller is responsible for signing and submitting the transaction. No wallet authentication is required, only an API key. The minter address in the request body determines who will receive the tokens. The transaction is built for the stage whose window contains the current time, and the response names it in `stage_uuid`, `stage_type`, `stage_start_time` and `stage_end_time`.
          *
-         *     Supports ERC-721 SeaDrop V1 drops only; an ERC-1155 drop returns 400.
+         *     Supports ERC-721 SeaDrop V1 and ERC-1155 SeaDrop V2 drops. An ERC-1155 drop mints one token per request, named by `token_id`; an ERC-721 drop assigns token IDs onchain, so `token_id` must be omitted. Minting an ERC-1155 token while an allowlist (signed presale) stage is live on the drop, or from a paid stage priced in an ERC-20 token, is not yet supported and returns 400 with code UNSUPPORTED_DROP_TYPE.
          *
          *     Error bodies for the drop, stage and minter conditions below carry a stable `code` alongside `errors`. Branch on `code`, not on the message text.
          *
-         *     A 422 means the drop is mintable but this mint is not: the minter is not on the active presale's allowlist (the message names the stage and when the public stage opens), the quantity is over the wallet's limit or the remaining supply (the message says how many remain), the minter cannot pay the price and gas, or the active stage has a price and the drop has no creator payout address, so every paid mint would revert until the creator sets one.
+         *     A 422 means the drop is mintable but this mint is not: the minter is not on the active presale's allowlist (the message names the stage and, when the drop has a public stage, when it opens), the quantity is over the wallet's limit or the remaining supply (the message says how many remain), the minter cannot pay the price and gas, or the active stage has a price and the drop has no creator payout address, so every paid mint would revert until the creator sets one, or the active stage is paid and its OpenSea fee is below the drop's minimum, so OpenSea will not sign the mint until the creator publishes the stage again (STAGE_FEE_BELOW_FLOOR). GET /api/v2/drops/{slug} still shows such a stage as live.
          */
         post: operations["build_drop_mint_transaction"];
         delete?: never;
@@ -908,6 +910,8 @@ export interface paths {
         /**
          * Build cross-chain mint transactions for a drop
          * @description Returns an ordered list of transactions for minting a drop using a token on another chain. The payer signs each transaction in order, and the minter receives the NFT. After submission, pass receipt_request to POST /api/v2/transactions/receipt and poll until the status is terminal.
+         *
+         *     An ERC-1155 drop mints one token per request, named by `token_id`; an ERC-721 drop must omit `token_id`. Minting an ERC-1155 token while an allowlist (signed presale) stage is live on the drop, or from a paid stage priced in an ERC-20 token, is not yet supported and returns 400 with code UNSUPPORTED_DROP_TYPE.
          */
         post: operations["build_cross_chain_drop_mint_transactions"];
         delete?: never;
@@ -2098,7 +2102,7 @@ export interface paths {
         };
         /**
          * Get drop eligibility for the authenticated wallet
-         * @description Returns per-stage eligibility for the authenticated wallet, including pricing and mint limits.
+         * @description Returns per-stage eligibility for the authenticated wallet, including pricing, mint limits, and on ERC-721 drops how many the wallet can still mint in each stage (`mints_remaining`), counting its past mints, the drop's remaining supply and any stage supply cap.
          */
         get: operations["get_drop_eligibility"];
         put?: never;
@@ -3058,7 +3062,7 @@ export interface paths {
          *
          *     This is the credential path for headless callers that hold no signing key: the scoped token in the request body is the only credential, so no session cookie, wallet signature, or API key is required. The alternative is the OAuth 2.1 authorization-code flow described by the `WalletAuth` security scheme.
          *
-         *     Failures are deliberately opaque. An unknown, revoked, rotated, or non-scoped subject token and a disabled integration all return the same 403 `Token exchange is not available`, so a 403 is not by itself evidence that the endpoint is unavailable.
+         *     Failures are deliberately opaque. An unknown, revoked, rotated, or non-scoped subject token and a disabled integration all return the same 403 `Token exchange is not available`, so a 403 is not by itself evidence that the endpoint is unavailable. A 403 saying the access token could not be bound to the token's wallet means this scoped token cannot be exchanged again, usually because its wallet is no longer linked to the account: sign in again to create a new one instead of retrying.
          */
         post: operations["exchange_scoped_token"];
         delete?: never;
@@ -3162,7 +3166,7 @@ export interface components {
             chain?: string | null;
             /** @description Contract address */
             contract_address?: string | null;
-            /** @description Perpetual ID */
+            /** @description Perpetual, card, or printing ID */
             id?: string | null;
             /** @description Collection slug */
             slug?: string | null;
@@ -3172,7 +3176,7 @@ export interface components {
              * @description Watchlist entity type
              * @enum {string}
              */
-            type: "ITEM" | "TOKEN" | "COLLECTION" | "PERPETUAL";
+            type: "ITEM" | "TOKEN" | "COLLECTION" | "PERPETUAL" | "CARD" | "CARD_PRINTING";
         };
         /** @description Response for a favorites write operation */
         FavoriteResponse: {
@@ -3201,6 +3205,11 @@ export interface components {
              * @example 1234
              */
             token_id?: string | null;
+            /**
+             * @description Token standard of the NFT named by token_id: `erc721` (the default) or `erc1155`. Pass the value a receipt_request returned; only valid with token_id.
+             * @example erc1155
+             */
+            token_standard?: string | null;
         };
         /** @description The original swap quote assets */
         SwapQuoteInput: {
@@ -3735,14 +3744,14 @@ export interface components {
             swap_provider?: string | null;
             /**
              * Format: double
-             * @description Total cost of tokens sent in USD
-             * @example 1869
+             * @description Total USD value of the tokens received
+             * @example 1850.5
              */
             total_cost_usd: number;
             /**
              * Format: double
-             * @description Total value of tokens received in USD
-             * @example 1850.5
+             * @description Total USD value of the tokens sent
+             * @example 1869
              */
             total_price_usd: number;
         };
@@ -4830,7 +4839,7 @@ export interface components {
             launch_date_pending?: boolean;
             /** @description Maximum supply for the drop as a decimal string */
             max_supply?: string | null;
-            /** @description The drop's complete stage set, replacing any existing stages rather than merging with them. Exactly one stage must be `public_sale` and it must be first in this array. The presales that follow must be contiguous among themselves, each starting exactly when the previous presale ended, and the last must end exactly when the public stage starts. The first presale start time is not constrained. Array order is therefore not chronological: the public stage is listed first and runs last. */
+            /** @description The drop's complete stage set, replacing any existing stages rather than merging with them. At most one stage may be `public_sale`, and it must be first in this array. The presales must be contiguous among themselves, each starting exactly when the previous presale ended, and when there is a public stage the last must end exactly when it starts. The first presale start time is not constrained. With a public stage, array order is therefore not chronological: the public stage is listed first and runs last. A drop with no public stage is allowlist only and ends when its last presale ends. At most 6 stages. */
             stages: components["schemas"]["SaveDropEditsStageRequest"][];
         };
         /** @description A drop stage for Creator Studio edits */
@@ -4850,9 +4859,12 @@ export interface components {
              * @example Public sale
              */
             label: string;
-            /** @description Maximum token supply for this stage as a decimal string */
+            /**
+             * @description Supply cap for an allowlist (signed presale) stage, as a decimal string from 1 to 65535: the collection's total minted at which this stage stops minting. It counts every mint on the drop, earlier stages included, so it is not a count for this stage alone: a cap of 300 on a drop with 120 already minted leaves the stage 180 mints. Omit it or send null for no cap. Rejected on a `public_sale` stage. A cap at or above `max_supply` never binds and reads back as null.
+             * @example 300
+             */
             max_token_supply_for_stage?: string | null;
-            /** @description This stage's per-wallet limit as a decimal string: what the stage adds for each wallet on its list, unless that wallet's allowlist row sets its own. Not a running total: limits add up across the stages a wallet is listed on, the public stage adds its own on top, and unused mints carry into later stages. */
+            /** @description This stage's per-wallet limit as a decimal string: what the stage adds for each wallet on its list, unless that wallet's allowlist row sets its own. Not a running total: limits add up across the stages a wallet is listed on, a public stage adds its own on top, and unused mints carry into later stages. */
             max_total_mintable_by_wallet: string;
             /** @description Stage price */
             price: components["schemas"]["SaveDropEditsPriceRequest"];
@@ -4946,6 +4958,11 @@ export interface components {
              * @default false
              */
             skip_balance_check?: boolean;
+            /**
+             * @description Token ID to mint. Required for an ERC-1155 drop, where each token is minted separately, and refused for an ERC-721 drop, whose token IDs are assigned onchain at mint.
+             * @example 1
+             */
+            token_id?: string;
         };
         /** @description Started upload of a drop's item media and metadata to IPFS */
         DropMetadataUploadResponse: {
@@ -5035,6 +5052,11 @@ export interface components {
              * @example 1
              */
             quantity: number;
+            /**
+             * @description Token ID to mint. Required for an ERC-1155 drop, where each token is minted separately, and refused for an ERC-721 drop, whose token IDs are assigned onchain at mint.
+             * @example 1
+             */
+            token_id?: string;
         };
         /** @description Response body for validating a drop allowlist */
         ValidateDropAllowlistResponse: {
@@ -6518,8 +6540,13 @@ export interface components {
             end_time: string;
             /** @description Stage label/name */
             label?: string | null;
-            /** @description This stage's default per-wallet limit, as a decimal string: what the stage adds for each wallet on its list, unless that wallet's allowlist row sets its own. Limits add up across the stages a wallet is listed on, the public stage adds its own on top, and unused mints carry into later stages. For one wallet's running total through a stage, read max_total_mintable_by_wallet on the eligibility response. */
+            /** @description This stage's default per-wallet limit, as a decimal string: what the stage adds for each wallet on its list, unless that wallet's allowlist row sets its own. Limits add up across the stages a wallet is listed on, a public stage adds its own on top, and unused mints carry into later stages. For one wallet's running total through a stage, read max_total_mintable_by_wallet on the eligibility response. */
             max_per_wallet: string;
+            /**
+             * @description The stage's supply cap on an ERC-721 drop, as a decimal string: the collection's total minted at which the stage stops minting, counting every stage's mints, not a count for this stage alone. A cap of 300 on a drop with 120 minted leaves the stage 180 mints. Null when the stage has no cap, including a cap at or above max_supply, which never binds, and on every ERC-1155 drop. Only allowlist (signed presale) stages are capped. For what one wallet can still mint, read mints_remaining on the eligibility response.
+             * @example 300
+             */
+            max_token_supply_for_stage?: string | null;
             /** @description Mint price per token in wei (decimal string) */
             price?: string | null;
             /** @description Currency contract address (e.g. 0x0000...0000 for native token) */
@@ -6621,10 +6648,15 @@ export interface components {
         DropStageEligibilityResponse: {
             /** @description Whether the wallet is eligible for this stage */
             is_eligible: boolean;
-            /** @description The wallet's running cap through this stage, all token ids included, as a decimal string: the limits of every stage up to and including this one that the wallet is listed on, added together, clamped to supply. The public stage's own limit is added only on the public stage's result, not on any presale's. SeaDrop checks the cap against the wallet's lifetime minted count on the contract, so subtract what the wallet has minted to get what it can still mint. */
+            /** @description The wallet's running cap through this stage, all token ids included, as a decimal string: the limits of every stage up to and including this one that the wallet is listed on, added together, and clamped to the drop's max supply. It is not reduced by what has already been minted or by the stage's supply cap. The public stage's own limit is added only on the public stage's result, not on any presale's. SeaDrop checks the cap against the wallet's lifetime minted count on the contract. For what the wallet can still mint, read mints_remaining. */
             max_total_mintable_by_wallet?: string | null;
-            /** @description The same running cap for a single token id (ERC-1155), as a decimal string: the per-token limits of every stage up to and including this one that the wallet is listed on, added together, clamped to supply. As with the whole-drop cap, the public stage's own per-token limit is added only on the public stage's result. */
+            /** @description The same running cap for a single token id (ERC-1155), as a decimal string: the per-token limits of every stage up to and including this one that the wallet is listed on, added together, clamped to max supply. As with the whole-drop cap, the public stage's own per-token limit is added only on the public stage's result. */
             max_total_mintable_by_wallet_per_token?: string | null;
+            /**
+             * @description How many more tokens the wallet can mint in this stage, as a decimal string, given what has been minted so far: max_total_mintable_by_wallet less what the wallet has already minted on the contract, then limited by what the drop has left and, on a stage with a supply cap, by what the cap leaves. It does not check the stage's time window, so an upcoming or ended stage still reports a number; compare start_time and end_time from GET /api/v2/drops/{slug}. 0 when the wallet or the stage has nothing left. Null when the wallet is not eligible for the stage, on ERC-1155 drops (limits there are per token), and when the wallet's onchain mint count could not be read.
+             * @example 2
+             */
+            mints_remaining?: string | null;
             /** @description Mint price per token in wei (decimal string) */
             price?: string | null;
             /**
@@ -10725,7 +10757,7 @@ export interface operations {
                     "*/*": components["schemas"]["DropMintResponse"];
                 };
             };
-            /** @description Invalid request: bad address format, invalid quantity, missing required fields, or a drop type this endpoint does not mint (ERC-1155, code UNSUPPORTED_DROP_TYPE) */
+            /** @description Invalid request: bad address format, invalid quantity or token_id, missing required fields, token_id missing for an ERC-1155 drop or sent for an ERC-721 drop, or an ERC-1155 mint while an allowlist (signed presale) stage is live or from an ERC-20 priced stage (code UNSUPPORTED_DROP_TYPE) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -10770,7 +10802,7 @@ export interface operations {
                     "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
-            /** @description Minting precondition failed. Codes: MINTER_NOT_ELIGIBLE (wallet not on the active presale's allowlist), MINT_LIMIT_EXCEEDED (the wallet's limit for the stage), SUPPLY_EXHAUSTED (the drop's or the stage's remaining supply), INSUFFICIENT_BALANCE (cannot pay the price and gas; skipped with skip_balance_check), NO_PAYOUT_ADDRESS (a paid stage on a drop with no creator payout address) */
+            /** @description Minting precondition failed. Codes: MINTER_NOT_ELIGIBLE (wallet not on the active presale's allowlist), MINT_LIMIT_EXCEEDED (the wallet's limit for the stage), SUPPLY_EXHAUSTED (the drop's or the stage's remaining supply), INSUFFICIENT_BALANCE (cannot pay the price and gas; skipped with skip_balance_check), NO_PAYOUT_ADDRESS (a paid stage on a drop with no creator payout address), STAGE_FEE_BELOW_FLOOR (a paid allowlist stage whose OpenSea fee is below the drop's minimum) */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -11111,7 +11143,7 @@ export interface operations {
                     "*/*": components["schemas"]["CrossChainDropMintResponse"];
                 };
             };
-            /** @description Invalid address, payment chain, payment token, quantity, or request body, or an ERC-1155 drop (code UNSUPPORTED_DROP_TYPE) */
+            /** @description Invalid address, payment chain, payment token, quantity, token_id, or request body, token_id missing for an ERC-1155 drop or sent for an ERC-721 drop, or an ERC-1155 mint while an allowlist (signed presale) stage is live or from an ERC-20 priced stage (code UNSUPPORTED_DROP_TYPE) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -11156,7 +11188,7 @@ export interface operations {
                     "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
-            /** @description Minting precondition failed, including an ineligible wallet, exhausted supply, insufficient balance, a payer that is not allowed for the active presale, a paid stage on a drop with no creator payout address, or a mint Relay reports would fail on the drop's chain (DESTINATION_TX_FAILED). Retrying the same request does not help. Codes: the mint endpoint's 422 codes, plus PAYER_NOT_ALLOWED, MINT_WOULD_REVERT, AMOUNT_TOO_LOW, PAYMENT_TOKEN_UNSUPPORTED and ROUTE_UNSUPPORTED. INSUFFICIENT_BALANCE here means the payer's balance of the payment token. */
+            /** @description Minting precondition failed, including an ineligible wallet, exhausted supply, insufficient balance, a payer that is not allowed for the active presale, a paid stage on a drop with no creator payout address or with a fee below the drop's minimum, or a mint Relay reports would fail on the drop's chain (DESTINATION_TX_FAILED). Retrying the same request does not help. Codes: the mint endpoint's 422 codes, plus PAYER_NOT_ALLOWED, MINT_WOULD_REVERT, AMOUNT_TOO_LOW, PAYMENT_TOKEN_UNSUPPORTED and ROUTE_UNSUPPORTED. INSUFFICIENT_BALANCE here means the payer's balance of the payment token. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -18713,7 +18745,7 @@ export interface operations {
                     "application/json": components["schemas"]["AuthErrorResponse"];
                 };
             };
-            /** @description Token exchange is not available. Returned for an unknown, revoked, or non-scoped subject token as well as for a disabled integration; the two are not distinguishable by design. */
+            /** @description Token exchange is not available. Returned for an unknown, revoked, or non-scoped subject token as well as for a disabled integration; the two are not distinguishable by design. Also returned, with its own message, when the access token cannot be bound to the subject token's wallet; retrying the same subject token does not help. */
             403: {
                 headers: {
                     [name: string]: unknown;

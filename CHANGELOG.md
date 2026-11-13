@@ -1,5 +1,13 @@
 # @opensea/api-types
 
+## 0.19.0
+
+### Minor Changes
+
+- 23021ea: Sync OpenAPI spec for this week's drop changes. `DropMintRequest` and `CrossChainDropMintRequest` gain `token_id`, required for an ERC-1155 drop and refused for an ERC-721 drop. `DropStageResponse` gains `max_token_supply_for_stage`, the stage's supply cap (null when uncapped). `DropStageEligibilityResponse` gains `mints_remaining`, how many more the wallet can mint in the stage on an ERC-721 drop. `AssetQuantityInput` gains `token_standard` (`erc721` or `erc1155`) for transaction receipts. The mint endpoints document the new 422 code `STAGE_FEE_BELOW_FLOOR`.
+
+  Also from the spec: the `write:orders` scope now covers creating orders and the catalog offer endpoints, the social graph and tool scopes list fewer MCP tools, a search result type adds `CARD` and `CARD_PRINTING`, and swap quote USD totals have corrected descriptions.
+
 ## 0.18.1
 
 ### Patch Changes

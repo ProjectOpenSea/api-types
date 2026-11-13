@@ -40,7 +40,7 @@ export const AUTH_SCOPES = [
     description: "View saved tools and toolkits for the authenticated account",
     group: "read",
     endpoints: ["/api/v2/saved-tools","/api/v2/toolkits","/api/v2/toolkits/{toolkit_slug}"],
-    mcpTools: ["list_saved_tools","list_toolkits","get_toolkit"],
+    mcpTools: ["list_saved_tools"],
   },
   {
     name: "read:wallets",
@@ -64,7 +64,7 @@ export const AUTH_SCOPES = [
     description: "Follow, unfollow, watch, and unwatch profiles, and link or unlink an X account, for the authenticated account",
     group: "write",
     endpoints: ["/api/v2/accounts/{address_or_username}/follow","/api/v2/accounts/{address_or_username}/watch","/api/v2/accounts/social/x/link","/api/v2/accounts/social/x/link/{link_id}","/api/v2/accounts/social/x"],
-    mcpTools: ["manage_social_graph","link_x_account"],
+    mcpTools: ["manage_social_graph"],
   },
   {
     name: "write:tools",
@@ -72,14 +72,14 @@ export const AUTH_SCOPES = [
     description: "Save and remove tools and manage toolkits for the authenticated account",
     group: "write",
     endpoints: ["/api/v2/saved-tools","/api/v2/toolkits","/api/v2/toolkits/{toolkit_id}/save"],
-    mcpTools: ["save_tool","unsave_tool","create_toolkit","save_toolkit","unsave_toolkit"],
+    mcpTools: ["save_tool","unsave_tool"],
   },
   {
     name: "write:orders",
-    displayName: "Cancel orders",
-    description: "Cancel orders on behalf of authenticated account",
+    displayName: "Create and cancel orders",
+    description: "Create and cancel orders on behalf of authenticated account",
     group: "write",
-    endpoints: ["/api/v2/orders/chain/{chain}/protocol/{protocol_address}/{order_hash}/cancel"],
+    endpoints: ["/api/v2/orders/chain/{chain}/protocol/{protocol_address}/{order_hash}/cancel","/api/v2/catalog_offers/actions","/api/v2/catalog_offers","/api/v2/catalog_offers/{catalog_offer_id}/cancel"],
     mcpTools: ["cancel_orders"],
   },
   {
