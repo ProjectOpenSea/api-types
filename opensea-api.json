@@ -4691,6 +4691,219 @@
         "x-opensea-auth-scopes": ["write:collections"]
       }
     },
+    "/api/v2/collections/{slug}/rarity_settings": {
+      "get": {
+        "tags": ["Collection Endpoints"],
+        "summary": "Get collection rarity settings",
+        "description": "List the settings that change how the collection's rarity is computed, each with its source: the rarity object in the contract's contractURI, or a setting made on OpenSea. A setting made on OpenSea takes precedence for its trait, and contract_mode shows the contract value a revert would restore. Traits with no setting are scored by frequency and are not listed. Only the collection owner or an authorized editor can read them.",
+        "operationId": "get_collection_rarity_settings",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Collection slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "boredapeyachtclub"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rarity settings in effect",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionRaritySettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1ErrorWrapper"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:collections"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:collections"]
+      },
+      "post": {
+        "tags": ["Collection Endpoints"],
+        "summary": "Set a collection rarity setting",
+        "description": "Set how one trait type, or each item's number of traits, counts toward the collection's rarity. exclude leaves it out of rarity while keeping it as a filter; higher_is_rarer ranks larger numeric values or larger trait counts as rarer; frequency scores it normally, which also overrides a contract metadata setting. The setting takes precedence over the contract's contractURI for that trait. Rarity ranks are recomputed in the background after the call returns. Only the collection owner or an authorized editor can change it.",
+        "operationId": "set_collection_rarity_setting",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Collection slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "boredapeyachtclub"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetCollectionRaritySettingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Rarity settings in effect after the change",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionRaritySettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1ErrorWrapper"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:collections"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:collections"]
+      }
+    },
+    "/api/v2/collections/{slug}/rarity_settings/revert": {
+      "post": {
+        "tags": ["Collection Endpoints"],
+        "summary": "Revert a collection rarity setting",
+        "description": "Remove the setting made on OpenSea for one trait type, or for the trait count, so the contract's contractURI setting for it, if any, applies again. Rarity ranks are recomputed in the background after the call returns. Only the collection owner or an authorized editor can revert it.",
+        "operationId": "revert_collection_rarity_setting",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Collection slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "boredapeyachtclub"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevertCollectionRaritySettingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Rarity settings in effect after the revert",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionRaritySettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1ErrorWrapper"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": [],
+            "WalletAuth": ["write:collections"]
+          }
+        ],
+        "x-opensea-auth-required": true,
+        "x-opensea-auth-scopes": ["write:collections"]
+      }
+    },
     "/api/v2/collections/{slug}/pricing_currency": {
       "post": {
         "tags": ["Collection Endpoints"],
@@ -20678,6 +20891,93 @@
         },
         "required": ["success"]
       },
+      "CollectionRaritySetting": {
+        "type": "object",
+        "description": "How one trait counts toward a collection's rarity",
+        "properties": {
+          "contract_mode": {
+            "type": ["string", "null"],
+            "description": "The contract metadata mode a revert would restore, when a site setting overrides one; otherwise null.",
+            "enum": ["frequency", "exclude", "higher_is_rarer", null]
+          },
+          "hidden_from_filters": {
+            "type": "boolean",
+            "description": "Whether OpenSea hides the trait from filters. Rarity settings never change this."
+          },
+          "mode": {
+            "type": "string",
+            "description": "Mode in effect",
+            "enum": ["frequency", "exclude", "higher_is_rarer"]
+          },
+          "source": {
+            "type": "string",
+            "description": "contract_metadata when the setting comes from the rarity object in the contract's contractURI, site when it was set on OpenSea. Site settings take precedence.",
+            "enum": ["contract_metadata", "site"]
+          },
+          "trait_count": {
+            "type": "boolean",
+            "description": "Whether the setting applies to each item's number of traits"
+          },
+          "trait_type": {
+            "type": ["string", "null"],
+            "description": "Trait type the setting applies to; null for the trait count setting",
+            "example": "Background"
+          }
+        },
+        "required": ["hidden_from_filters", "mode", "source", "trait_count"]
+      },
+      "CollectionRaritySettingsResponse": {
+        "type": "object",
+        "description": "A collection's rarity settings in effect, one entry per configured trait",
+        "properties": {
+          "settings": {
+            "type": "array",
+            "description": "Settings in effect",
+            "items": {
+              "$ref": "#/components/schemas/CollectionRaritySetting"
+            }
+          }
+        },
+        "required": ["settings"]
+      },
+      "SetCollectionRaritySettingRequest": {
+        "type": "object",
+        "description": "Request body for setting how one trait counts toward a collection's rarity",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "description": "frequency scores the trait normally, exclude leaves it out of rarity (it stays available as a filter), and higher_is_rarer ranks larger numeric values or larger trait counts as rarer.",
+            "enum": ["frequency", "exclude", "higher_is_rarer"]
+          },
+          "trait_count": {
+            "type": "boolean",
+            "default": false,
+            "description": "true applies the setting to the number of traits each item has instead of a trait type. Send either trait_type or trait_count, not both."
+          },
+          "trait_type": {
+            "type": "string",
+            "description": "Trait type the setting applies to, matched exactly after trimming. Omit when trait_count is true.",
+            "example": "Background"
+          }
+        },
+        "required": ["mode"]
+      },
+      "RevertCollectionRaritySettingRequest": {
+        "type": "object",
+        "description": "Request body for removing one trait's OpenSea rarity setting",
+        "properties": {
+          "trait_count": {
+            "type": "boolean",
+            "default": false,
+            "description": "true reverts the trait count setting. Send either trait_type or trait_count, not both."
+          },
+          "trait_type": {
+            "type": "string",
+            "description": "Trait type to revert. Omit when trait_count is true.",
+            "example": "Background"
+          }
+        }
+      },
       "SetCollectionPricingCurrencyResponse": {
         "type": "object",
         "description": "Result of a request to change a collection's pricing currency",
@@ -27305,6 +27605,8 @@
             "/api/v2/collections/{slug}/media/{placement}",
             "/api/v2/collections/{slug}/pricing_currency",
             "/api/v2/collections/{slug}/creator_fee_enforcement",
+            "/api/v2/collections/{slug}/rarity_settings",
+            "/api/v2/collections/{slug}/rarity_settings/revert",
             "/api/v2/collections/{slug}/refresh"
           ],
           [

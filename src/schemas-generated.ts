@@ -593,6 +593,24 @@ export type CollectionRarity = Schemas["CollectionRarity"]
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
  * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<CollectionRaritySetting>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `CollectionRaritySetting`.
+ */
+export type CollectionRaritySetting = Schemas["CollectionRaritySetting"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<CollectionRaritySettingsResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `CollectionRaritySettingsResponse`.
+ */
+export type CollectionRaritySettingsResponse = Schemas["CollectionRaritySettingsResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
  * SDK-facing value with `Camelize<CollectionRefreshResponse>` (exported by
  * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
  * `CollectionRefreshResponse`.
@@ -2168,6 +2186,15 @@ export type ReorderProfileShelvesRequest = Schemas["ReorderProfileShelvesRequest
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
  * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<RevertCollectionRaritySettingRequest>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `RevertCollectionRaritySettingRequest`.
+ */
+export type RevertCollectionRaritySettingRequest = Schemas["RevertCollectionRaritySettingRequest"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
  * SDK-facing value with `Camelize<SaleEvent>` (exported by
  * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
  * `SaleEvent`.
@@ -2371,6 +2398,15 @@ export type SetCollectionPricingCurrencyRequest = Schemas["SetCollectionPricingC
  * `SetCollectionPricingCurrencyResponse`.
  */
 export type SetCollectionPricingCurrencyResponse = Schemas["SetCollectionPricingCurrencyResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<SetCollectionRaritySettingRequest>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `SetCollectionRaritySettingRequest`.
+ */
+export type SetCollectionRaritySettingRequest = Schemas["SetCollectionRaritySettingRequest"]
 
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`

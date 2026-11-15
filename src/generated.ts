@@ -1013,6 +1013,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/collections/{slug}/rarity_settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get collection rarity settings
+         * @description List the settings that change how the collection's rarity is computed, each with its source: the rarity object in the contract's contractURI, or a setting made on OpenSea. A setting made on OpenSea takes precedence for its trait, and contract_mode shows the contract value a revert would restore. Traits with no setting are scored by frequency and are not listed. Only the collection owner or an authorized editor can read them.
+         */
+        get: operations["get_collection_rarity_settings"];
+        put?: never;
+        /**
+         * Set a collection rarity setting
+         * @description Set how one trait type, or each item's number of traits, counts toward the collection's rarity. exclude leaves it out of rarity while keeping it as a filter; higher_is_rarer ranks larger numeric values or larger trait counts as rarer; frequency scores it normally, which also overrides a contract metadata setting. The setting takes precedence over the contract's contractURI for that trait. Rarity ranks are recomputed in the background after the call returns. Only the collection owner or an authorized editor can change it.
+         */
+        post: operations["set_collection_rarity_setting"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/collections/{slug}/rarity_settings/revert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revert a collection rarity setting
+         * @description Remove the setting made on OpenSea for one trait type, or for the trait count, so the contract's contractURI setting for it, if any, applies again. Rarity ranks are recomputed in the background after the call returns. Only the collection owner or an authorized editor can revert it.
+         */
+        post: operations["revert_collection_rarity_setting"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/collections/{slug}/pricing_currency": {
         parameters: {
             query?: never;
@@ -5123,6 +5167,69 @@ export interface components {
         CollectionRefreshResponse: {
             /** @description Whether the refresh was queued */
             success: boolean;
+        };
+        /** @description How one trait counts toward a collection's rarity */
+        CollectionRaritySetting: {
+            /**
+             * @description The contract metadata mode a revert would restore, when a site setting overrides one; otherwise null.
+             * @enum {string|null}
+             */
+            contract_mode?: "frequency" | "exclude" | "higher_is_rarer" | null;
+            /** @description Whether OpenSea hides the trait from filters. Rarity settings never change this. */
+            hidden_from_filters: boolean;
+            /**
+             * @description Mode in effect
+             * @enum {string}
+             */
+            mode: "frequency" | "exclude" | "higher_is_rarer";
+            /**
+             * @description contract_metadata when the setting comes from the rarity object in the contract's contractURI, site when it was set on OpenSea. Site settings take precedence.
+             * @enum {string}
+             */
+            source: "contract_metadata" | "site";
+            /** @description Whether the setting applies to each item's number of traits */
+            trait_count: boolean;
+            /**
+             * @description Trait type the setting applies to; null for the trait count setting
+             * @example Background
+             */
+            trait_type?: string | null;
+        };
+        /** @description A collection's rarity settings in effect, one entry per configured trait */
+        CollectionRaritySettingsResponse: {
+            /** @description Settings in effect */
+            settings: components["schemas"]["CollectionRaritySetting"][];
+        };
+        /** @description Request body for setting how one trait counts toward a collection's rarity */
+        SetCollectionRaritySettingRequest: {
+            /**
+             * @description frequency scores the trait normally, exclude leaves it out of rarity (it stays available as a filter), and higher_is_rarer ranks larger numeric values or larger trait counts as rarer.
+             * @enum {string}
+             */
+            mode: "frequency" | "exclude" | "higher_is_rarer";
+            /**
+             * @description true applies the setting to the number of traits each item has instead of a trait type. Send either trait_type or trait_count, not both.
+             * @default false
+             */
+            trait_count?: boolean;
+            /**
+             * @description Trait type the setting applies to, matched exactly after trimming. Omit when trait_count is true.
+             * @example Background
+             */
+            trait_type?: string;
+        };
+        /** @description Request body for removing one trait's OpenSea rarity setting */
+        RevertCollectionRaritySettingRequest: {
+            /**
+             * @description true reverts the trait count setting. Send either trait_type or trait_count, not both.
+             * @default false
+             */
+            trait_count?: boolean;
+            /**
+             * @description Trait type to revert. Omit when trait_count is true.
+             * @example Background
+             */
+            trait_type?: string;
         };
         /** @description Result of a request to change a collection's pricing currency */
         SetCollectionPricingCurrencyResponse: {
@@ -11402,6 +11509,134 @@ export interface operations {
                 };
             };
             429: components["responses"]["RateLimit"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_collection_rarity_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Collection slug
+                 * @example boredapeyachtclub
+                 */
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rarity settings in effect */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CollectionRaritySettingsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    set_collection_rarity_setting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Collection slug
+                 * @example boredapeyachtclub
+                 */
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetCollectionRaritySettingRequest"];
+            };
+        };
+        responses: {
+            /** @description Rarity settings in effect after the change */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CollectionRaritySettingsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    revert_collection_rarity_setting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Collection slug
+                 * @example boredapeyachtclub
+                 */
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevertCollectionRaritySettingRequest"];
+            };
+        };
+        responses: {
+            /** @description Rarity settings in effect after the revert */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CollectionRaritySettingsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["V1ErrorWrapper"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };

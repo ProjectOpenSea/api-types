@@ -95,7 +95,7 @@ export const AUTH_SCOPES = [
     displayName: "Collection metadata editing",
     description: "Modify collection metadata for authenticated account",
     group: "write",
-    endpoints: ["/api/v2/collections/{slug}","/api/v2/collections/{slug}/metadata","/api/v2/collections/{slug}/visibility","/api/v2/collections/{slug}/images/{image_type}","/api/v2/collections/{slug}/media/{placement}","/api/v2/collections/{slug}/pricing_currency","/api/v2/collections/{slug}/creator_fee_enforcement","/api/v2/collections/{slug}/refresh"],
+    endpoints: ["/api/v2/collections/{slug}","/api/v2/collections/{slug}/metadata","/api/v2/collections/{slug}/visibility","/api/v2/collections/{slug}/images/{image_type}","/api/v2/collections/{slug}/media/{placement}","/api/v2/collections/{slug}/pricing_currency","/api/v2/collections/{slug}/creator_fee_enforcement","/api/v2/collections/{slug}/rarity_settings","/api/v2/collections/{slug}/rarity_settings/revert","/api/v2/collections/{slug}/refresh"],
     mcpTools: ["manage_collections"],
   },
   {
