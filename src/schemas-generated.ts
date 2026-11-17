@@ -485,6 +485,15 @@ export type CollectionCriteria = Schemas["CollectionCriteria"]
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
  * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<CollectionDepthResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `CollectionDepthResponse`.
+ */
+export type CollectionDepthResponse = Schemas["CollectionDepthResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
  * SDK-facing value with `Camelize<CollectionDetailedResponse>` (exported by
  * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
  * `CollectionDetailedResponse`.
@@ -922,6 +931,33 @@ export type CrossChainFulfillmentResponse = Schemas["CrossChainFulfillmentRespon
  * `CrossChainPaymentToken`.
  */
 export type CrossChainPaymentToken = Schemas["CrossChainPaymentToken"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<DepthBucketResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `DepthBucketResponse`.
+ */
+export type DepthBucketResponse = Schemas["DepthBucketResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<DepthPriceResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `DepthPriceResponse`.
+ */
+export type DepthPriceResponse = Schemas["DepthPriceResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<DepthTokenPriceResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `DepthTokenPriceResponse`.
+ */
+export type DepthTokenPriceResponse = Schemas["DepthTokenPriceResponse"]
 
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
@@ -2659,6 +2695,15 @@ export type SwapQuoteInput = Schemas["SwapQuoteInput"]
  * `SwapQuoteResponse`.
  */
 export type SwapQuoteResponse = Schemas["SwapQuoteResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<SwapRouteAmountsResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `SwapRouteAmountsResponse`.
+ */
+export type SwapRouteAmountsResponse = Schemas["SwapRouteAmountsResponse"]
 
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`

@@ -59,6 +59,14 @@ export const AUTH_SCOPES = [
     mcpTools: ["manage_watchlist"],
   },
   {
+    name: "write:posts",
+    displayName: "Publish posts",
+    description: "Create and delete OpenSea signals for the authenticated account",
+    group: "write",
+    endpoints: ["/api/v2/signals","/api/v2/signals/{signal_id}"],
+    mcpTools: [],
+  },
+  {
     name: "write:social",
     displayName: "Manage social relationships",
     description: "Follow, unfollow, watch, and unwatch profiles, and link or unlink an X account, for the authenticated account",
@@ -77,9 +85,9 @@ export const AUTH_SCOPES = [
   {
     name: "write:orders",
     displayName: "Create and cancel orders",
-    description: "Create and cancel orders on behalf of authenticated account",
+    description: "Create and cancel orders and submit catalog offer feedback on behalf of authenticated account",
     group: "write",
-    endpoints: ["/api/v2/orders/chain/{chain}/protocol/{protocol_address}/{order_hash}/cancel","/api/v2/catalog_offers/actions","/api/v2/catalog_offers","/api/v2/catalog_offers/{catalog_offer_id}/cancel"],
+    endpoints: ["/api/v2/orders/chain/{chain}/protocol/{protocol_address}/{order_hash}/cancel","/api/v2/catalog_offers/actions","/api/v2/catalog_offers","/api/v2/catalog_offers/{catalog_offer_id}/cancel","/api/v2/catalog_offers/{catalog_offer_id}/reports","/api/v2/catalog_offers/{catalog_offer_id}/feedback"],
     mcpTools: ["cancel_orders"],
   },
   {

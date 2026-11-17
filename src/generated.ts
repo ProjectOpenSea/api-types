@@ -2246,7 +2246,7 @@ export interface paths {
         };
         /**
          * Get collection offer aggregates
-         * @description Get aggregated offer buckets grouped by price level for a collection.
+         * @description Get aggregated offer buckets grouped by price level for a collection. Set include_depth=true to also return the site depth chart, independent of pagination and sort_direction: cumulative quantities from up to 50 lowest listing price buckets and 50 highest offer price buckets. Depth is capped, not a full orderbook total.
          */
         get: operations["get_collection_offer_aggregates"];
         put?: never;
@@ -2346,7 +2346,7 @@ export interface paths {
         };
         /**
          * Get NFTs by collection
-         * @description Get NFTs in a specific collection. Optionally filter by traits using the 'traits' query parameter with a JSON array of trait filters. Multiple traits are AND-combined (items must match all specified traits). Example: ?traits=[{"traitType":"Background","value":"Red"},{"traitType":"Eyes","value":"Blue"}]
+         * @description Get NFTs in a specific collection. Optionally filter by listing status, price, rarity, indexed numeric traits, or text traits, and order by price, rarity, or creation date. Use the 'traits' query parameter with a JSON array of text trait filters. Multiple traits are AND-combined (items must match all specified traits). Example: ?traits=[{"traitType":"Background","value":"Red"},{"traitType":"Eyes","value":"Blue"}]
          */
         get: operations["get_nfts_by_collection"];
         put?: never;
@@ -2686,7 +2686,7 @@ export interface paths {
         };
         /**
          * Get an OpenSea account profile
-         * @description Get an OpenSea Account Profile including details such as bio, social media usernames, and profile image.
+         * @description Get an OpenSea Account Profile including details such as bio, social media usernames, and profile image. Opt in with include=wallets to add sorted, unique public registered wallet addresses. Private and watched wallets are never returned, including to the account owner; a private, watched, or unlinked address does not reveal its account's wallets. The wallets field is omitted by default and empty when requested but none are publicly linked. Expanded responses must not be cached because wallet visibility can change. Standard API-key quotas apply; agent_free keys also have a 30-per-hour per-key, per-identifier limit.
          */
         get: operations["get_account"];
         put?: never;
@@ -3639,6 +3639,11 @@ export interface components {
             /** @description Recipient address (defaults to sender address) */
             recipient?: string | null;
             /**
+             * @description Require the selected route to use one same-chain transaction without additional signing steps, bundles, or relayer fulfillment. Returns SINGLE_TRANSACTION_UNAVAILABLE when unsupported; does not retry other routes.
+             * @default false
+             */
+            single_transaction_only?: boolean;
+            /**
              * Format: double
              * @description Slippage tolerance as a decimal (0.0 to 0.5, default: 0.01)
              * @example 0.01
@@ -3646,6 +3651,12 @@ export interface components {
             slippage_tolerance?: number | null;
             /** @description Tokens to swap to (at least one required) */
             to_assets: components["schemas"]["SwapAssetInput"][];
+            /**
+             * @description Solana output format. serialized returns an unsigned base64 v0 transaction with blockhash expiry. Only wallet-funded transactions requiring the sender signature alone are supported; unsupported transactions fail without an instructions-only fallback. EVM transactions are unchanged.
+             * @default instructions
+             * @enum {string}
+             */
+            transaction_format?: "instructions" | "serialized";
         };
         /** @description An account referenced by a Solana instruction */
         SvmInstructionAccountResponse: {
@@ -3698,14 +3709,25 @@ export interface components {
              */
             priority_fee_lamports?: string | null;
         };
-        /** @description Everything needed to compile and sign a Solana v0 transaction. The client supplies a recent blockhash. */
+        /** @description Instructions for a Solana v0 transaction. In instructions mode the client supplies a recent blockhash; serialized mode also returns ready-to-sign unsigned bytes and their expiry. */
         SvmTransactionDetailsResponse: {
             /** @description Base58-encoded address lookup tables the compiled message must reference to stay under the transaction size limit */
             address_lookup_tables: string[];
+            /** @description Recent blockhash embedded in serialized_transaction */
+            blockhash?: string | null;
             /** @description Base58-encoded address the transaction is built for */
             from: string;
             /** @description Instructions to include, in order */
             instructions: components["schemas"]["SvmInstructionResponse"][];
+            /**
+             * Format: int64
+             * @description Last block height at which serialized_transaction can land. This is a block height, not a slot or timestamp.
+             */
+            last_valid_block_height?: number | null;
+            /** @description True when the transaction must be submitted as a Jito bundle */
+            requires_jito_bundle: boolean;
+            /** @description Base64-encoded unsigned Solana v0 transaction, present when transaction_format=serialized. Sign without rebuilding the message. Request a new quote after last_valid_block_height. */
+            serialized_transaction?: string | null;
             /** @description Present only when the transaction may be compiled as a v1 message. A v1 compiler drops the ComputeBudget instructions from `instructions` and places these values in the message header; legacy/v0 compilers ignore this field */
             transaction_config?: components["schemas"]["SvmTransactionConfigResponse"] | null;
         };
@@ -3775,6 +3797,8 @@ export interface components {
             refresh_after_ms?: number | null;
             /** @description Errors encountered for individual swap routes */
             route_errors: components["schemas"]["SwapRouteErrorResponse"][];
+            /** @description Successful routes in execution order with raw token quantities. Intermediate route outputs are not additional final receipts. Failed routes are described in route_errors. */
+            routes: components["schemas"]["SwapRouteAmountsResponse"][];
             /**
              * Format: double
              * @description Slippage tolerance as a decimal (e.g. 0.01 = 1%)
@@ -3798,6 +3822,34 @@ export interface components {
              * @example 1869
              */
             total_price_usd: number;
+        };
+        /** @description Token quantities for one successful route, in execution order */
+        SwapRouteAmountsResponse: {
+            /** @description Input token contract address or native token identifier */
+            from_address: string;
+            /** @description Input token chain slug */
+            from_chain: string;
+            /**
+             * @description Input quantity in the token's smallest unit
+             * @example 1000000000
+             */
+            from_quantity: string;
+            /**
+             * @description Provider-reported minimum output in the output token's smallest unit. Null when unavailable. This is not an independently decoded onchain guarantee or a net wallet balance change after separately charged fees.
+             * @example 148500000
+             */
+            min_to_quantity?: string | null;
+            /** @description Provider for this route */
+            swap_provider: string;
+            /** @description Output token contract address or native token identifier */
+            to_address: string;
+            /** @description Output token chain slug */
+            to_chain: string;
+            /**
+             * @description Expected output quantity in the token's smallest unit
+             * @example 150000000
+             */
+            to_quantity: string;
         };
         /** @description An error encountered for a specific swap route */
         SwapRouteErrorResponse: {
@@ -6938,6 +6990,11 @@ export interface components {
              */
             quantity: number;
         };
+        /** @description Cumulative depth from at most 50 source price buckets per side, independent of pagination */
+        CollectionDepthResponse: {
+            listings: components["schemas"]["DepthBucketResponse"][];
+            offers: components["schemas"]["DepthBucketResponse"][];
+        };
         /** @description An aggregated offer bucket */
         CollectionOfferAggregateResponse: {
             /** @description Bidders at this price level */
@@ -6954,10 +7011,32 @@ export interface components {
         };
         /** @description Paginated list of collection offer aggregates */
         CollectionOfferAggregatesPaginatedResponse: {
+            /** @description Capped cumulative site depth chart, present only with include_depth=true */
+            depth?: components["schemas"]["CollectionDepthResponse"] | null;
             /** @description Cursor for the next page of results */
             next?: string | null;
             /** @description List of offer aggregates */
             offer_aggregates: components["schemas"]["CollectionOfferAggregateResponse"][];
+        };
+        /** @description A cumulative depth point in the site chart order */
+        DepthBucketResponse: {
+            price: components["schemas"]["DepthPriceResponse"];
+            /**
+             * Format: int32
+             * @description Cumulative quantity within the capped chart, saturated at 2147483647
+             */
+            quantity: number;
+        };
+        /** @description Depth price in its payment currency */
+        DepthPriceResponse: {
+            token: components["schemas"]["DepthTokenPriceResponse"];
+        };
+        /** @description Human-readable amount and its currency */
+        DepthTokenPriceResponse: {
+            chain: string;
+            contract_address: string;
+            symbol?: string | null;
+            unit: string;
         };
         /** @description Price information for an offer aggregate */
         OfferAggregatePriceResponse: {
@@ -7550,6 +7629,8 @@ export interface components {
             profile_image_url?: string | null;
             social_media_accounts: components["schemas"]["SocialMediaAccount"][];
             username?: string | null;
+            /** @description Publicly visible registered wallet addresses; included only with include=wallets. Empty when no wallets are publicly linked. */
+            wallets?: string[];
             website?: string | null;
         };
         SocialMediaAccount: {
@@ -8006,6 +8087,10 @@ export interface components {
             collection: string;
             collection_offers_enabled: boolean;
             contracts: components["schemas"]["Contract"][];
+            /** @enum {string} */
+            cost_basis_coverage: "FULL" | "PARTIAL" | "NONE";
+            /** @description Acquisition cost in USD for held NFT units with known basis. Null when unavailable. */
+            cost_basis_usd?: string | null;
             description?: string | null;
             discord_url?: string | null;
             /** @description Square avatar for the collection, used wherever it is named. Falls back to a representative item's image when the collection has none of its own. */
@@ -8015,9 +8100,21 @@ export interface components {
             is_nsfw: boolean;
             /** Format: int32 */
             item_count: number;
+            /**
+             * Format: int32
+             * @description Held NFT units with a known acquisition cost.
+             */
+            known_basis_quantity: number;
             name: string;
             opensea_url: string;
             owner?: string | null;
+            /**
+             * Format: double
+             * @description Unrealized return as a fraction of cost basis, not a percentage.
+             */
+            profit_loss_percent?: number | null;
+            /** @description Unrealized P&L in USD for units with known basis, using the public collection valuation. */
+            profit_loss_usd?: string | null;
             project_url?: string | null;
             safelist_status: string;
             telegram_url?: string | null;
@@ -8027,6 +8124,8 @@ export interface components {
             twitter_username?: string | null;
             /** Format: double */
             usd_value?: number | null;
+            /** @enum {string|null} */
+            valuation_method?: "COLLECTION_TOP_OFFER" | "ESTIMATED_VALUE" | null;
             wiki_url?: string | null;
         };
         ProfileCollectionsResponse: {
@@ -8054,7 +8153,7 @@ export interface components {
          * @example read:favorites
          * @enum {string}
          */
-        AuthScope: "read:eligibility" | "read:favorites" | "read:social" | "read:tools" | "read:wallets" | "write:favorites" | "write:social" | "write:tools" | "write:orders" | "write:drops" | "write:collections" | "write:profile" | "write:wallets";
+        AuthScope: "read:eligibility" | "read:favorites" | "read:social" | "read:tools" | "read:wallets" | "write:favorites" | "write:posts" | "write:social" | "write:tools" | "write:orders" | "write:drops" | "write:collections" | "write:profile" | "write:wallets";
         /** @description Scoped-token exchange request */
         TokenExchangeRequest: {
             /** @description The opaque scoped token (personal access token) to exchange. A session JWT is not accepted. */
@@ -14052,6 +14151,10 @@ export interface operations {
                  * @example 0x1234567890abcdef1234567890abcdef12345678
                  */
                 recipient?: string;
+                /** @description Solana output format: instructions (default) or serialized (unsigned base64 v0 transaction with blockhash expiry). Serialized mode supports wallet-funded transactions requiring only the sender signature and fails instead of falling back when unsupported. EVM transactions are unchanged. */
+                transaction_format?: "instructions" | "serialized";
+                /** @description Require the selected route to use one same-chain transaction without additional signing steps, bundles, or relayer fulfillment. Returns SINGLE_TRANSACTION_UNAVAILABLE when unsupported; does not retry other routes. */
+                single_transaction_only?: boolean;
             };
             header?: never;
             path?: never;
@@ -15935,6 +16038,8 @@ export interface operations {
                  * @example desc
                  */
                 sort_direction?: string;
+                /** @description Include the capped two-sided site depth chart (default: false) */
+                include_depth?: boolean;
             };
             header?: never;
             path: {
@@ -16331,6 +16436,22 @@ export interface operations {
                  */
                 limit?: number;
                 next?: string;
+                /** @description Only listed (true) or unlisted (false) NFTs; omit for both */
+                is_listed?: boolean;
+                /** @description Minimum listing price in the listing payment token's units, inclusive (no currency conversion) */
+                price_min?: number;
+                /** @description Maximum listing price in the listing payment token's units, inclusive (no currency conversion) */
+                price_max?: number;
+                /** @description Minimum rarity rank, inclusive */
+                rarity_min?: number;
+                /** @description Maximum rarity rank, inclusive */
+                rarity_max?: number;
+                /** @description Sort by price, rarity, or created_date; omit to preserve default ordering */
+                sort_by?: string;
+                /** @description asc or desc, defaults to asc when sort_by is supplied. Rarity uses the site's ordering: desc shows the rarest first. */
+                sort_direction?: string;
+                /** @description JSON array of numeric trait ranges with traitType, min and max; up to 100 ranges. Available only for collections with active, complete indexed trait data; unsupported collections return 400. Maximum page size 100 when supplied. */
+                numeric_traits?: string;
             };
             header?: never;
             path: {
@@ -17503,7 +17624,10 @@ export interface operations {
     };
     get_account: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Optional account expansions. Currently only wallets is supported. */
+                include?: "wallets"[];
+            };
             header?: never;
             path: {
                 /**

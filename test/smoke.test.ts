@@ -131,6 +131,7 @@ describe("@opensea/api-types smoke tests", () => {
       "read:tools",
       "read:wallets",
       "write:favorites",
+      "write:posts",
       "write:social",
       "write:tools",
       "write:orders",

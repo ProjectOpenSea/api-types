@@ -8453,6 +8453,26 @@
               "type": "string"
             },
             "example": "0x1234567890abcdef1234567890abcdef12345678"
+          },
+          {
+            "name": "transaction_format",
+            "in": "query",
+            "description": "Solana output format: instructions (default) or serialized (unsigned base64 v0 transaction with blockhash expiry). Serialized mode supports wallet-funded transactions requiring only the sender signature and fails instead of falling back when unsupported. EVM transactions are unchanged.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["instructions", "serialized"]
+            }
+          },
+          {
+            "name": "single_transaction_only",
+            "in": "query",
+            "description": "Require the selected route to use one same-chain transaction without additional signing steps, bundles, or relayer fulfillment. Returns SINGLE_TRANSACTION_UNAVAILABLE when unsupported; does not retry other routes.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
           }
         ],
         "responses": {
@@ -11663,7 +11683,7 @@
       "get": {
         "tags": ["Collection Endpoints"],
         "summary": "Get collection offer aggregates",
-        "description": "Get aggregated offer buckets grouped by price level for a collection.",
+        "description": "Get aggregated offer buckets grouped by price level for a collection. Set include_depth=true to also return the site depth chart, independent of pagination and sort_direction: cumulative quantities from up to 50 lowest listing price buckets and 50 highest offer price buckets. Depth is capped, not a full orderbook total.",
         "operationId": "get_collection_offer_aggregates",
         "parameters": [
           {
@@ -11707,6 +11727,16 @@
               "default": "desc"
             },
             "example": "desc"
+          },
+          {
+            "name": "include_depth",
+            "in": "query",
+            "description": "Include the capped two-sided site depth chart (default: false)",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
           }
         ],
         "responses": {
@@ -12237,7 +12267,7 @@
       "get": {
         "tags": ["NFT Endpoints"],
         "summary": "Get NFTs by collection",
-        "description": "Get NFTs in a specific collection. Optionally filter by traits using the 'traits' query parameter with a JSON array of trait filters. Multiple traits are AND-combined (items must match all specified traits). Example: ?traits=[{\"traitType\":\"Background\",\"value\":\"Red\"},{\"traitType\":\"Eyes\",\"value\":\"Blue\"}]",
+        "description": "Get NFTs in a specific collection. Optionally filter by listing status, price, rarity, indexed numeric traits, or text traits, and order by price, rarity, or creation date. Use the 'traits' query parameter with a JSON array of text trait filters. Multiple traits are AND-combined (items must match all specified traits). Example: ?traits=[{\"traitType\":\"Background\",\"value\":\"Red\"},{\"traitType\":\"Eyes\",\"value\":\"Blue\"}]",
         "operationId": "get_nfts_by_collection",
         "parameters": [
           {
@@ -12291,6 +12321,82 @@
           {
             "name": "next",
             "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "is_listed",
+            "in": "query",
+            "description": "Only listed (true) or unlisted (false) NFTs; omit for both",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "description": "Minimum listing price in the listing payment token's units, inclusive (no currency conversion)",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "description": "Maximum listing price in the listing payment token's units, inclusive (no currency conversion)",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "rarity_min",
+            "in": "query",
+            "description": "Minimum rarity rank, inclusive",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "rarity_max",
+            "in": "query",
+            "description": "Maximum rarity rank, inclusive",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "description": "Sort by price, rarity, or created_date; omit to preserve default ordering",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_direction",
+            "in": "query",
+            "description": "asc or desc, defaults to asc when sort_by is supplied. Rarity uses the site's ordering: desc shows the rarest first.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "numeric_traits",
+            "in": "query",
+            "description": "JSON array of numeric trait ranges with traitType, min and max; up to 100 ranges. Available only for collections with active, complete indexed trait data; unsupported collections return 400. Maximum page size 100 when supplied.",
             "required": false,
             "schema": {
               "type": "string"
@@ -13940,7 +14046,7 @@
       "get": {
         "tags": ["Account Endpoints"],
         "summary": "Get an OpenSea account profile",
-        "description": "Get an OpenSea Account Profile including details such as bio, social media usernames, and profile image.",
+        "description": "Get an OpenSea Account Profile including details such as bio, social media usernames, and profile image. Opt in with include=wallets to add sorted, unique public registered wallet addresses. Private and watched wallets are never returned, including to the account owner; a private, watched, or unlinked address does not reveal its account's wallets. The wallets field is omitted by default and empty when requested but none are publicly linked. Expanded responses must not be cached because wallet visibility can change. Standard API-key quotas apply; agent_free keys also have a 30-per-hour per-key, per-identifier limit.",
         "operationId": "get_account",
         "parameters": [
           {
@@ -13954,6 +14060,19 @@
               "minLength": 0
             },
             "example": "0x8ba1f109551bD432803012645fAc136c94C19D6e"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "description": "Optional account expansions. Currently only wallets is supported.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["wallets"]
+              }
+            }
           }
         ],
         "responses": {
@@ -17200,6 +17319,11 @@
             "type": ["string", "null"],
             "description": "Recipient address (defaults to sender address)"
           },
+          "single_transaction_only": {
+            "type": "boolean",
+            "default": false,
+            "description": "Require the selected route to use one same-chain transaction without additional signing steps, bundles, or relayer fulfillment. Returns SINGLE_TRANSACTION_UNAVAILABLE when unsupported; does not retry other routes."
+          },
           "slippage_tolerance": {
             "type": ["number", "null"],
             "format": "double",
@@ -17212,6 +17336,12 @@
             "items": {
               "$ref": "#/components/schemas/SwapAssetInput"
             }
+          },
+          "transaction_format": {
+            "type": "string",
+            "default": "instructions",
+            "description": "Solana output format. serialized returns an unsigned base64 v0 transaction with blockhash expiry. Only wallet-funded transactions requiring the sender signature alone are supported; unsupported transactions fail without an instructions-only fallback. EVM transactions are unchanged.",
+            "enum": ["instructions", "serialized"]
           }
         },
         "required": ["address", "from_assets", "to_assets"]
@@ -17289,7 +17419,7 @@
       },
       "SvmTransactionDetailsResponse": {
         "type": "object",
-        "description": "Everything needed to compile and sign a Solana v0 transaction. The client supplies a recent blockhash.",
+        "description": "Instructions for a Solana v0 transaction. In instructions mode the client supplies a recent blockhash; serialized mode also returns ready-to-sign unsigned bytes and their expiry.",
         "properties": {
           "address_lookup_tables": {
             "type": "array",
@@ -17297,6 +17427,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "blockhash": {
+            "type": ["string", "null"],
+            "description": "Recent blockhash embedded in serialized_transaction"
           },
           "from": {
             "type": "string",
@@ -17308,6 +17442,19 @@
             "items": {
               "$ref": "#/components/schemas/SvmInstructionResponse"
             }
+          },
+          "last_valid_block_height": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Last block height at which serialized_transaction can land. This is a block height, not a slot or timestamp."
+          },
+          "requires_jito_bundle": {
+            "type": "boolean",
+            "description": "True when the transaction must be submitted as a Jito bundle"
+          },
+          "serialized_transaction": {
+            "type": ["string", "null"],
+            "description": "Base64-encoded unsigned Solana v0 transaction, present when transaction_format=serialized. Sign without rebuilding the message. Request a new quote after last_valid_block_height."
           },
           "transaction_config": {
             "anyOf": [
@@ -17321,7 +17468,12 @@
             "description": "Present only when the transaction may be compiled as a v1 message. A v1 compiler drops the ComputeBudget instructions from `instructions` and places these values in the message header; legacy/v0 compilers ignore this field"
           }
         },
-        "required": ["address_lookup_tables", "from", "instructions"]
+        "required": [
+          "address_lookup_tables",
+          "from",
+          "instructions",
+          "requires_jito_bundle"
+        ]
       },
       "SwapCostResponse": {
         "type": "object",
@@ -17438,6 +17590,13 @@
               "$ref": "#/components/schemas/SwapRouteErrorResponse"
             }
           },
+          "routes": {
+            "type": "array",
+            "description": "Successful routes in execution order with raw token quantities. Intermediate route outputs are not additional final receipts. Failed routes are described in route_errors.",
+            "items": {
+              "$ref": "#/components/schemas/SwapRouteAmountsResponse"
+            }
+          },
           "slippage_tolerance": {
             "type": "number",
             "format": "double",
@@ -17467,9 +17626,60 @@
           "estimated_duration_ms",
           "marketplace_fee_bps",
           "route_errors",
+          "routes",
           "slippage_tolerance",
           "total_cost_usd",
           "total_price_usd"
+        ]
+      },
+      "SwapRouteAmountsResponse": {
+        "type": "object",
+        "description": "Token quantities for one successful route, in execution order",
+        "properties": {
+          "from_address": {
+            "type": "string",
+            "description": "Input token contract address or native token identifier"
+          },
+          "from_chain": {
+            "type": "string",
+            "description": "Input token chain slug"
+          },
+          "from_quantity": {
+            "type": "string",
+            "description": "Input quantity in the token's smallest unit",
+            "example": "1000000000"
+          },
+          "min_to_quantity": {
+            "type": ["string", "null"],
+            "description": "Provider-reported minimum output in the output token's smallest unit. Null when unavailable. This is not an independently decoded onchain guarantee or a net wallet balance change after separately charged fees.",
+            "example": "148500000"
+          },
+          "swap_provider": {
+            "type": "string",
+            "description": "Provider for this route"
+          },
+          "to_address": {
+            "type": "string",
+            "description": "Output token contract address or native token identifier"
+          },
+          "to_chain": {
+            "type": "string",
+            "description": "Output token chain slug"
+          },
+          "to_quantity": {
+            "type": "string",
+            "description": "Expected output quantity in the token's smallest unit",
+            "example": "150000000"
+          }
+        },
+        "required": [
+          "from_address",
+          "from_chain",
+          "from_quantity",
+          "swap_provider",
+          "to_address",
+          "to_chain",
+          "to_quantity"
         ]
       },
       "SwapRouteErrorResponse": {
@@ -25114,6 +25324,25 @@
         },
         "required": ["address", "quantity"]
       },
+      "CollectionDepthResponse": {
+        "type": "object",
+        "description": "Cumulative depth from at most 50 source price buckets per side, independent of pagination",
+        "properties": {
+          "listings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DepthBucketResponse"
+            }
+          },
+          "offers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DepthBucketResponse"
+            }
+          }
+        },
+        "required": ["listings", "offers"]
+      },
       "CollectionOfferAggregateResponse": {
         "type": "object",
         "description": "An aggregated offer bucket",
@@ -25145,6 +25374,17 @@
         "type": "object",
         "description": "Paginated list of collection offer aggregates",
         "properties": {
+          "depth": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CollectionDepthResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Capped cumulative site depth chart, present only with include_depth=true"
+          },
           "next": {
             "type": ["string", "null"],
             "description": "Cursor for the next page of results"
@@ -25158,6 +25398,50 @@
           }
         },
         "required": ["offer_aggregates"]
+      },
+      "DepthBucketResponse": {
+        "type": "object",
+        "description": "A cumulative depth point in the site chart order",
+        "properties": {
+          "price": {
+            "$ref": "#/components/schemas/DepthPriceResponse"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Cumulative quantity within the capped chart, saturated at 2147483647"
+          }
+        },
+        "required": ["price", "quantity"]
+      },
+      "DepthPriceResponse": {
+        "type": "object",
+        "description": "Depth price in its payment currency",
+        "properties": {
+          "token": {
+            "$ref": "#/components/schemas/DepthTokenPriceResponse"
+          }
+        },
+        "required": ["token"]
+      },
+      "DepthTokenPriceResponse": {
+        "type": "object",
+        "description": "Human-readable amount and its currency",
+        "properties": {
+          "chain": {
+            "type": "string"
+          },
+          "contract_address": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": ["string", "null"]
+          },
+          "unit": {
+            "type": "string"
+          }
+        },
+        "required": ["chain", "contract_address", "unit"]
       },
       "OfferAggregatePriceResponse": {
         "type": "object",
@@ -26518,6 +26802,13 @@
           "username": {
             "type": ["string", "null"]
           },
+          "wallets": {
+            "type": "array",
+            "description": "Publicly visible registered wallet addresses; included only with include=wallets. Empty when no wallets are publicly linked.",
+            "items": {
+              "type": "string"
+            }
+          },
           "website": {
             "type": ["string", "null"]
           }
@@ -27353,6 +27644,14 @@
               "$ref": "#/components/schemas/Contract"
             }
           },
+          "cost_basis_coverage": {
+            "type": "string",
+            "enum": ["FULL", "PARTIAL", "NONE"]
+          },
+          "cost_basis_usd": {
+            "type": ["string", "null"],
+            "description": "Acquisition cost in USD for held NFT units with known basis. Null when unavailable."
+          },
           "description": {
             "type": ["string", "null"]
           },
@@ -27376,6 +27675,11 @@
             "type": "integer",
             "format": "int32"
           },
+          "known_basis_quantity": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Held NFT units with a known acquisition cost."
+          },
           "name": {
             "type": "string"
           },
@@ -27384,6 +27688,15 @@
           },
           "owner": {
             "type": ["string", "null"]
+          },
+          "profit_loss_percent": {
+            "type": ["number", "null"],
+            "format": "double",
+            "description": "Unrealized return as a fraction of cost basis, not a percentage."
+          },
+          "profit_loss_usd": {
+            "type": ["string", "null"],
+            "description": "Unrealized P&L in USD for units with known basis, using the public collection valuation."
           },
           "project_url": {
             "type": ["string", "null"]
@@ -27408,6 +27721,10 @@
             "type": ["number", "null"],
             "format": "double"
           },
+          "valuation_method": {
+            "type": ["string", "null"],
+            "enum": ["COLLECTION_TOP_OFFER", "ESTIMATED_VALUE", null]
+          },
           "wiki_url": {
             "type": ["string", "null"]
           }
@@ -27416,9 +27733,11 @@
           "collection",
           "collection_offers_enabled",
           "contracts",
+          "cost_basis_coverage",
           "is_disabled",
           "is_nsfw",
           "item_count",
+          "known_basis_quantity",
           "name",
           "opensea_url",
           "safelist_status",
@@ -27491,6 +27810,7 @@
           "read:tools",
           "read:wallets",
           "write:favorites",
+          "write:posts",
           "write:social",
           "write:tools",
           "write:orders",
@@ -27507,9 +27827,10 @@
           "View saved tools and toolkits for the authenticated account",
           "View wallet state for the authenticated account, currently agent ownership relationships including pending proposals",
           "Add and remove favorites and watchlist entries for authenticated account",
+          "Create and delete OpenSea signals for the authenticated account",
           "Follow, unfollow, watch, and unwatch profiles, and link or unlink an X account, for the authenticated account",
           "Save and remove tools and manage toolkits for the authenticated account",
-          "Create and cancel orders on behalf of authenticated account",
+          "Create and cancel orders and submit catalog offer feedback on behalf of authenticated account",
           "Manage Creator Studio drops for authenticated account",
           "Modify collection metadata for authenticated account",
           "Modify profile settings for authenticated account",
@@ -27522,6 +27843,7 @@
           "View saved tools and toolkits",
           "View linked wallets and agent relationships",
           "Manage favorites and watchlist",
+          "Publish posts",
           "Manage social relationships",
           "Manage saved tools and toolkits",
           "Create and cancel orders",
@@ -27536,6 +27858,7 @@
           "read",
           "read",
           "read",
+          "write",
           "write",
           "write",
           "write",
@@ -27564,6 +27887,7 @@
           ],
           ["/api/v2/accounts/agent-relationships"],
           ["/api/v2/watchlist"],
+          ["/api/v2/signals", "/api/v2/signals/{signal_id}"],
           [
             "/api/v2/accounts/{address_or_username}/follow",
             "/api/v2/accounts/{address_or_username}/watch",
@@ -27580,7 +27904,9 @@
             "/api/v2/orders/chain/{chain}/protocol/{protocol_address}/{order_hash}/cancel",
             "/api/v2/catalog_offers/actions",
             "/api/v2/catalog_offers",
-            "/api/v2/catalog_offers/{catalog_offer_id}/cancel"
+            "/api/v2/catalog_offers/{catalog_offer_id}/cancel",
+            "/api/v2/catalog_offers/{catalog_offer_id}/reports",
+            "/api/v2/catalog_offers/{catalog_offer_id}/feedback"
           ],
           [
             "/api/v2/drops/{slug}",
@@ -27634,6 +27960,7 @@
           ["list_saved_tools"],
           ["get_agent_relationships"],
           ["manage_watchlist"],
+          [],
           ["manage_social_graph"],
           ["save_tool", "unsave_tool"],
           ["cancel_orders"],

@@ -1,5 +1,13 @@
 # @opensea/api-types
 
+## 0.20.1
+
+### Patch Changes
+
+- a93a5b8: Refresh generated types for deployed collection NFT filters, collection liquidity depth, collection cost basis and P&L, and public account wallet expansion. Include current swap response additions and keep SDK auth scope constants synchronized with the deployed write:posts scope.
+
+  Typed response fixtures now need `ProfileCollectionResponse.cost_basis_coverage` and `known_basis_quantity`, `SvmTransactionDetailsResponse.requires_jito_bundle`, and `SwapQuoteDetails.routes`, matching fields returned by the deployed server.
+
 ## 0.20.0
 
 ### Minor Changes
