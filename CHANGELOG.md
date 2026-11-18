@@ -1,5 +1,11 @@
 # @opensea/api-types
 
+## 0.20.2
+
+### Patch Changes
+
+- Refresh the deployed REST schema with optional collection volume history and card catalog identities on existing routes. Include the canonical optional Solana marketplace-fee transfer response metadata.
+
 ## 0.20.1
 
 ### Patch Changes

@@ -3698,7 +3698,7 @@
       "post": {
         "tags": ["Drops Endpoints"],
         "summary": "Build mint transaction data for a drop",
-        "description": "Returns ready-to-sign transaction data for minting tokens from a drop. The caller is responsible for signing and submitting the transaction. No wallet authentication is required, only an API key. The minter address in the request body determines who will receive the tokens. The transaction is built for the stage whose window contains the current time, and the response names it in `stage_uuid`, `stage_type`, `stage_start_time` and `stage_end_time`.\n\nSupports ERC-721 SeaDrop V1 and ERC-1155 SeaDrop V2 drops. An ERC-1155 drop mints one token per request, named by `token_id`; an ERC-721 drop assigns token IDs onchain, so `token_id` must be omitted. Minting an ERC-1155 token while an allowlist (signed presale) stage is live on the drop, or from a paid stage priced in an ERC-20 token, is not yet supported and returns 400 with code UNSUPPORTED_DROP_TYPE.\n\nError bodies for the drop, stage and minter conditions below carry a stable `code` alongside `errors`. Branch on `code`, not on the message text.\n\nA 422 means the drop is mintable but this mint is not: the minter is not on the active presale's allowlist (the message names the stage and, when the drop has a public stage, when it opens), the quantity is over the wallet's limit or the remaining supply (the message says how many remain), the minter cannot pay the price and gas, or the active stage has a price and the drop has no creator payout address, so every paid mint would revert until the creator sets one, or the active stage is paid and its OpenSea fee is below the drop's minimum, so OpenSea will not sign the mint until the creator publishes the stage again (STAGE_FEE_BELOW_FLOOR). GET /api/v2/drops/{slug} still shows such a stage as live.",
+        "description": "Returns ready-to-sign transaction data for minting tokens from a drop. The caller is responsible for signing and submitting the transaction. No wallet authentication is required, only an API key. The minter address in the request body determines who will receive the tokens. The transaction is built for the stage whose window contains the current time, and the response names it in `stage_uuid`, `stage_type`, `stage_start_time` and `stage_end_time`.\n\nSupports ERC-721 SeaDrop V1 and ERC-1155 SeaDrop V2 drops. An ERC-1155 drop mints one token per request, named by `token_id`; an ERC-721 drop assigns token IDs onchain, so `token_id` must be omitted. Minting an ERC-1155 token while an allowlist (signed presale) stage is live on the drop, or from a paid stage priced in an ERC-20 token, is not yet supported and returns 400 with code UNSUPPORTED_DROP_TYPE.\n\nError bodies for the drop, stage and minter conditions below carry a stable `code` alongside `errors`. Branch on `code`, not on the message text.\n\nA 422 means the drop is mintable but this mint is not: the minter is not on the active presale's allowlist (the message names the stage and, when the drop has a public stage, when it opens), the quantity is over the wallet's limit or the remaining supply (the message says how many remain), the minter cannot pay the price and gas, or the active stage has a price and the drop has no creator payout address, so every paid mint would revert until the creator sets one, or the active stage is paid and its OpenSea fee is below the drop's minimum, so OpenSea will not build the mint until the creator corrects the fee (STAGE_FEE_BELOW_FLOOR). GET /api/v2/drops/{slug} still shows such a stage as live.",
         "operationId": "build_drop_mint_transaction",
         "parameters": [
           {
@@ -3784,7 +3784,7 @@
             }
           },
           "422": {
-            "description": "Minting precondition failed. Codes: MINTER_NOT_ELIGIBLE (wallet not on the active presale's allowlist), MINT_LIMIT_EXCEEDED (the wallet's limit for the stage), SUPPLY_EXHAUSTED (the drop's or the stage's remaining supply), INSUFFICIENT_BALANCE (cannot pay the price and gas; skipped with skip_balance_check), NO_PAYOUT_ADDRESS (a paid stage on a drop with no creator payout address), STAGE_FEE_BELOW_FLOOR (a paid allowlist stage whose OpenSea fee is below the drop's minimum)",
+            "description": "Minting precondition failed. Codes: MINTER_NOT_ELIGIBLE (wallet not on the active presale's allowlist), MINT_LIMIT_EXCEEDED (the wallet's limit for the stage), SUPPLY_EXHAUSTED (the drop's or the stage's remaining supply), INSUFFICIENT_BALANCE (cannot pay the price and gas; skipped with skip_balance_check), NO_PAYOUT_ADDRESS (a paid stage on a drop with no creator payout address), STAGE_FEE_BELOW_FLOOR (a paid stage, allowlist or public, whose OpenSea fee is below the drop's minimum)",
             "content": {
               "*/*": {
                 "schema": {
@@ -9656,6 +9656,16 @@
             }
           },
           {
+            "name": "include_catalog",
+            "in": "query",
+            "description": "Include canonical card identity after its unrestricted public launch. Omitted when unavailable.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "description": "Number of items to return per page",
@@ -11529,6 +11539,22 @@
               "type": "string"
             },
             "example": "doodles-official"
+          },
+          {
+            "name": "volume_timeframe",
+            "in": "query",
+            "description": "Opt-in volume history from the site's existing aggregate buckets. one_hour and one_day use 5-minute buckets; seven_days uses hourly buckets; thirty_days uses 6-hour buckets; one_year uses daily buckets. Missing buckets are omitted. The current bucket may be incomplete.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "one_hour",
+                "one_day",
+                "seven_days",
+                "thirty_days",
+                "one_year"
+              ]
+            }
           }
         ],
         "responses": {
@@ -17390,6 +17416,51 @@
         },
         "required": ["accounts", "program_id"]
       },
+      "SvmMarketplaceFeeTransferResponse": {
+        "type": "object",
+        "description": "Reported OpenSea marketplace-fee transfer, separate from the provider swap",
+        "properties": {
+          "decimals": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Token decimals"
+          },
+          "native_token": {
+            "type": "boolean",
+            "description": "True for native SOL, false for SPL tokens including wrapped SOL"
+          },
+          "raw_amount": {
+            "type": "string",
+            "description": "Exact fee in raw token units as a decimal integer string",
+            "example": "2500000"
+          },
+          "recipient": {
+            "type": "string",
+            "description": "Actual destination wallet for native SOL, or destination token account for SPL transfers"
+          },
+          "recipient_owner": {
+            "type": ["string", "null"],
+            "description": "Owner of the destination SPL token account; null for native SOL"
+          },
+          "settlement": {
+            "type": "string",
+            "description": "separate_transfer means a separate instruction pays the fee. It does not identify whether funds originated from swap output. unknown means the server did not report a recognized settlement",
+            "enum": ["separate_transfer", "unknown"]
+          },
+          "token_address": {
+            "type": "string",
+            "description": "Token mint for SPL tokens; 11111111111111111111111111111111 for native SOL"
+          }
+        },
+        "required": [
+          "decimals",
+          "native_token",
+          "raw_amount",
+          "recipient",
+          "settlement",
+          "token_address"
+        ]
+      },
       "SvmTransactionConfigResponse": {
         "type": "object",
         "description": "Compute budget a v1 Solana message carries inline instead of as instructions",
@@ -17447,6 +17518,17 @@
             "type": ["integer", "null"],
             "format": "int64",
             "description": "Last block height at which serialized_transaction can land. This is a block height, not a slot or timestamp."
+          },
+          "marketplace_fee_transfer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SvmMarketplaceFeeTransferResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Exact OpenSea marketplace-fee transfer appended to this transaction. Null means unreported, not zero fees. Does not include provider fees or total transaction costs"
           },
           "requires_jito_bundle": {
             "type": "boolean",
@@ -24106,6 +24188,41 @@
         },
         "required": ["offers"]
       },
+      "CardCatalogIdentityResponse": {
+        "type": "object",
+        "properties": {
+          "card_name": {
+            "type": "string"
+          },
+          "card_slug": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "printing_source_id": {
+            "type": "string"
+          },
+          "set_name": {
+            "type": "string"
+          },
+          "set_slug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "card_name",
+          "card_slug",
+          "category",
+          "language",
+          "printing_source_id",
+          "set_name",
+          "set_slug"
+        ]
+      },
       "ListingPriceResponse": {
         "type": "object",
         "description": "Price of a listing in its payment token, with its USD equivalent",
@@ -24142,6 +24259,9 @@
               }
             ],
             "description": "Price of the lowest active listing. Null when the NFT is not listed."
+          },
+          "catalog": {
+            "$ref": "#/components/schemas/CardCatalogIdentityResponse"
           },
           "collection": {
             "type": "string"
@@ -25194,9 +25314,55 @@
           },
           "total": {
             "$ref": "#/components/schemas/Total"
+          },
+          "volume_history": {
+            "type": "array",
+            "description": "Timestamped volume buckets, oldest first. Present only when volume_timeframe is supplied. Missing buckets are omitted.",
+            "items": {
+              "$ref": "#/components/schemas/CollectionVolumePointResponse"
+            }
           }
         },
         "required": ["intervals", "total"]
+      },
+      "CollectionVolumePointResponse": {
+        "type": "object",
+        "description": "A collection volume bucket in USD and the chain's native currency",
+        "properties": {
+          "native": {
+            "$ref": "#/components/schemas/DepthTokenPriceResponse",
+            "description": "Volume in the chain's native currency"
+          },
+          "time": {
+            "type": "number",
+            "format": "double",
+            "description": "Start of the aggregate bucket"
+          },
+          "usd": {
+            "type": "string",
+            "description": "Volume in USD, encoded as a decimal string"
+          }
+        },
+        "required": ["native", "time", "usd"]
+      },
+      "DepthTokenPriceResponse": {
+        "type": "object",
+        "description": "Human-readable amount and its currency",
+        "properties": {
+          "chain": {
+            "type": "string"
+          },
+          "contract_address": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": ["string", "null"]
+          },
+          "unit": {
+            "type": "string"
+          }
+        },
+        "required": ["chain", "contract_address", "unit"]
       },
       "IntervalStat": {
         "type": "object",
@@ -25423,25 +25589,6 @@
           }
         },
         "required": ["token"]
-      },
-      "DepthTokenPriceResponse": {
-        "type": "object",
-        "description": "Human-readable amount and its currency",
-        "properties": {
-          "chain": {
-            "type": "string"
-          },
-          "contract_address": {
-            "type": "string"
-          },
-          "symbol": {
-            "type": ["string", "null"]
-          },
-          "unit": {
-            "type": "string"
-          }
-        },
-        "required": ["chain", "contract_address", "unit"]
       },
       "OfferAggregatePriceResponse": {
         "type": "object",

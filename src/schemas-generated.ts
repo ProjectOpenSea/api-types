@@ -395,6 +395,15 @@ export type CancelResponse = Schemas["CancelResponse"]
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
  * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<CardCatalogIdentityResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `CardCatalogIdentityResponse`.
+ */
+export type CardCatalogIdentityResponse = Schemas["CardCatalogIdentityResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
  * SDK-facing value with `Camelize<ChainIdentifier>` (exported by
  * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
  * `ChainIdentifier`.
@@ -670,6 +679,15 @@ export type CollectionTransactionResponse = Schemas["CollectionTransactionRespon
  * `CollectionTransactionsResponse`.
  */
 export type CollectionTransactionsResponse = Schemas["CollectionTransactionsResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<CollectionVolumePointResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `CollectionVolumePointResponse`.
+ */
+export type CollectionVolumePointResponse = Schemas["CollectionVolumePointResponse"]
 
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
@@ -2596,6 +2614,15 @@ export type SvmInstructionAccountResponse = Schemas["SvmInstructionAccountRespon
  * `SvmInstructionResponse`.
  */
 export type SvmInstructionResponse = Schemas["SvmInstructionResponse"]
+
+/**
+ * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`
+ * camelizes responses and snakeizes request bodies, so annotate an
+ * SDK-facing value with `Camelize<SvmMarketplaceFeeTransferResponse>` (exported by
+ * `@opensea/sdk`) or the matching `@opensea/sdk` type rather than with
+ * `SvmMarketplaceFeeTransferResponse`.
+ */
+export type SvmMarketplaceFeeTransferResponse = Schemas["SvmMarketplaceFeeTransferResponse"]
 
 /**
  * Wire shape, snake_case as the API sends and accepts it. `@opensea/sdk`

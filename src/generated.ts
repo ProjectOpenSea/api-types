@@ -773,7 +773,7 @@ export interface paths {
          *
          *     Error bodies for the drop, stage and minter conditions below carry a stable `code` alongside `errors`. Branch on `code`, not on the message text.
          *
-         *     A 422 means the drop is mintable but this mint is not: the minter is not on the active presale's allowlist (the message names the stage and, when the drop has a public stage, when it opens), the quantity is over the wallet's limit or the remaining supply (the message says how many remain), the minter cannot pay the price and gas, or the active stage has a price and the drop has no creator payout address, so every paid mint would revert until the creator sets one, or the active stage is paid and its OpenSea fee is below the drop's minimum, so OpenSea will not sign the mint until the creator publishes the stage again (STAGE_FEE_BELOW_FLOOR). GET /api/v2/drops/{slug} still shows such a stage as live.
+         *     A 422 means the drop is mintable but this mint is not: the minter is not on the active presale's allowlist (the message names the stage and, when the drop has a public stage, when it opens), the quantity is over the wallet's limit or the remaining supply (the message says how many remain), the minter cannot pay the price and gas, or the active stage has a price and the drop has no creator payout address, so every paid mint would revert until the creator sets one, or the active stage is paid and its OpenSea fee is below the drop's minimum, so OpenSea will not build the mint until the creator corrects the fee (STAGE_FEE_BELOW_FLOOR). GET /api/v2/drops/{slug} still shows such a stage as live.
          */
         post: operations["build_drop_mint_transaction"];
         delete?: never;
@@ -3685,6 +3685,32 @@ export interface components {
              */
             program_id: string;
         };
+        /** @description Reported OpenSea marketplace-fee transfer, separate from the provider swap */
+        SvmMarketplaceFeeTransferResponse: {
+            /**
+             * Format: int32
+             * @description Token decimals
+             */
+            decimals: number;
+            /** @description True for native SOL, false for SPL tokens including wrapped SOL */
+            native_token: boolean;
+            /**
+             * @description Exact fee in raw token units as a decimal integer string
+             * @example 2500000
+             */
+            raw_amount: string;
+            /** @description Actual destination wallet for native SOL, or destination token account for SPL transfers */
+            recipient: string;
+            /** @description Owner of the destination SPL token account; null for native SOL */
+            recipient_owner?: string | null;
+            /**
+             * @description separate_transfer means a separate instruction pays the fee. It does not identify whether funds originated from swap output. unknown means the server did not report a recognized settlement
+             * @enum {string}
+             */
+            settlement: "separate_transfer" | "unknown";
+            /** @description Token mint for SPL tokens; 11111111111111111111111111111111 for native SOL */
+            token_address: string;
+        };
         /** @description Compute budget a v1 Solana message carries inline instead of as instructions */
         SvmTransactionConfigResponse: {
             /**
@@ -3724,6 +3750,8 @@ export interface components {
              * @description Last block height at which serialized_transaction can land. This is a block height, not a slot or timestamp.
              */
             last_valid_block_height?: number | null;
+            /** @description Exact OpenSea marketplace-fee transfer appended to this transaction. Null means unreported, not zero fees. Does not include provider fees or total transaction costs */
+            marketplace_fee_transfer?: components["schemas"]["SvmMarketplaceFeeTransferResponse"] | null;
             /** @description True when the transaction must be submitted as a Jito bundle */
             requires_jito_bundle: boolean;
             /** @description Base64-encoded unsigned Solana v0 transaction, present when transaction_format=serialized. Sign without rebuilding the message. Request a new quote after last_valid_block_height. */
@@ -6494,6 +6522,15 @@ export interface components {
             next?: string | null;
             offers: components["schemas"]["Offer"][];
         };
+        CardCatalogIdentityResponse: {
+            card_name: string;
+            card_slug: string;
+            category: string;
+            language: string;
+            printing_source_id: string;
+            set_name: string;
+            set_slug: string;
+        };
         /** @description Price of a listing in its payment token, with its USD equivalent */
         ListingPriceResponse: {
             /**
@@ -6516,6 +6553,7 @@ export interface components {
         StandardizedNft: {
             /** @description Price of the lowest active listing. Null when the NFT is not listed. */
             best_listing_price?: components["schemas"]["ListingPriceResponse"] | null;
+            catalog?: components["schemas"]["CardCatalogIdentityResponse"];
             collection: string;
             contract: string;
             /** Format: int32 */
@@ -6911,6 +6949,27 @@ export interface components {
         CollectionStatsResponse: {
             intervals: components["schemas"]["IntervalStat"][];
             total: components["schemas"]["Total"];
+            /** @description Timestamped volume buckets, oldest first. Present only when volume_timeframe is supplied. Missing buckets are omitted. */
+            volume_history?: components["schemas"]["CollectionVolumePointResponse"][];
+        };
+        /** @description A collection volume bucket in USD and the chain's native currency */
+        CollectionVolumePointResponse: {
+            /** @description Volume in the chain's native currency */
+            native: components["schemas"]["DepthTokenPriceResponse"];
+            /**
+             * Format: double
+             * @description Start of the aggregate bucket
+             */
+            time: number;
+            /** @description Volume in USD, encoded as a decimal string */
+            usd: string;
+        };
+        /** @description Human-readable amount and its currency */
+        DepthTokenPriceResponse: {
+            chain: string;
+            contract_address: string;
+            symbol?: string | null;
+            unit: string;
         };
         IntervalStat: {
             /**
@@ -7030,13 +7089,6 @@ export interface components {
         /** @description Depth price in its payment currency */
         DepthPriceResponse: {
             token: components["schemas"]["DepthTokenPriceResponse"];
-        };
-        /** @description Human-readable amount and its currency */
-        DepthTokenPriceResponse: {
-            chain: string;
-            contract_address: string;
-            symbol?: string | null;
-            unit: string;
         };
         /** @description Price information for an offer aggregate */
         OfferAggregatePriceResponse: {
@@ -11008,7 +11060,7 @@ export interface operations {
                     "*/*": components["schemas"]["V1ErrorWrapper"];
                 };
             };
-            /** @description Minting precondition failed. Codes: MINTER_NOT_ELIGIBLE (wallet not on the active presale's allowlist), MINT_LIMIT_EXCEEDED (the wallet's limit for the stage), SUPPLY_EXHAUSTED (the drop's or the stage's remaining supply), INSUFFICIENT_BALANCE (cannot pay the price and gas; skipped with skip_balance_check), NO_PAYOUT_ADDRESS (a paid stage on a drop with no creator payout address), STAGE_FEE_BELOW_FLOOR (a paid allowlist stage whose OpenSea fee is below the drop's minimum) */
+            /** @description Minting precondition failed. Codes: MINTER_NOT_ELIGIBLE (wallet not on the active presale's allowlist), MINT_LIMIT_EXCEEDED (the wallet's limit for the stage), SUPPLY_EXHAUSTED (the drop's or the stage's remaining supply), INSUFFICIENT_BALANCE (cannot pay the price and gas; skipped with skip_balance_check), NO_PAYOUT_ADDRESS (a paid stage on a drop with no creator payout address), STAGE_FEE_BELOW_FLOOR (a paid stage, allowlist or public, whose OpenSea fee is below the drop's minimum) */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -14869,6 +14921,8 @@ export interface operations {
                 sort_by?: string;
                 /** @description Sort direction: asc or desc */
                 sort_direction?: string;
+                /** @description Include canonical card identity after its unrestricted public launch. Omitted when unavailable. */
+                include_catalog?: boolean;
                 /**
                  * @description Number of items to return per page
                  * @example 20
@@ -15906,7 +15960,10 @@ export interface operations {
     };
     get_collection_stats: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Opt-in volume history from the site's existing aggregate buckets. one_hour and one_day use 5-minute buckets; seven_days uses hourly buckets; thirty_days uses 6-hour buckets; one_year uses daily buckets. Missing buckets are omitted. The current bucket may be incomplete. */
+                volume_timeframe?: "one_hour" | "one_day" | "seven_days" | "thirty_days" | "one_year";
+            };
             header?: never;
             path: {
                 /**
